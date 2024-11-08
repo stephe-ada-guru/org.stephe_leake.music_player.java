@@ -18,18 +18,26 @@
 
 package org.stephe_leake.music_player_2
 
+import android.app.AlertDialog;
 import android.content.Context
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity
 
 class utils
 {
-   companion object {
-
+   companion object
+   {
       // download service commands
       val COMMAND_CANCEL_DOWNLOAD : Int = 2;
       val COMMAND_DOWNLOAD        : Int = 3;
+
+      
+      val logTag : String =
+         // Must be shorter than 23 chars
+         //  1        10        20 |
+         "stephes_music";
 
       // objects
 
@@ -51,6 +59,24 @@ class utils
             {
                throw RuntimeException(id.toString() + " is not a TextView; it is a " + v.toString());
             }
+      }
+      
+      fun alertLog(context : Context, msg : String)
+      {
+         // Messages containing info user needs time to read; requires explicit dismissal.
+         //
+         // Cannot be called from a service
+         Log.i(logTag, msg);
+         AlertDialog.Builder(context).setMessage(msg).setPositiveButton(R.string.Ok, null).show();
+      }
+
+      fun alertLog(context : Context, msg : String, e : Throwable)
+      {
+         // Messages containing info user needs time to read; requires explicit dismissal.
+         //
+         // Cannot be called from a service
+         Log.e(logTag, msg);
+         AlertDialog.Builder(context).setMessage(msg + e.toString()).setPositiveButton(R.string.Ok, null).show();
       }
    }
 }

@@ -23,6 +23,7 @@
 
   <!-- misc -->
   <string name="app_name">Stephe\'s Music Player 2</string>
+  <string name="pref_name">Music Player settings</string>
 
   <string name="dialog_download_new_playlist">Enter a playlist category</string>
   <string name="dialog_jump_song">Enter a song number to jump to</string>

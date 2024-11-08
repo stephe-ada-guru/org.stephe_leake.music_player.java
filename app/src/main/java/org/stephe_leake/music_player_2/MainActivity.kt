@@ -141,8 +141,7 @@ class MainActivity : AppCompatActivity()
 
          if (null == serverIP)
             {
-             //FIXME: don't have utils yet
-             // utils.alertLog(this, "set Server IP in preferences")
+               utils.alertLog(this, "set Server IP in preferences")
             }
          else
             {

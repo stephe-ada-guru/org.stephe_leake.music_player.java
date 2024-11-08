@@ -1,3 +1,17 @@
+1 Nov 11:50 AM : sent email to Adela
+
+
+test app:
+    create new "empty activity" test_preferences
+        builds, runs
+
+    edit mainActivity to do preferences from music
+        crashes - can't find class "fragment". sigh
+
+    create new "navigation drawers"; has a fragment
+        builds, runs
+        change one fragment to music_player settings
+
 use same design as old app
     start search activity from menu
 
@@ -6,6 +20,24 @@ delete app/build/*
 copy/update rest of old activity.java to new MainActivity.kt
     menu - test preferences
     compiles, runs, menu displays
+    testing:
+        prefs
+            crashes
+Binary XML file line #32 in org.stephe_leake.music_player_2:layout/prefactivity: Error inflating class fragment
+Caused by: android.app.Fragment$InstantiationException: Trying to instantiate a class org.stephe_leake.music_player_2.MainPreferenceFragment that is not a Fragment
+                    res/layout/prefactivity.xml, org.../PrefActivity.kt
+
+               export prefactivity in manifest, run it directly from studio -> same error.
+
+                post on stackoverflow?
+                    simplify code in ~/android_work
+
+            server IP:
+
+        Create New Playlist
+            alertlog about set server IP: works
+
+
 
 review all android studio warnings
 
@@ -17,6 +49,8 @@ text in buttons is too light!
 
 
  Resources
+tablet: Android 14
+phone:  Android 14
 
 AndroidStudio doesn't understand git worktree (sigh)
     gradle sync in work_1 fails mysteriously (sigh)
