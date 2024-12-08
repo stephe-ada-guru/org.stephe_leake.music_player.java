@@ -18,16 +18,13 @@
   write to the Free Software Foundation, 51 Franklin Street, Suite
   500, Boston, MA 02110-1335, USA.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:baselineAligned="false">
-
-    <fragment
-        android:tag="frag"
-        android:name="org.stephe_leake.music_player_2.MainPreferenceFragment"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"/>
-</LinearLayout>
+<androidx.fragment.app.FragmentContainerView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:tag="frag"
+    android:id="@+id/main_pref_frag"
+    android:name="org.stephe_leake.music_player_2.MainPreferenceFragment"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1">
+</androidx.fragment.app.FragmentContainerView>

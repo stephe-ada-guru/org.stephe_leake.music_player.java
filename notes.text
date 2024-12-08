@@ -1,16 +1,5 @@
-1 Nov 11:50 AM : sent email to Adela
-
-
 test app:
-    create new "empty activity" test_preferences
-        builds, runs
-
-    edit mainActivity to do preferences from music
-        crashes - can't find class "fragment". sigh
-
-    create new "navigation drawers"; has a fragment
-        builds, runs
-        change one fragment to music_player settings
+    Menu | preferences runs, but displays empty screen
 
 use same design as old app
     start search activity from menu

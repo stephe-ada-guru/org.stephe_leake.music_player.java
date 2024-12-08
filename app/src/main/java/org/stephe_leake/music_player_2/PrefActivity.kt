@@ -19,9 +19,9 @@
 package org.stephe_leake.music_player_2
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 
-class PrefActivity : ComponentActivity()
+class PrefActivity : FragmentActivity()
 {
    override fun onCreate(savedInstanceState: Bundle?)
    {

@@ -22,6 +22,9 @@
   <item
       type="id"
       name="main_toolbar"/>
+  <item
+      type="id"
+      name="main_pref_frag"/>
 
   <item
       type="id"
