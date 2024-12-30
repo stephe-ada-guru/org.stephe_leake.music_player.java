@@ -51,6 +51,9 @@ android {
 
 dependencies {
 
+   // version from https://developer.android.com/jetpack/androidx/releases/preference?hl=en#kts
+   val preference_version = "1.2.1"
+   
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -59,7 +62,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.preference)
+    implementation("androidx.preference:preference-ktx:$preference_version")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

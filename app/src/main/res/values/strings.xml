@@ -71,13 +71,13 @@
   <string name="prev_threshold_dialog_title">previous threshold (milliseconds)</string>
 
   <string name="server_IP_key">server_IP</string>
-  <string name="server_IP_default"></string>
+  <string name="server_IP_default">192.168.7.52</string>
   <string name="server_IP_title">Server IP</string>
   <string name="server_IP_summary">Server for download</string>
   <string name="server_IP_dialog_title">Server IP</string>
 
   <string name="song_count_max_key">song_count_max</string>
-  <string name="song_count_max_default">100</string>
+  <string name="song_count_max_default">300</string>
   <string name="song_count_max_title">Song count max</string>
   <string name="song_count_max_summary">Maximum count of songs in playlist after download</string>
   <string name="song_count_max_dialog_title">Song count max</string>

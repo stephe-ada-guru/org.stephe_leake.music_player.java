@@ -33,6 +33,16 @@ class utils
       val COMMAND_CANCEL_DOWNLOAD : Int = 2;
       val COMMAND_DOWNLOAD        : Int = 3;
 
+      //  Commands to play and download, sent via broadcast Intent actions. Alphabetical order
+      //  Only one action, so we can add commands without adding to the reciever filter.
+      val ACTION_PLAY_COMMAND     : String = "org.stephe_leake.stephes_music.action.play_command";
+      val ACTION_DOWNLOAD_COMMAND : String = "org.stephe_leake.stephes_music.action.download_command";
+
+      // according to android docs, extra field names must inlude the package prefix (no explanation of why)
+      val EXTRA_COMMAND          : String = "org.stephe_leake.stephes_music.extra.command";
+      val EXTRA_COMMAND_POSITION : String = "org.stephe_leake.stephes_music.action.command_position";
+      val EXTRA_COMMAND_PLAYLIST : String = "org.stephe_leake.stephes_music.action.command_playlist";
+      val EXTRA_COMMAND_STATE    : String = "org.stephe_leake.stephes_music.action.command_state";
       
       val logTag : String =
          // Must be shorter than 23 chars
@@ -42,6 +52,7 @@ class utils
       // objects
 
       var mainActivity: AppCompatActivity? = null;
+      var smmDirectory: String? = null;
 
       // methods
 

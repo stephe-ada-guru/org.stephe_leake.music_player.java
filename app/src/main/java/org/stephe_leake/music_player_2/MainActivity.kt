@@ -18,6 +18,7 @@
 
 package org.stephe_leake.music_player_2
 
+import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -28,6 +29,7 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.widget.EditText;
 import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
@@ -44,10 +46,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.preference.EditTextPreferenceDialogFragmentCompat
 
+import java.io.File;
+import java.util.zip.Inflater
+
 import org.stephe_leake.music_player_2.PrefActivity
 import org.stephe_leake.music_player_2.utils.Companion
 import org.stephe_leake.music_player_2.utils.Companion.mainActivity
-import java.util.zip.Inflater
 
 class MainActivity : AppCompatActivity()
 {
@@ -137,7 +141,9 @@ class MainActivity : AppCompatActivity()
       {
          var res: Resources           = getResources()
          var prefs: SharedPreferences = this.getPreferences(Context.MODE_PRIVATE)
-         var serverIP: String?        = prefs.getString (res.getString(R.string.server_IP_key), null)
+         var serverIP: String?        =
+            // Default in preferences.xml doesn't seem to be used.
+            prefs.getString (res.getString(R.string.server_IP_key), res.getString(R.string.server_IP_default))
 
          if (null == serverIP)
             {
@@ -145,12 +151,37 @@ class MainActivity : AppCompatActivity()
             }
          else
             {
-               //FIXME: this is not a preference, just a string
-               // var diag: EditTextPreferenceDialogFragmentCompat = EditTextPreferenceDialogFragmentCompat()
-               // var args: Bundle = Bundle()
-               // args.putInt("command", utils.COMMAND_DOWNLOAD)
-               // diag.setArguments(args)
-               // diag.show(, "enter new playlist category")
+               // Get the playlist name, which is the song category;
+               // tell play service to download initial playlist.
+
+               var builder: AlertDialog.Builder = AlertDialog.Builder(this)
+               builder.setTitle("new playlist category")
+
+               val input: EditText = EditText(this)
+               builder.setView(input);
+
+               builder.setPositiveButton ("OK")
+               {dialog, which ->
+                   
+                   val playlistDir: File = File(utils.smmDirectory)
+                val name: String = input.getText().toString()
+                
+                mainActivity!!.startService(
+                  Intent (/* action = */ utils.ACTION_DOWNLOAD_COMMAND,
+                     /* uri = */ null,
+                     /* packageContext = */ mainActivity,
+                     /* cls = */ DownloadService::class.java)
+                      .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_DOWNLOAD)
+                      .putExtra(utils.EXTRA_COMMAND_PLAYLIST, playlistDir.getAbsolutePath() +
+                                 "/" + name))
+               }
+               
+               builder.setNegativeButton ("Cancel")
+                {dialog, which ->
+                      dialog.cancel();
+                }
+
+               builder.show();
             }
       }
 
@@ -194,7 +225,7 @@ class MainActivity : AppCompatActivity()
 
       R.id.menu_share ->
       {
-         //FIXME: don't have utils yet
+         //FIXME: 
          // utils.verboseLog("sharing " + utils.retriever.musicUri.toString())
 
          //  intent: Intent = Intent()
