@@ -30,6 +30,7 @@ import java.io.FileReader
 import java.io.FileWriter
 import java.io.IOException
 import java.io.LineNumberReader
+import java.util.LinkedList
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -56,46 +57,44 @@ class DownloadUtils
    companion object
    {
       val prefLogLevel : LogLevel = LogLevel.Info
-   }
+      val BUFFER_SIZE : Int = 8 * 1024
 
-   val BUFFER_SIZE : Int = 8 * 1024
+      // used in processDirEntry
+      var playlistDir     : String = ""
+      var mentionedFiles  : MutableList<String> = mutableListOf<String>()
+      val logFileBaseName : String = "download_log"
 
-   // used in processDirEntry
-   var playlistDir     : String = ""
-   var mentionedFiles  : MutableList<String> = mutableListOf<String>()
-   val logFileBaseName : String = "download_log"
-
-   fun logFileName() : String
-   {
-      return utils.smmDirectory + "/" + logFileBaseName + utils.logFileExt
-   }
-
-   fun log(context : Context, level : LogLevel, msg : String)
-   {
-      if (level >= prefLogLevel)
+      fun logFileName() : String
       {
-         utils.log(context, level, msg, logFileBaseName)
+         return utils.smmDirectory + "/" + logFileBaseName + utils.logFileExt
       }
-   }
 
-   fun readPlaylist(playlistFilename : String, lowercase : boolean) : List<String> 
-   {
-      // Read playlist file, return list of files (lowercase) in it.
-      val playlistFile : File = File(playlistFilename)
-
-      var result : LinkedList<String> = LinkedList<>()
-
-      for (i : LineIterator in FileUtils.lineIterator(playlistFile))
+      fun log(context : Context, level : LogLevel, msg : String)
       {
-         val line : String = i.next()
-         if lowercase
+         if (level >= prefLogLevel)
             {
-               result.addLast(line.toLowerCase(Locale.getDefault()))
+               utils.log(context, level, msg, logFileBaseName)
             }
-         else
-            result.addLast(line)
       }
-      return result;
-   }
 
+      fun readPlaylist(playlistFilename : String, lowercase : Boolean) : List<String> 
+      {
+         // Read playlist file, return list of files (lowercase) in it.
+         val playlistFile : File = File(playlistFilename)
+
+         var result : LinkedList<String> = LinkedList<String>()
+
+         for (line : String in FileUtils.lineIterator(playlistFile))
+            {
+               if (lowercase)
+                  {
+                     result.addLast(line.lowercase(Locale.getDefault()))
+                  }
+               else
+                  result.addLast(line)
+            }
+         return result;
+      }
+
+   }
 }

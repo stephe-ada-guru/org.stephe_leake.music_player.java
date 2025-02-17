@@ -86,7 +86,7 @@ class MainActivity : AppCompatActivity()
           .setDataAndType(
              FileProvider.getUriForFile(
                 this,
-                org.stephe_leake.music_player_2.BuildConfig.APPLICATION_ID + ".fileprovider",
+                BuildConfig.APPLICATION_ID + ".provider",
                 File(DownloadUtils.logFileName())),
              "text/plain")
 
@@ -96,7 +96,7 @@ class MainActivity : AppCompatActivity()
           .setDataAndType(
              FileProvider.getUriForFile(
                 this,
-                BuildConfig.APPLICATION_ID + ".fileprovider",
+                BuildConfig.APPLICATION_ID + ".provider",
                 File(utils.errorLogFileName())),
              "text/plain")
 
@@ -181,23 +181,23 @@ class MainActivity : AppCompatActivity()
                builder.setView(input);
 
                builder.setPositiveButton ("OK")
-               {dialog, which ->
+               {_, _ ->
                    
                    val playlistDir: File = File(utils.smmDirectory)
                 val name: String = input.getText().toString()
                 
-                mainActivity!!.startService(
-                  Intent (action = utils.ACTION_DOWNLOAD_COMMAND,
-                     uri = null,
-                     packageContext = mainActivity,
-                     cls = DownloadService::class.java)
+                this.startService(
+                  Intent (utils.ACTION_DOWNLOAD_COMMAND,
+                     null,
+                     this,
+                     DownloadService::class.java)
                       .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_DOWNLOAD)
                       .putExtra(utils.EXTRA_COMMAND_PLAYLIST, playlistDir.getAbsolutePath() +
                                  "/" + name))
                }
                
                builder.setNegativeButton ("Cancel")
-                {dialog, which ->
+                {dialog, _ ->
                       dialog.cancel();
                 }
 

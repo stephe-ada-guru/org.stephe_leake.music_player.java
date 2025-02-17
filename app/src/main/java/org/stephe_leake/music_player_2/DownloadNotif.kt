@@ -29,7 +29,8 @@ class DownloadNotif
 {
    val channelId : String = "Stephe's Music download service"
 
-   var notif   : Notification = Notification.Builder(context, channelId).build()
+   var notifMem : Notification = Notification.Builder(context, channelId).build()
+   
    init {
       val channel : NotificationChannel = NotificationChannel(
          channelId, "Stephe's Music download channel", NotificationManager.IMPORTANCE_LOW)
@@ -43,7 +44,10 @@ class DownloadNotif
    }
 
    var showLogPendingIntent : PendingIntent = showLogPendingIntentInit
-   
+
+   // AndroidStudio says this Builder constructor is deprecated, but
+   // https://developer.android.com/reference/android/app/Notification.Action.Builder
+   // doesn't.
    var cancelAction : Notification.Action = Notification.Action.Builder(
       R.drawable.cancel, "cancel", cancelIntent).build()
 
@@ -63,7 +67,7 @@ class DownloadNotif
 
    fun getNotif() : Notification
    {
-      return notif
+      return notifMem
    }
 
    fun setName(playlistName : String)
@@ -73,7 +77,7 @@ class DownloadNotif
 
    fun update()
    {
-      notif = Notification.Builder(context, channelId)
+      notifMem = Notification.Builder(context, channelId)
         .addAction (cancelAction)
         .setAutoCancel(true) // doesn't work
         .setContentIntent(showLogPendingIntent)
@@ -86,7 +90,7 @@ class DownloadNotif
 
      val notifManager : NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                                            
-     notifManager.notify(utils.notif_download_id, notif)
+     notifManager.notify(utils.notif_download_id, notifMem)
    }
 
    fun Done(msg : String)

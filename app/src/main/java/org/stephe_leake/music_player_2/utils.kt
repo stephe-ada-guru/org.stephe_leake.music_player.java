@@ -75,8 +75,8 @@ class utils
 
       val logTag : String =
          // Must be shorter than 23 chars
-         //  1        10        20 |
-         "stephes_music"
+      //  1        10        20 |
+      "stephes_music"
 
       // objects
 
@@ -85,105 +85,106 @@ class utils
       var cancelDownloadIntent  : Intent = Intent(Intent.ACTION_VIEW)
       
       var mainActivity: AppCompatActivity? = null
-      var smmDirectory: String? = null
+
+      // preferences don't work, so this needs a valid default
+      val smmDirectory: String = "/storage/emulated/0/Music/Music"
 
       val logFileExt : String = ".txt"
 
       val errorLogFileBaseName : String = "error_log"
 
-   }   
-   // methods
+      // public non-member functions
 
-   fun findTextViewById (a: AppCompatActivity, id: Int) : TextView
-   {
-      val v : View? = a.findViewById(id)
-      
-      if (v == null) throw RuntimeException("no such id " + id)
-         
-         if (v is TextView)
-         {
-            return v
-         }
-      else
-         {
-            throw RuntimeException(id.toString() + " is not a TextView; it is a " + v.toString())
-         }
-   }
-
-   fun logImage (item : LogLevel) : String
-   {
-      return when (item)
+      fun findTextViewById (a: AppCompatActivity, id: Int) : TextView
       {
-         LogLevel.Verbose-> ""
-         LogLevel.Info -> ""
-         LogLevel.Error -> "ERROR: "
-         LogLevel.Debug -> "Debug: "
+         val v : View? = a.findViewById(id)
+         
+         if (v == null) throw RuntimeException("no such id " + id)
+            
+            if (v is TextView)
+            {
+               return v
+            }
+         else
+            {
+               throw RuntimeException(id.toString() + " is not a TextView; it is a " + v.toString())
+            }
+      }
+
+      fun logImage (item : LogLevel) : String
+      {
+         return when (item)
+         {
+            LogLevel.Verbose-> ""
+            LogLevel.Info -> ""
+            LogLevel.Error -> "ERROR: "
+            LogLevel.Debug -> "Debug: "
+         }
+      }
+      
+      fun errorLogFileName() : String
+      {
+         return utils.smmDirectory + "/" + errorLogFileBaseName + logFileExt
+      }
+
+      fun log(context : Context, level : LogLevel, msg : String, logFileBaseName : String)
+      {
+         val fmt       : SimpleDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss : ", Locale.US)
+         val time      : Long     = System.currentTimeMillis() // local time zone
+         val timeStamp : String   = fmt.format(time)
+         val levelImg  : String   = logImage (level)
+         val logFileName : String = utils.smmDirectory + "/" + logFileBaseName + logFileExt
+         val logFile     : File   = File(logFileName)
+         val writer : PrintWriter = PrintWriter(FileWriter(logFileName, true)) // append
+
+         if (logFile.exists() && time - logFile.lastModified() > 4 * utils.millisPerHour)
+            {
+               val oldLogFileName : String = utils.smmDirectory + "/" + logFileBaseName + "_1" + logFileExt
+               val oldLogFile     : File   = File(oldLogFileName)
+
+               if (oldLogFile.exists())
+                  {oldLogFile.delete()}
+
+               logFile.renameTo(oldLogFile)
+            }
+
+         writer.println(timeStamp + levelImg + msg)
+         writer.close()
+      }
+
+      fun errorLog(context : Context, msg : String, e : Throwable)
+      {
+         // programmer errors (possibly due to Android bugs :)
+         log(context, LogLevel.Error, msg + e.toString(), utils.errorLogFileBaseName)
+         if (null != context)
+            Toast.makeText(context, msg + e.toString(), Toast.LENGTH_LONG).show()
+      }
+
+      fun errorLog(context : Context, msg : String)
+      {
+         // programmer errors (possibly due to Android bugs :)
+         log (context, LogLevel.Error, msg, errorLogFileBaseName)
+
+         // This can crash due to lack of resources; happens when run on new device.
+         // Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
+      }
+
+      fun alertLog(context : Context, msg : String)
+      {
+         // Messages containing info user needs time to read; requires explicit dismissal.
+         //
+         // Cannot be called from a service
+         Log.i(logTag, msg)
+         AlertDialog.Builder(context).setMessage(msg).setPositiveButton(R.string.Ok, null).show()
+      }
+
+      fun alertLog(context : Context, msg : String, e : Throwable)
+      {
+         // Messages containing info user needs time to read; requires explicit dismissal.
+         //
+         // Cannot be called from a service
+         Log.e(logTag, msg)
+         AlertDialog.Builder(context).setMessage(msg + e.toString()).setPositiveButton(R.string.Ok, null).show()
       }
    }
-   
-   fun errorLogFileName() : String
-   {
-      return utils.smmDirectory + "/" + errorLogFileBaseName + logFileExt
-   }
-
-   fun log(context : Context, level : LogLevel, msg : String, logFileBaseName : String)
-   {
-      val fmt       : SimpleDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss : ", Locale.US)
-      val time      : Long     = System.currentTimeMillis() // local time zone
-      val timeStamp : String   = fmt.format(time)
-      val levelImg  : String   = logImage (level)
-      val logFileName : String = utils.smmDirectory + "/" + logFileBaseName + logFileExt
-      val logFile     : File   = File(logFileName)
-      val writer : PrintWriter = PrintWriter(FileWriter(logFileName, true)) // append
-
-      if (logFile.exists() && time - logFile.lastModified() > 4 * utils.millisPerHour)
-         {
-            val oldLogFileName : String = utils.smmDirectory + "/" + logFileBaseName + "_1" + logFileExt
-            val oldLogFile     : File   = File(oldLogFileName)
-
-            if (oldLogFile.exists())
-               {oldLogFile.delete()}
-
-            logFile.renameTo(oldLogFile)
-         }
-
-      writer.println(timeStamp + levelImg + msg)
-      writer.close()
-   }
-
-   fun errorLog(context : Context, msg : String, e : Throwable)
-   {
-      // programmer errors (possibly due to Android bugs :)
-      log(context, LogLevel.Error, msg + e.toString(), utils.errorLogFileBaseName)
-      if (null != context)
-         Toast.makeText(context, msg + e.toString(), Toast.LENGTH_LONG).show()
-   }
-
-   fun errorLog(context : Context, msg : String)
-   {
-      // programmer errors (possibly due to Android bugs :)
-      log (context, LogLevel.Error, msg, errorLogFileBaseName)
-
-      // This can crash due to lack of resources; happens when run on new device.
-      // Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
-   }
-
-   fun alertLog(context : Context, msg : String)
-   {
-      // Messages containing info user needs time to read; requires explicit dismissal.
-      //
-      // Cannot be called from a service
-      Log.i(logTag, msg)
-      AlertDialog.Builder(context).setMessage(msg).setPositiveButton(R.string.Ok, null).show()
-   }
-
-   fun alertLog(context : Context, msg : String, e : Throwable)
-   {
-      // Messages containing info user needs time to read; requires explicit dismissal.
-      //
-      // Cannot be called from a service
-      Log.e(logTag, msg)
-      AlertDialog.Builder(context).setMessage(msg + e.toString()).setPositiveButton(R.string.Ok, null).show()
-   }
-   
 }

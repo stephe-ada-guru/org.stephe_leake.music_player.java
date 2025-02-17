@@ -40,7 +40,7 @@ class DownloadService : Service()
 
       val filter : IntentFilter = IntentFilter()
       filter.addAction(utils.ACTION_DOWNLOAD_COMMAND)
-      registerReceiver(broadcastReceiverCommand, filter)
+      registerReceiver(broadcastReceiverCommand, filter, RECEIVER_NOT_EXPORTED)
 
       val notif : DownloadNotif = DownloadNotif(
         context = this,
