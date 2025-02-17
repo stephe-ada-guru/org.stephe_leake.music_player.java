@@ -1,20 +1,18 @@
 use same design as old app
     start search activity from menu
 
-    give up on preferences; set useful server IP default in strings.xml
-
+    give up on preferences
+        set useful server IP default in strings.xml
+        and in pref.getString call; xml default not set automatically
 
 testing
     menu
         Create New Playlist
-            alertlog about "set server IP" shows even though default set?!
-                rebuild after delete build/* => no help; apparently defaults in xml don't work!?
-                set defValue in pref.getString call.
-
-                editing startservice statement
-                    created empty DownloadService.kt
-                    prompts for playlist category/name, crashes on null pointer
-                        need real service
+            editing startservice statement
+                created empty DownloadService.kt
+                prompts for playlist category/name, crashes on null pointer
+                    need real service
+                    translate rest of downloadservice.java
 
         quit - does nothing; need play service
 

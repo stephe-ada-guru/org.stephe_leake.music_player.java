@@ -18,16 +18,46 @@
 
 package org.stephe_leake.music_player_2
 
+import android.app.PendingIntent
 import android.app.Service
-import android.os.IBinder
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.IBinder
 
 class DownloadService : Service()
 {
+   val broadcastReceiverCommand : MPBroadcastReceiver = MPBroadcastReceiver()
+   
    ////////// service lifetime methods
    override fun onBind(intent: Intent): IBinder?
    {
-      return null;
+      return null
+   }
+
+   override fun onCreate()
+   {
+      super.onCreate()
+
+      val filter : IntentFilter = IntentFilter()
+      filter.addAction(utils.ACTION_DOWNLOAD_COMMAND)
+      registerReceiver(broadcastReceiverCommand, filter)
+
+      val notif : DownloadNotif = DownloadNotif(
+        context = this,
+         showLogPendingIntentInit = PendingIntent.getActivity
+           (this.getApplicationContext(),
+            utils.showDownloadLogIntentId,
+            utils.showDownloadLogIntent,
+            PendingIntent.FLAG_IMMUTABLE),
+
+         cancelIntent = PendingIntent.getBroadcast
+           (this.getApplicationContext(),
+            utils.cancelDownloadIntentId,
+            utils.cancelDownloadIntent,
+            PendingIntent.FLAG_IMMUTABLE))
+
+      startForeground (utils.notif_download_id, notif.getNotif(),
+                       android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
    }
 
 }

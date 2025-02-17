@@ -29,7 +29,7 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
-import android.widget.EditText;
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
@@ -44,14 +44,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.content.FileProvider
 import androidx.preference.EditTextPreferenceDialogFragmentCompat
 
 import java.io.File;
 import java.util.zip.Inflater
 
+import org.stephe_leake.music_player_2.BuildConfig
 import org.stephe_leake.music_player_2.PrefActivity
-import org.stephe_leake.music_player_2.utils.Companion
-import org.stephe_leake.music_player_2.utils.Companion.mainActivity
 
 class MainActivity : AppCompatActivity()
 {
@@ -78,7 +78,27 @@ class MainActivity : AppCompatActivity()
        super.onCreate(savedInstanceState)
        enableEdgeToEdge()
 
-       mainActivity = this
+       utils.mainActivity = this
+
+       utils.showDownloadLogIntent = Intent(Intent.ACTION_VIEW)
+          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+          .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+          .setDataAndType(
+             FileProvider.getUriForFile(
+                this,
+                org.stephe_leake.music_player_2.BuildConfig.APPLICATION_ID + ".fileprovider",
+                File(DownloadUtils.logFileName())),
+             "text/plain")
+
+       utils.showErrorLogIntent = Intent(Intent.ACTION_VIEW)
+          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+          .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+          .setDataAndType(
+             FileProvider.getUriForFile(
+                this,
+                BuildConfig.APPLICATION_ID + ".fileprovider",
+                File(utils.errorLogFileName())),
+             "text/plain")
 
        setContentView(R.layout.mainactivity)
        setSupportActionBar(findViewById(R.id.main_toolbar))
@@ -167,10 +187,10 @@ class MainActivity : AppCompatActivity()
                 val name: String = input.getText().toString()
                 
                 mainActivity!!.startService(
-                  Intent (/* action = */ utils.ACTION_DOWNLOAD_COMMAND,
-                     /* uri = */ null,
-                     /* packageContext = */ mainActivity,
-                     /* cls = */ DownloadService::class.java)
+                  Intent (action = utils.ACTION_DOWNLOAD_COMMAND,
+                     uri = null,
+                     packageContext = mainActivity,
+                     cls = DownloadService::class.java)
                       .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_DOWNLOAD)
                       .putExtra(utils.EXTRA_COMMAND_PLAYLIST, playlistDir.getAbsolutePath() +
                                  "/" + name))
@@ -237,8 +257,8 @@ class MainActivity : AppCompatActivity()
       }
 
       R.id.menu_show_download_log ->
-         {  //FIXME: don't have utils yet
-         // startActivity(utils.showDownloadLogIntent)
+         { 
+           startActivity(utils.showDownloadLogIntent)
          }
 
       R.id.menu_show_error_log ->
