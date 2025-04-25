@@ -3,8 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="FOREGROUND_SERVICE" />
-    <uses-permission android:name="FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:allowBackup="true"
@@ -37,6 +37,11 @@
         <service
             android:name=".DownloadService"
             android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
+        <service
+            android:name=".PlayService"
+            android:foregroundServiceType="mediaPlayback"
             android:exported="false" />
 
          <provider

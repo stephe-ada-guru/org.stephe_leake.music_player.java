@@ -57,6 +57,21 @@ class utils
       val EXTRA_COMMAND_PLAYLIST : String = "org.stephe_leake.stephes_music.action.command_playlist"
       val EXTRA_COMMAND_STATE    : String = "org.stephe_leake.stephes_music.action.command_state"
       
+      // play service commands
+      const val COMMAND_JUMP           : Int = 4
+      const val COMMAND_NEXT           : Int = 5
+      const val COMMAND_NOTE           : Int = 6
+      const val COMMAND_PAUSE          : Int = 7
+      const val COMMAND_PLAY           : Int = 8
+      const val COMMAND_PLAYLIST       : Int = 9 // playlist  string (abs file name)
+      const val COMMAND_PREVIOUS       : Int = 10
+      const val COMMAND_QUIT           : Int = 11
+      const val COMMAND_RESET_PLAYLIST : Int = 12
+      const val COMMAND_SAVE_STATE     : Int = 13
+      const val COMMAND_SEEK           : Int = 14 // position  int (milliseconds)
+      const val COMMAND_TOGGLEPAUSE    : Int = 15
+      const val COMMAND_UPDATE_DISPLAY : Int = 16
+
       // download service commands
       val COMMAND_CANCEL_DOWNLOAD : Int = 2
       val COMMAND_DOWNLOAD        : Int = 3
@@ -86,14 +101,28 @@ class utils
       
       var mainActivity: AppCompatActivity? = null
 
+
+      ////////// Shared objects
+
       // preferences don't work, so this needs a valid default
-      val smmDirectory: String = "/storage/emulated/0/Music/Music"
+      val smmDirectory : String = "/storage/emulated/0/Music/Music"
+
+      var playlistBasename : String = ""
+      // Current playlist file name; relative to smmDirectory, without
+      // extension (suitable for user display). Empty if no playlist is
+      // current.
 
       val logFileExt : String = ".txt"
 
       val errorLogFileBaseName : String = "error_log"
 
       // public non-member functions
+
+      fun playlistAbsPath() : String 
+      // return current playlist file abs path
+      {
+         return utils.smmDirectory + "/" + utils.playlistBasename + ".m3u"
+      }
 
       fun findTextViewById (a: AppCompatActivity, id: Int) : TextView
       {

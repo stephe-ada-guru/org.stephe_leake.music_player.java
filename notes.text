@@ -7,7 +7,8 @@ use same design as old app
 testing
     menu
         Create New Playlist
-            crashes with "Need FOREGROUND_SERVICE", but adding that in Manifest did not help
+            changes compile; need more testing
+
 
         quit - does nothing; need play service
 
