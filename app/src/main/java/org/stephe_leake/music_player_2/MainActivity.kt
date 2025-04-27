@@ -23,9 +23,11 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.content.res.Resources
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import android.content.res.Resources
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -34,9 +36,9 @@ import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -75,42 +77,67 @@ class MainActivity : AppCompatActivity()
 
    override fun onCreate(savedInstanceState: Bundle?)
    {
-       super.onCreate(savedInstanceState)
-       enableEdgeToEdge()
+      super.onCreate(savedInstanceState)
+      enableEdgeToEdge()
 
-       utils.mainActivity = this
+      utils.mainActivity = this
 
-       utils.showDownloadLogIntent = Intent(Intent.ACTION_VIEW)
-          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-          .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-          .setDataAndType(
-             FileProvider.getUriForFile(
-                this,
-                BuildConfig.APPLICATION_ID + ".provider",
-                File(DownloadUtils.logFileName())),
-             "text/plain")
+      utils.appDirectory = this.getExternalFilesDir(null)!!.getAbsolutePath();
 
-       utils.showErrorLogIntent = Intent(Intent.ACTION_VIEW)
-          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-          .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-          .setDataAndType(
-             FileProvider.getUriForFile(
-                this,
-                BuildConfig.APPLICATION_ID + ".provider",
-                File(utils.errorLogFileName())),
-             "text/plain")
+      utils.showDownloadLogIntent = Intent(Intent.ACTION_VIEW)
+         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+         .setDataAndType(
+            FileProvider.getUriForFile(
+               this,
+               BuildConfig.APPLICATION_ID + ".provider",
+               File(DownloadUtils.downloadLogFileName())),
+            "text/plain")
 
-       setContentView(R.layout.mainactivity)
-       setSupportActionBar(findViewById(R.id.main_toolbar))
+      utils.showErrorLogIntent = Intent(Intent.ACTION_VIEW)
+         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+         .setDataAndType(
+            FileProvider.getUriForFile(
+               this,
+               BuildConfig.APPLICATION_ID + ".provider",
+               File(utils.errorLogFileName())),
+            "text/plain")
 
-       // Set up displays, top to bottom left to right
-       
-       album       = utils.findTextViewById(this, R.id.album)
-       albumArtist = utils.findTextViewById(this, R.id.albumArtist)
-       artist      = utils.findTextViewById(this, R.id.artist)
-       composer    = utils.findTextViewById(this, R.id.composer)
-       title       = utils.findTextViewById(this, R.id.title)
-       year        = utils.findTextViewById(this, R.id.year)
+      setContentView(R.layout.mainactivity)
+      setSupportActionBar(findViewById(R.id.main_toolbar))
+
+      // Set up displays, top to bottom left to right
+      
+      album       = utils.findTextViewById(this, R.id.album)
+      albumArtist = utils.findTextViewById(this, R.id.albumArtist)
+      artist      = utils.findTextViewById(this, R.id.artist)
+      composer    = utils.findTextViewById(this, R.id.composer)
+      title       = utils.findTextViewById(this, R.id.title)
+      year        = utils.findTextViewById(this, R.id.year)
+
+   } //onCreate
+
+   override fun onRequestPermissionsResult(requestCode : Int,
+                                           permissions : Array<String>,
+                                           grantResults: IntArray)
+   {
+      super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+      
+      if (requestCode == utils.STORAGE_PERMISSION_REQUEST_CODE)
+         {
+            if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED))
+               {
+                  // Permission was granted
+                  utils.filePermissionGranted = true
+               }
+            else
+               {
+                  // Permission denied, handle it gracefully (e.g., inform the user)
+                  utils.filePermissionGranted = false
+                  utils.alertLog(this, "You denied access to local storage; this app cannot function without it.")
+               }
+         }
    }
 
    ////////// Menu
@@ -136,161 +163,175 @@ class MainActivity : AppCompatActivity()
    {
       when (item.getItemId())
       {
-      // Alphabetical order
+         // Alphabetical order
 
-      R.id.menu_copy ->
-      {
-         var clipManage: ClipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-
-         val album       : TextView = utils.findTextViewById(this, R.id.album)
-         val albumArtist : TextView = utils.findTextViewById(this, R.id.albumArtist)
-         val artist      : TextView = utils.findTextViewById(this, R.id.artist)
-         val composer    : TextView = utils.findTextViewById(this, R.id.composer)
-         val title       : TextView = utils.findTextViewById(this, R.id.title)
-         
-         val Msg: String = albumArtist.getText().toString() +
-                 " " + artist.getText().toString() +
-                 " " + album.getText().toString() +
-                 " " + title.getText().toString() +
-                 " " + composer.getText().toString()
-
-         clipManage.setPrimaryClip (ClipData.newPlainText ("song", Msg))
-      }
-
-      R.id.menu_new_playlist ->
-      {
-         var res: Resources           = getResources()
-         var prefs: SharedPreferences = this.getPreferences(Context.MODE_PRIVATE)
-         var serverIP: String?        =
-            // Default in preferences.xml doesn't seem to be used.
-            prefs.getString (res.getString(R.string.server_IP_key), res.getString(R.string.server_IP_default))
-
-         if (null == serverIP)
+         R.id.menu_copy ->
             {
-               utils.alertLog(this, "set Server IP in preferences")
-            }
-         else
-            {
-               // Get the playlist name, which is the song category;
-               // tell play service to download initial playlist.
+               var clipManage: ClipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
 
-               var builder: AlertDialog.Builder = AlertDialog.Builder(this)
-               builder.setTitle("new playlist category")
-
-               val input: EditText = EditText(this)
-               builder.setView(input);
-
-               builder.setPositiveButton ("OK")
-               {_, _ ->
-                   
-                   val playlistDir: File = File(utils.smmDirectory)
-                val name: String = input.getText().toString()
-                
-                this.startService(
-                  Intent (utils.ACTION_DOWNLOAD_COMMAND,
-                     null,
-                     this,
-                     DownloadService::class.java)
-                      .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_DOWNLOAD)
-                      .putExtra(utils.EXTRA_COMMAND_PLAYLIST, playlistDir.getAbsolutePath() +
-                                 "/" + name))
-               }
+               val album       : TextView = utils.findTextViewById(this, R.id.album)
+               val albumArtist : TextView = utils.findTextViewById(this, R.id.albumArtist)
+               val artist      : TextView = utils.findTextViewById(this, R.id.artist)
+               val composer    : TextView = utils.findTextViewById(this, R.id.composer)
+               val title       : TextView = utils.findTextViewById(this, R.id.title)
                
-               builder.setNegativeButton ("Cancel")
-                {dialog, _ ->
-                      dialog.cancel();
-                }
+               val Msg: String = albumArtist.getText().toString() +
+               " " + artist.getText().toString() +
+               " " + album.getText().toString() +
+               " " + title.getText().toString() +
+               " " + composer.getText().toString()
 
-               builder.show();
+               clipManage.setPrimaryClip (ClipData.newPlainText ("song", Msg))
             }
-      }
 
-      R.id.menu_liner_notes ->
-      {
-         //FIXME: retriever not there yet
-         // var intent: Intent = Intent(Intent.ACTION_VIEW)
-         // .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-         // .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-         // .setDataAndType(utils.retriever.linerUri, "application/pdf")
+         R.id.menu_new_playlist ->
+            {
+               utils.checkFilePermission(this)
+               
+               if (utils.filePermissionGranted)
+                  {
+                     var res     : Resources         = getResources()
+                     var prefs   : SharedPreferences = this.getPreferences(Context.MODE_PRIVATE)
+                     var serverIP: String?           =
+                        // Default in preferences.xml doesn't seem to be used.
+                     prefs.getString (res.getString(R.string.server_IP_key), res.getString(R.string.server_IP_default))
+                     
+                     if (null == serverIP)
+                        {
+                           utils.alertLog(this, "set Server IP in preferences")
+                        }
+                     else
+                        {
+                           // Get the playlist name, which is the song category;
+                           // tell play service to download initial playlist.
 
-         // startActivity(intent)
-      }
+                           var builder: AlertDialog.Builder = AlertDialog.Builder(this)
+                           builder.setTitle("new playlist category")
 
-      R.id.menu_preferences ->
-         // We don't need a result
+                           val input: EditText = EditText(this)
+                           builder.setView(input);
+
+                           builder.setPositiveButton ("OK")
+                           {_, _ ->
+                               
+                               val playlistDir: File = File(utils.globalDirectory)
+                            val name: String = input.getText().toString()
+                            
+                            this.startService(
+                               Intent (utils.ACTION_DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
+                                  .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_DOWNLOAD)
+                                  .putExtra(utils.EXTRA_COMMAND_PLAYLIST, playlistDir.getAbsolutePath() +
+                                            "/" + name))
+                           }
+                           
+                           builder.setNegativeButton ("Cancel")
+                           {dialog, _ ->
+                               dialog.cancel();
+                           }
+
+                           builder.show();
+                        }
+                  }
+            }
+
+         R.id.menu_liner_notes ->
+            {
+               utils.checkFilePermission(this)
+               
+               if (!utils.filePermissionGranted) {return false}
+
+               //FIXME: retriever not there yet
+               // var intent: Intent = Intent(Intent.ACTION_VIEW)
+               // .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+               // .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+               // .setDataAndType(utils.retriever.linerUri, "application/pdf")
+
+               // startActivity(intent)
+            }
+
+         R.id.menu_preferences ->
+            // We don't need a result
          this.startActivity(Intent(utils.mainActivity, PrefActivity::class.java))
 
-      R.id.menu_quit ->
-         {//FIXME: don't have play service yet
-         // sendBroadcast
-         //   (Intent
-         //      (utils.ACTION_PLAY_COMMAND)
-         //      .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_QUIT))
+         R.id.menu_quit ->
+            {//FIXME: don't have play service yet
+             // sendBroadcast
+             //   (Intent
+             //      (utils.ACTION_PLAY_COMMAND)
+             //      .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_QUIT))
 
-         // stopService (Intent().setComponent(playServiceComponentName))
+             // stopService (Intent().setComponent(playServiceComponentName))
 
-         // finish()
-         }
+             // finish()
+            }
 
-      R.id.menu_reset_playlist ->
-         {  //FIXME: don't have play service yet
-         // sendBroadcast(Intent(utils.ACTION_PLAY_COMMAND)
-         //                 .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_RESET_PLAYLIST))
-         }
+         R.id.menu_reset_playlist ->
+            {
+               utils.checkFilePermission(this)
+               
+               if (!utils.filePermissionGranted) {return false}
 
-      R.id.menu_search ->
-         {
-         //FIXME: start search activity, search local database
-         }
+               //FIXME: don't have play service yet
+               // sendBroadcast(Intent(utils.ACTION_PLAY_COMMAND)
+               //                 .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_RESET_PLAYLIST))
+            }
 
-      R.id.menu_share ->
-      {
-         //FIXME: 
-         // utils.verboseLog("sharing " + utils.retriever.musicUri.toString())
+         R.id.menu_search ->
+            {
+               //FIXME: start search activity, search local database
+            }
 
-         //  intent: Intent = Intent()
-         // .setAction(Intent.ACTION_SEND)
-         // .putExtra(Intent.EXTRA_STREAM, utils.retriever.musicUri)
-         // .setType("audio/mp3")
+         R.id.menu_share ->
+            {
+               //FIXME: 
+                  // utils.verboseLog("sharing " + utils.retriever.musicUri.toString())
 
-         // startActivity(Intent.createChooser(intent, "Share song via ..."))
-      }
+               //  intent: Intent = Intent()
+               // .setAction(Intent.ACTION_SEND)
+               // .putExtra(Intent.EXTRA_STREAM, utils.retriever.musicUri)
+               // .setType("audio/mp3")
 
-      R.id.menu_show_download_log ->
-         { 
-           startActivity(utils.showDownloadLogIntent)
-         }
+               // startActivity(Intent.createChooser(intent, "Share song via ..."))
+            }
 
-      R.id.menu_show_error_log ->
-         {  //FIXME: don't have utils yet
-         // startActivity(utils.showErrorLogIntent)
-         }
+         R.id.menu_show_download_log ->
+            { 
+              startActivity(utils.showDownloadLogIntent)
+            }
 
-      R.id.menu_update_playlist ->
-      {
-         //FIXME: don't have this fragment yet
-         // var res: Resources           = getResources()
-         // var prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-         // var serverIP: String         = prefs.getString (res.getString(R.string.server_IP_key), null)
+         R.id.menu_show_error_log ->
+            {  //FIXME: don't have utils yet
+               // startActivity(utils.showErrorLogIntent)
+            }
 
-         // if (null == serverIP)
-         //    //FIXME: don't have utils yet
-         //    // utils.alertLog(this, "set Server IP in preferences")
-         // else
-         // {
-         //    //  var diag: PickPlaylistDialogFragment = PickPlaylistDialogFragment()
-         //    //  var args: Bundle = Bundle()
-         //    // args.putInt("command", utils.COMMAND_DOWNLOAD)
-         //    // diag.setArguments(args)
-         //    // diag.show(getFragmentManager(), "pick update playlist")
-         // }
-      }
+         R.id.menu_update_playlist ->
+            {
+               utils.checkFilePermission(this)
+               
+               if (!utils.filePermissionGranted) {return false}
 
-      else ->
-         {//FIXME: don't have utils yet
-         // utils.errorLog
-         //   (this, "activity.onOptionsItemSelected: unknown MenuItemId " + item.getItemId())
-         }
+               //FIXME: don't have this fragment yet
+               // var res: Resources           = getResources()
+               // var prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+               // var serverIP: String         = prefs.getString (res.getString(R.string.server_IP_key), null)
+
+               // if (null == serverIP)
+               //    //FIXME: don't have utils yet
+               //    // utils.alertLog(this, "set Server IP in preferences")
+               // else
+               // {
+                  //    //  var diag: PickPlaylistDialogFragment = PickPlaylistDialogFragment()
+                  //    //  var args: Bundle = Bundle()
+                  //    // args.putInt("command", utils.COMMAND_DOWNLOAD)
+                  //    // diag.setArguments(args)
+                  //    // diag.show(getFragmentManager(), "pick update playlist")
+                  // }
+            }
+
+         else ->
+            {
+               Log.e(utils.logTag, "activity.onOptionsItemSelected: unknown MenuItemId " + item.getItemId())
+            }
       }
       return false // continue menu processing
    }

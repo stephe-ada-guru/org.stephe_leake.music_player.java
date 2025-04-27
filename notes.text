@@ -5,9 +5,17 @@ use same design as old app
         set useful defaults in code
 
 testing
+    notes and error log in app-specific dir
+        used to be called 'smmdir', but now that refers to the global music store
+        change to 'appDir', 'globalDir'
+
     menu
         Create New Playlist
-            changes compile; need more testing
+            need to request permission from user; see gemini report
+                calls ActivityCompat.requestPermissions, but that does _not_ actually request permission from the user!
+                https://developer.android.com/training/permissions/requesting#explain
+                move to just before every file access, add shouldShowRequestPermissionRationale(), ExplainFilePermAct
+
 
 
         quit - does nothing; need play service
@@ -18,7 +26,12 @@ testing
 
 After download new playlist, check that all files are present; download any missing
 
-review all android studio warnings
+
+change web server command "download" to "get_song_list"
+    send from DownloadUtils.kt getNewSongsList
+
+record "last_downloaded" in getNewSongs, not in get file.
+
 
 Need "clear playlist" and "delete playlist"; instrumental got screwed up.
     or just edit manually, since they are visible.

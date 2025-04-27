@@ -18,7 +18,6 @@
 
 package org.stephe_leake.music_player_2
 
-import android.media.MediaScannerConnection
 import android.content.Context
 
 import java.io.BufferedInputStream
@@ -39,6 +38,8 @@ import kotlin.collections.MutableList
 import org.apache.commons.io.FilenameUtils
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.LineIterator
+
+// filefilter is a package, not a class
 import org.apache.commons.io.filefilter.FalseFileFilter
 import org.apache.commons.io.filefilter.FileFileFilter
 import org.apache.commons.io.filefilter.OrFileFilter
@@ -57,26 +58,26 @@ class DownloadUtils
 {
    companion object
    {
-      val prefLogLevel : LogLevel = LogLevel.Info
+      var prefLogLevel : LogLevel = LogLevel.Info
       val BUFFER_SIZE : Int = 8 * 1024
 
       // used in processDirEntry
       var playlistDir     : String = ""
       var mentionedFiles  : MutableList<String> = mutableListOf<String>()
-      val logFileBaseName : String = "download_log"
+      val downloadLogFileBaseName : String = "download_log"
 
-      lateinit var httpClient : OkHttpClient 
+      var httpClient : OkHttpClient? = null
 
-      fun logFileName() : String
+      fun downloadLogFileName() : String
       {
-         return utils.smmDirectory + "/" + logFileBaseName + utils.logFileExt
+         return utils.appDirectory + "/" + downloadLogFileBaseName + utils.logFileExt
       }
 
-      fun log(context : Context, level : LogLevel, msg : String)
+      fun log(level : LogLevel, msg : String)
       {
          if (level >= prefLogLevel)
             {
-               utils.log(context, level, msg, logFileBaseName)
+               utils.log(level, msg, downloadLogFileBaseName)
             }
       }
 
@@ -110,8 +111,7 @@ class DownloadUtils
          return result;
       }
 
-      fun prunePlaylist(context          : Context,
-                        playlistFilename : String,
+      fun prunePlaylist(playlistFilename : String,
                         lastFilename     : String)
          : Int
       // Delete lines from start of playlist file up to but not including
@@ -126,7 +126,7 @@ class DownloadUtils
          try {
             val lines      : List<String>     = readPlaylist(playlistFilename, false)
             val input      : LineNumberReader = LineNumberReader(FileReader(lastFilename))
-            val lastPlayed : String           = input.readLine()
+            val lastPlayed : String?          = input.readLine()
             var found      : Boolean          = false
 
             input.close()
@@ -172,17 +172,17 @@ class DownloadUtils
          return deleteCount
       }
 
-      public fun cleanPlaylist(context : Context, category : String, playlistDir : String, smmDir : String)
+      public fun cleanPlaylist(category : String)
       {
          // Delete lines in category.m3u that are before song in
-         // SMM_Dir/category.last.
+         // appDir/category.last.
          //
          // Directory names end in '/'
 
          // We can't declare a File object for lastFile; that prevents
          // delete in prunePlaylist.
-         val playlistFilename : String = FilenameUtils.concat(playlistDir, category + ".m3u")
-         val lastFilename     : String = FilenameUtils.concat(smmDir, category + ".last")
+         val playlistFilename : String = utils.playlistFileName(category)
+         val lastFilename     : String = utils.lastFileName (category)
 
          try
          {
@@ -190,19 +190,18 @@ class DownloadUtils
             if ("" != FilenameUtils.getPath(playlistFilename))
                if ("" != FilenameUtils.getPath(lastFilename))
                {
-                  val deleteCount : Int = prunePlaylist(context, playlistFilename, lastFilename);
-                  log(context, LogLevel.Info, category + " playlist cleaned: " + deleteCount + " songs deleted")
+                  val deleteCount : Int = prunePlaylist(playlistFilename, lastFilename);
+                  log(LogLevel.Info, category + " playlist cleaned: " + deleteCount + " songs deleted")
                }
          }
          catch (e : IOException)
          {
             // from prunePlaylist (which calls readPlaylist)
-            log(context, LogLevel.Error, "cannot read/write playlist '" + playlistFilename + "'")
+            log(LogLevel.Error, "cannot read/write playlist '" + playlistFilename + "'")
          }
       }
       
-      fun getNewSongsList(context  : Context,
-                          serverIP : String,
+      fun getNewSongsList(serverIP : String,
                           category : String,
                           count    : Int,
                           newCount : Int,
@@ -225,7 +224,7 @@ class DownloadUtils
 
          try
          {
-            val response : Response = httpClient.newCall(request).execute()
+            val response : Response = httpClient!!.newCall(request).execute()
 
             try
             {
@@ -233,38 +232,328 @@ class DownloadUtils
             }
             catch (e: IOException) {
                // From response.body()
-               log(context, LogLevel.Error, "getNewSongsList request has no body: " + e.toString())
+               log(LogLevel.Error, "getNewSongsList request has no body: " + e.toString())
                result.status = ProcessStatus.Fatal
             }
          }
          catch (e: IOException) {
             // From httpClient.newCall; connection failed after retry
-            log(context, LogLevel.Error, "getNewSongsList '" + url + "': http request failed: " + e.toString())
+            log(LogLevel.Error, "getNewSongsList '" + url + "': http request failed: " + e.toString())
             result.status = ProcessStatus.Retry
          }
 
-         log(context, LogLevel.Info, "getNewSongsList: " + result.strings.size.toString() + " songs")
+         log(LogLevel.Info, "getNewSongsList: " + result.strings.size.toString() + " songs")
          return result
       }
 
-      fun sendNotes(context  : Context,
-                    serverIP : String,
-                    category : String,
-                    smmDir   : String)
+      private fun getFile(serverIP : String,
+                          resource : String,
+                          fileName : File)
+         : StatusCount
+      {
+         // Check if 'filename' already exists locally; if not, get
+         // 'resource' from 'serverIP', store locally in 'fileName'.
+         // 'resource' shall have only path and file name.
+         //
+         // Return result.status Success if successful, Fatal or Retry
+         // for any errors (error messages in log). result.count = 1 if
+         // file was downloaded, 0 if found locally.
+
+         val result: StatusCount = StatusCount()
+
+         // File.exists throws IOException ENOENT if the directory does not exist!
+         fileName.mkdirs()
+
+         if (fileName.exists())
+            {
+               return result
+            }
+         else
+            {
+               // new file
+               result.count = 1
+            }
+
+         val builder: HttpUrl.Builder = HttpUrl.Builder()
+            .scheme("http")
+            .host(serverIP)
+            .port(8080)
+
+         val url: HttpUrl = builder
+            .addPathSegment(resource)
+            .build()
+
+         try
+         {
+            fileName.createNewFile()
+         }
+         catch (e: IOException)
+         {
+            log(LogLevel.Error, "cannot create file " + fileName.getAbsolutePath())
+            result.status = ProcessStatus.Fatal
+            return result
+         }
+
+         try
+         {
+            val response : Response = httpClient!!.newCall(Request.Builder().url(url).build()).execute()
+
+            if (!response.isSuccessful)
+               {
+                  log(LogLevel.Error,
+                      "getFile '" + url.toString() + "' request failed: " +
+                      response.code + " " + response.message)
+                  result.status = ProcessStatus.Retry
+                  return result
+               }
+
+            val inBuf: BufferedInputStream = BufferedInputStream(response.body!!.byteStream())
+            val out: FileOutputStream = FileOutputStream(fileName)
+            val buffer = ByteArray(BUFFER_SIZE)
+            val contentLen: String = response.header("Content-Length")!!
+            val contentLength = contentLen.toInt()
+            var downloaded = 0
+            var count : Int
+
+            while ((inBuf.read(buffer).also {count = it}) != -1)
+            {
+               downloaded += count
+               out.write(buffer, 0, count)
+            }
+            out.close()
+            inBuf.close()
+
+            if (downloaded != contentLength)
+               log(LogLevel.Error, "downloading '" + resource + "'; got " +
+                   downloaded + "bytes, expecting " + contentLength
+            )
+            else log(LogLevel.Verbose, "downloaded '$resource'")
+               
+            }
+         catch (e: IOException)
+         {
+            // From httpClient.newCall; connection failed after retry
+            log(LogLevel.Error, "http request failed: getFile '" + resource + "': " + e.toString())
+            result.status = ProcessStatus.Retry
+         }
+         catch (e: NumberFormatException)
+         {
+            // from parseInt; corrupted Internet transmission. 'contentLen' not visible here.
+            log(LogLevel.Error, "parseInt failed")
+            result.status = ProcessStatus.Retry
+         }
+
+         return result
+      }
+
+      fun getMetaList(serverIP : String,
+                      resource : String)
+         : StatusStrings
+      {
+         val result: StatusStrings = StatusStrings()
+
+         val url: HttpUrl = HttpUrl.Builder()
+            .scheme("http")
+            .host(serverIP)
+            .port(8080)
+            .addPathSegments(resource)
+            .addPathSegment("meta")
+            .build()
+
+         ensureHttpClient()
+
+         try
+         {
+            val response : Response = httpClient!!.newCall(Request.Builder().url(url).build()).execute()
+
+            if (!response.isSuccessful)
+               {
+                  try
+                  {
+                     result.strings = response.body!!.string().split("\r\n")
+                  }
+                  catch (e: IOException)
+                  {
+                     // From response.body(); server error possibly due to corrupted file name
+                     log(LogLevel.Error, "getMetaList request has no body: " + e.toString())
+                     result.status = ProcessStatus.Retry
+                  }
+               }
+         }
+         catch (e: IOException)
+         {
+            // From httpClient.newCall; connection failed after retry
+            log(LogLevel.Error, "http request failed: getMetaList '" + resource + "': " + e.toString())
+            result.status = ProcessStatus.Retry
+         }
+         
+         return result
+      }
+
+      private fun getMeta(serverIP: String,
+                          resourcePath: String,
+                          destDir: File)
          : ProcessStatus
       {
-         val noteFile : File = File(smmDir, "$category.note")
-         var status   : ProcessStatus = ProcessStatus.Success
+         var fileStatus: StatusCount
+         var objFile: File
 
+         val files: StatusStrings = getMetaList(serverIP, resourcePath)
+
+         if (ProcessStatus.Success != files.status)
+            {
+               return files.status
+            }
+
+         if (files.strings.size == 1 && files.strings.get(0).length == 0)
+            {
+               // no meta files for this directory
+               return ProcessStatus.Success
+            }
+         
+         for (file in files.strings)
+            {
+               objFile = File(destDir, FilenameUtils.getName(file))
+
+               fileStatus = getFile(serverIP, file, objFile)
+               if (ProcessStatus.Success != fileStatus.status)
+                  {
+                     return fileStatus.status
+                  }
+            }
+
+         return ProcessStatus.Success
+      }
+
+      fun getSongs(serverIP: String,
+                   songs: List<String>,
+                   category: String,
+                   notif: DownloadNotif)
+         : StatusCount
+      {
+         // Add all 'songs' to playlist '<category>.m3u'. Ensure all
+         // 'songs' are available locally; if not, get from
+         // 'serverIP', store in 'root/<song>' (<song> contains <album
+         // artist>/<album> directories). Also get album art, liner
+         // notes for new directories.
+         
+         val playlistFile   : File = File(utils.playlistFileName(category))
+         val playlistWriter : FileWriter
+         val result         : StatusCount = StatusCount()
+         var metaStatus     : ProcessStatus
+         var fileStatus     : StatusCount
+         var newSongs = 0
+
+         try
+         {
+            playlistWriter = FileWriter(playlistFile, true) // append
+         } catch (e: IOException) {
+            log(LogLevel.Error, "cannot open '" + playlistFile.getAbsolutePath() + "' for append."
+            )
+            result.status = ProcessStatus.Fatal
+            return result
+         }
+
+         notif.Update(songs.size, result.count)
+
+         try
+         {
+            for (song in songs)
+               {
+                  val destDir : File = File(utils.globalDirectory, FilenameUtils.getPath(song))
+                  val songFile: File
+
+                  if (!destDir.exists())
+                     {
+                        destDir.mkdirs()
+
+                        metaStatus = getMeta(serverIP, FilenameUtils.getPath(song), destDir)
+                        
+                        when (metaStatus)
+                        {
+                           ProcessStatus.Start, ProcessStatus.Running ->
+                              {} // programmer error
+                           
+                           ProcessStatus.Success ->
+                              {}
+
+                           ProcessStatus.Fatal, ProcessStatus.Retry ->
+                              {
+                                 // Delete dir so meta will be downloaded on retry
+                                 destDir.delete()
+                                 result.status = metaStatus
+                              }
+                        }
+                     }
+
+                  if (result.status == ProcessStatus.Success)
+                     {
+                        songFile = File(destDir, FilenameUtils.getName(song))
+                        fileStatus = getFile( serverIP, song, songFile)
+
+                        when (fileStatus.status)
+                        {
+                           ProcessStatus.Start, ProcessStatus.Running ->
+                              {} // programmer error
+                           
+                           ProcessStatus.Success ->
+                              {
+                                 playlistWriter.write("$song\n")
+                                 result.count++
+                                 newSongs = newSongs + fileStatus.count
+                                 notif.Update(songs.size, result.count)
+                              }
+
+                           ProcessStatus.Retry ->
+                              result.status = fileStatus.status
+
+                           ProcessStatus.Fatal ->
+                              {
+                                 result.status = fileStatus.status
+                                 notif.Error("get file failed")
+                              }
+                        }
+                     }
+               }
+         }
+         catch (e: IOException)
+         {
+            // From playlistWriter.write
+            log(LogLevel.Error, "cannot append to '" + playlistFile.getAbsolutePath() + "'; disk full?")
+            result.status = ProcessStatus.Fatal // non-recoverable
+         }
+         finally
+         {
+            try
+            {
+               playlistWriter.close()
+            } catch (e: IOException) {
+               // probably from flush cache
+               log(LogLevel.Error, "cannot close '" + playlistFile.getAbsolutePath() + "'; disk full?")
+               result.status = ProcessStatus.Fatal // non-recoverable
+            }
+         }
+
+         log(LogLevel.Info,
+             result.count.toString() + " songs added to " + category + ", " + newSongs + " new.")
+
+         return result
+
+         // File objects hold the corresponding disk file locked; later
+         // unit test cannot delete them.
+      }
+
+      fun readNotes(noteFile : File)
+         : String
+      {
+         var data : String = ""
+         
          if (noteFile.exists())
             {
-               val url = "http://$serverIP:8080/remote_cache/$category.note"
-               var data = ""
-
                try
                {
-                  val noteReader: LineNumberReader = LineNumberReader(FileReader(noteFile))
-                  var line: String = noteReader.readLine()
+                  val noteReader : LineNumberReader = LineNumberReader(FileReader(noteFile))
+                  var line : String? = noteReader.readLine()
                   
                   while (line != null) {
                      // Doc for LineNumberReader says 'line' includes line terminators, but it doesn't.
@@ -274,37 +563,49 @@ class DownloadUtils
                }
                catch (e: FileNotFoundException) {} // from noteReader constructor; can't get here
                catch (e: IOException) {} // from noteReader.readLine; can't get here
+            }
+         return data
+      }
+   
+      fun sendNotes(serverIP : String,
+                    category : String)
+         : ProcessStatus
+      {
+         var status   : ProcessStatus = ProcessStatus.Success
+         val url      : String = "http://$serverIP:8080/remote_cache/$category.note"
+         val noteFile : File   = File(utils.notesFileName(category))
+         var data     : String = readNotes(noteFile)
 
+         if (data.length > 0)
+            {
+               val body    : TextBody = TextBody(data)
+               val request : Request  = Request.Builder()
+                  .url(url)
+                  .put(body)
+                  .build()
+               
+               ensureHttpClient()
+               try
                {
-                  val body    : TextBody = TextBody(data)
-                  val request : Request  = Request.Builder()
-                     .url(url)
-                     .put(body)
-                     .build()
-
-                  ensureHttpClient()
-                  try
-                  {
-                     val response : Response =httpClient.newCall(request).execute()
-                     
-                     if (200 != response.code)
-                        {
-                           status = ProcessStatus.Fatal // something wrong with server
-                           log(context, LogLevel.Error, "put notes failed " + response.message)
-                        }
-                     else
-                        log(context, LogLevel.Info, "$category sendNotes")
-                  }
-                  catch (e: IOException) {
-                     // From httpClient.newCall; connection failed after retry
-                     log(context, LogLevel.Error, category + " sendNotes http request failed: " + e.toString())
-                     status = ProcessStatus.Retry // retry after delay
-                  }
+                  val response : Response =httpClient!!.newCall(request).execute()
+                  
+                  if (200 != response.code)
+                     {
+                        status = ProcessStatus.Fatal // something wrong with server
+                        log(LogLevel.Error, "put notes failed " + response.message)
+                     }
+                  else
+                     log(LogLevel.Info, "$category sendNotes")
+               }
+               catch (e: IOException) {
+                  // From httpClient.newCall; connection failed after retry
+                  log(LogLevel.Error, category + " sendNotes http request failed: " + e.toString())
+                  status = ProcessStatus.Retry // retry after delay
                }
 
                noteFile.delete()
             }
-
+         
          return status
       }
 

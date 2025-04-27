@@ -25,7 +25,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.res.Resources
-import android.media.MediaScannerConnection
 import android.os.IBinder
 import androidx.preference.PreferenceManager
 
@@ -46,7 +45,7 @@ class DownloadService : Service()
    fun countSongsRemaining(category : String, playlistFile : File) : Int 
    {
       // Duplicate the part of restoreState that gets playlistPos
-      val smmFileName : String = utils.smmDirectory + "/" + category + ".last"
+      val lastFileName : String = utils.lastFileName(category)
 
       var inFile    : BufferedReader = BufferedReader (FileReader (playlistFile))
       var line      : String?        = inFile.readLine()
@@ -55,9 +54,9 @@ class DownloadService : Service()
 
       var currentFile : String = ""
 
-      if (File(smmFileName).exists()) try
+      if (File(lastFileName).exists()) try
          {
-            var reader : BufferedReader = BufferedReader(FileReader(smmFileName))
+            var reader : BufferedReader = BufferedReader(FileReader(lastFileName))
 
             currentFile = reader.readLine()
             reader.close()
@@ -66,7 +65,7 @@ class DownloadService : Service()
 
       while (line != null)
          {
-            if (File(utils.smmDirectory, line).canRead())
+            if (File(utils.globalDirectory, line).canRead())
                {
                   if (line.equals(currentFile))
                      startAt = songCount
@@ -80,8 +79,7 @@ class DownloadService : Service()
       return songCount - startAt - 1
    }
 
-   private fun updatePlaylist (context         : Context,
-                               playlistAbsName : String,
+   private fun updatePlaylist (playlistFileName : String,
                                notif           : DownloadNotif)
    {
       var res                : Resources           = getResources()
@@ -100,9 +98,9 @@ class DownloadService : Service()
                           res.getString(R.string.song_count_threshold_default))
 
       var serverIP        : String?     = prefs.getString (res.getString(R.string.server_IP_key), null)
-      var playlistFile    : File        = File(playlistAbsName)
+      var playlistFile    : File        = File(playlistFileName)
       var playlistDirFile : File        = File(FilenameUtils.getPath(playlistFile.getPath()))
-      var category        : String      = FilenameUtils.getBaseName(playlistAbsName)
+      var category        : String      = FilenameUtils.getBaseName(playlistFileName)
       var status          : StatusCount = StatusCount()
 
       if (serverIP == null || serverIP.equals(""))
@@ -130,20 +128,19 @@ class DownloadService : Service()
 
                if (playlistFile.exists())
                   {
-                     DownloadUtils.cleanPlaylist(
-                        context, category, playlistDirFile.getAbsolutePath(), utils.smmDirectory)
+                     DownloadUtils.cleanPlaylist(category)
 
-                     if (utils.playlistAbsPath().equals(playlistAbsName))
+                     if (utils.playlistFileName(category).equals(playlistFileName))
                         {
                            // Restart playlist to show song position, count
                            sendBroadcast(
                               Intent (utils.ACTION_PLAY_COMMAND)
                                  .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_PLAYLIST)
-                                 .putExtra(utils.EXTRA_COMMAND_PLAYLIST, playlistAbsName)
+                                 .putExtra(utils.EXTRA_COMMAND_PLAYLIST, playlistFileName)
                                  .putExtra(utils.EXTRA_COMMAND_STATE, PlayState.Paused.toInt()))
                         }
 
-                     status.status = DownloadUtils.sendNotes(context, serverIP, category, utils.smmDirectory)
+                     status.status = DownloadUtils.sendNotes(serverIP, category)
                      if (status.status != ProcessStatus.Success)
                         return
                   }
@@ -153,9 +150,9 @@ class DownloadService : Service()
                      playlistFile.createNewFile()
                   }
 
-               // This edits the playlist
+               // This edits the playlist, does not download any song files.
                newSongs = DownloadUtils.getNewSongsList(
-                  context, serverIP, category, songCount, newSongCount, overSelectRatio, -1)
+                  serverIP, category, songCount, newSongCount, overSelectRatio, -1)
 
                if (newSongs.status != ProcessStatus.Success)
                   {
@@ -163,30 +160,50 @@ class DownloadService : Service()
                      return
                   }
 
-               if (utils.playlistAbsPath().equals(playlistAbsName))
+               // Get any missing songs (should all be on phone
+               // already, but this handles new music).
+               status = DownloadUtils.getSongs(serverIP, newSongs.strings, category, notif)
+
+               if (status.status != ProcessStatus.Success)
+                  {
+                     return;
+                  }
+
+               if (utils.playlistFileName(utils.playlistBaseName).equals(playlistFileName))
                   {
                      // Restart playlist to show song position, count
                      sendBroadcast(
                         Intent (utils.ACTION_PLAY_COMMAND)
                            .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_PLAYLIST)
-                           .putExtra(utils.EXTRA_COMMAND_PLAYLIST, playlistAbsName)
+                           .putExtra(utils.EXTRA_COMMAND_PLAYLIST, playlistFileName)
                            .putExtra(utils.EXTRA_COMMAND_STATE, PlayState.Paused.toInt()))
                   }
 
                notif.Done("")
-               DownloadUtils.log(context, LogLevel.Info, category + ": update done\n\n")
+               DownloadUtils.log(LogLevel.Info, category + ": update done\n\n")
 
             }
          else
             {
                notif.Done("no update needed")
-               DownloadUtils.log(context, LogLevel.Info, category + ": no update needed\n\n")
+               DownloadUtils.log(LogLevel.Info, category + ": no update needed\n\n")
             }
       }
       catch (e : IOException)
       {
          // something is screwed up
          notif.Error("error: " + e.toString())
+      }
+   }
+
+   internal inner class DownloadRun(private val notif   : DownloadNotif,
+                                    private val playlist: String)
+      : Runnable
+   {
+      override fun run()
+      {
+         notif.setName(FilenameUtils.getBaseName(playlist))
+         updatePlaylist(playlist, notif)
       }
    }
 
@@ -222,4 +239,48 @@ class DownloadService : Service()
                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
    }
 
+   override fun onDestroy()
+   {
+      notif.Cancel();
+      unregisterReceiver(broadcastReceiverCommand);
+      super.onDestroy();
+   }
+   
+   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int
+   {
+      if (intent == null)
+         {
+            // intent is null if the service is restarted by Android
+            // after a crash.
+            return START_NOT_STICKY
+         }
+      else if (intent.getAction().equals(utils.ACTION_DOWNLOAD_COMMAND))
+         {
+            try {
+               val res   : Resources = getResources()
+               val prefs : SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+
+               DownloadUtils.prefLogLevel = LogLevel.valueOf(
+                  prefs.getString(res.getString(R.string.log_level_key),
+                                  LogLevel.Info.toString())!!)
+
+               val intentPlaylist : String = intent.getStringExtra(utils.EXTRA_COMMAND_PLAYLIST)!!
+
+               val runner : DownloadRun = DownloadRun(notif, intentPlaylist)
+               Thread(runner).start()
+
+               return START_NOT_STICKY
+            }
+            catch (e: Exception)
+            {
+               utils.errorLog(this, "DownloadService::onCreate: ", e)
+               return START_NOT_STICKY
+            }
+         }
+      else
+         {
+            utils.errorLog("onStartCommand got bad intent: $intent")
+            return START_NOT_STICKY
+         }
+   }
 }

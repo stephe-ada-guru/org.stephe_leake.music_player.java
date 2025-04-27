@@ -22,11 +22,15 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.Manifest.permission
 import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 import java.io.File
 import java.io.FileWriter
@@ -38,6 +42,9 @@ class utils
 {
    companion object
    {
+      val STORAGE_PERMISSION_REQUEST_CODE = 101
+      var filePermissionGranted : Boolean = false
+
       val millisPerMinute : Long = 60 * 1000
       val millisPerHour   : Long = 60 * millisPerMinute
       val millisPerDay    : Long = 24 * millisPerHour
@@ -63,7 +70,7 @@ class utils
       const val COMMAND_NOTE           : Int = 6
       const val COMMAND_PAUSE          : Int = 7
       const val COMMAND_PLAY           : Int = 8
-      const val COMMAND_PLAYLIST       : Int = 9 // playlist  string (abs file name)
+      const val COMMAND_PLAYLIST       : Int = 9 // playlist : string (abs file name). play it
       const val COMMAND_PREVIOUS       : Int = 10
       const val COMMAND_QUIT           : Int = 11
       const val COMMAND_RESET_PLAYLIST : Int = 12
@@ -74,7 +81,7 @@ class utils
 
       // download service commands
       val COMMAND_CANCEL_DOWNLOAD : Int = 2
-      val COMMAND_DOWNLOAD        : Int = 3
+      val COMMAND_DOWNLOAD        : Int = 3 // Update existing or create new playlist
 
       // sub-activity result codes
       val RESULT_TEXT_SCALE : Int         = Activity.RESULT_FIRST_USER + 1
@@ -104,13 +111,23 @@ class utils
 
       ////////// Shared objects
 
-      // preferences don't work, so this needs a valid default
-      val smmDirectory : String = "/storage/emulated/0/Music/Music"
+      var appDirectory : String = ""
+      // Absolute path to application-specific directory, containing
+      // files used to interface with Stephe's Music manager (smm);
+      // .last files, notes files, error log.
+      //
+      // Set by Activity to getExternalStorageDir().
 
-      var playlistBasename : String = ""
-      // Current playlist file name; relative to smmDirectory, without
-      // extension (suitable for user display). Empty if no playlist is
-      // current.
+      val globalDirectory : String = "/storage/emulated/0/Music/Music"
+      // Globally accessible directory where music and playlist files
+      // are stored.
+      // 
+      // Preferences don't work, so this needs a valid default
+
+      var playlistBaseName : String = ""
+      // Current playlist file name; relative to globalDirectory,
+      // without extension (suitable for user display). Empty if no
+      // playlist is current.
 
       val logFileExt : String = ".txt"
 
@@ -118,10 +135,56 @@ class utils
 
       // public non-member functions
 
-      fun playlistAbsPath() : String 
+      fun checkFilePermission(context : Context)
+      {
+         if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+                PackageManager.PERMISSION_GRANTED)
+         {
+            // Permission is not granted, request it
+            if (mainActivity!!.shouldShowRequestPermissionRationale(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
+               {
+                  // FIXME: working on this, see
+                  // ExplainFilePermAct.kt. Or maybe this is good
+                  // enough.
+                  alertLog(context,
+                            "We store music files in a globally accessible place, " +
+                            "so we need file read/write permission")
+               }
+            
+            ActivityCompat.requestPermissions(
+               mainActivity as Activity,
+               arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
+               STORAGE_PERMISSION_REQUEST_CODE)
+         }
+         
+         if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_EXTERNAL_STORAGE) !=
+                PackageManager.PERMISSION_GRANTED)
+         {
+            // Permission is not granted, request it
+
+            // Already showed explaination when requested WRITE
+            ActivityCompat.requestPermissions(
+               mainActivity as Activity,
+               arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE),
+               STORAGE_PERMISSION_REQUEST_CODE)
+         } 
+      }
+      
+      fun playlistFileName(category : String) : String 
       // return current playlist file abs path
       {
-         return utils.smmDirectory + "/" + utils.playlistBasename + ".m3u"
+         return utils.globalDirectory + "/" + category + ".m3u"
+      }
+
+      fun lastFileName(category : String) : String
+      // Absolute location of .last file
+      {
+         return utils.appDirectory + "/" + category + ".last"
+      }
+
+      fun notesFileName(category : String) : String
+      {
+         return utils.appDirectory + "/" + category + ".note"
       }
 
       fun findTextViewById (a: AppCompatActivity, id: Int) : TextView
@@ -153,46 +216,46 @@ class utils
       
       fun errorLogFileName() : String
       {
-         return utils.smmDirectory + "/" + errorLogFileBaseName + logFileExt
+         return appDirectory + "/" + errorLogFileBaseName + logFileExt
       }
 
-      fun log(context : Context, level : LogLevel, msg : String, logFileBaseName : String)
+      fun log(level : LogLevel, msg : String, logFileBaseName : String)
       {
+         // The error log file is in app local storage, so we don't need file permissions.
+         
          val fmt       : SimpleDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss : ", Locale.US)
          val time      : Long     = System.currentTimeMillis() // local time zone
          val timeStamp : String   = fmt.format(time)
          val levelImg  : String   = logImage (level)
-         val logFileName : String = utils.smmDirectory + "/" + logFileBaseName + logFileExt
-         val logFile     : File   = File(logFileName)
-         val writer : PrintWriter = PrintWriter(FileWriter(logFileName, true)) // append
-
+         val logFile   : File     = File(errorLogFileName())
+         val writer : PrintWriter = PrintWriter(FileWriter(errorLogFileName(), true)) // append
+         
          if (logFile.exists() && time - logFile.lastModified() > 4 * utils.millisPerHour)
             {
-               val oldLogFileName : String = utils.smmDirectory + "/" + logFileBaseName + "_1" + logFileExt
+               val oldLogFileName : String = logFileBaseName + "_1" + logFileExt
                val oldLogFile     : File   = File(oldLogFileName)
-
+               
                if (oldLogFile.exists())
                   {oldLogFile.delete()}
-
+               
                logFile.renameTo(oldLogFile)
             }
-
          writer.println(timeStamp + levelImg + msg)
          writer.close()
       }
 
-      fun errorLog(context : Context, msg : String, e : Throwable)
+      fun errorLog(context : Context?, msg : String, e : Throwable)
       {
          // programmer errors (possibly due to Android bugs :)
-         log(context, LogLevel.Error, msg + e.toString(), utils.errorLogFileBaseName)
+         log(LogLevel.Error, msg + e.toString(), utils.errorLogFileBaseName)
          if (null != context)
             Toast.makeText(context, msg + e.toString(), Toast.LENGTH_LONG).show()
       }
 
-      fun errorLog(context : Context, msg : String)
+      fun errorLog(msg : String)
       {
          // programmer errors (possibly due to Android bugs :)
-         log (context, LogLevel.Error, msg, errorLogFileBaseName)
+         log(LogLevel.Error, msg, errorLogFileBaseName)
 
          // This can crash due to lack of resources; happens when run on new device.
          // Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
