@@ -250,9 +250,11 @@ class MainActivity : AppCompatActivity()
             }
 
          R.id.menu_preferences ->
-            // We don't need a result
-         this.startActivity(Intent(utils.mainActivity, PrefActivity::class.java))
-
+            {
+               // We don't need a result
+               this.startActivity(Intent(utils.mainActivity, PrefActivity::class.java))
+            }
+         
          R.id.menu_quit ->
             {//FIXME: don't have play service yet
              // sendBroadcast
@@ -300,8 +302,8 @@ class MainActivity : AppCompatActivity()
             }
 
          R.id.menu_show_error_log ->
-            {  //FIXME: don't have utils yet
-               // startActivity(utils.showErrorLogIntent)
+            {  
+               startActivity(utils.showErrorLogIntent)
             }
 
          R.id.menu_update_playlist ->

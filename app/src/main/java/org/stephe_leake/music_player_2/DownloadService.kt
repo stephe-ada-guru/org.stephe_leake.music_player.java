@@ -80,7 +80,7 @@ class DownloadService : Service()
    }
 
    private fun updatePlaylist (playlistFileName : String,
-                               notif           : DownloadNotif)
+                               notif            : DownloadNotif)
    {
       var res                : Resources           = getResources()
       var prefs              : SharedPreferences   = PreferenceManager.getDefaultSharedPreferences(this)

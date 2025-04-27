@@ -143,9 +143,9 @@ class utils
             // Permission is not granted, request it
             if (mainActivity!!.shouldShowRequestPermissionRationale(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
                {
-                  // FIXME: working on this, see
-                  // ExplainFilePermAct.kt. Or maybe this is good
-                  // enough.
+                  // See // https://developer.android.com/training/permissions/requesting#explain
+                  // So far, shouldShow... returns false, so we don't
+                  // get here, so this is good enough.
                   alertLog(context,
                             "We store music files in a globally accessible place, " +
                             "so we need file read/write permission")

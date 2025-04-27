@@ -5,17 +5,17 @@ use same design as old app
         set useful defaults in code
 
 testing
-    notes and error log in app-specific dir
-        used to be called 'smmdir', but now that refers to the global music store
-        change to 'appDir', 'globalDir'
-
     menu
         Create New Playlist
-            need to request permission from user; see gemini report
-                calls ActivityCompat.requestPermissions, but that does _not_ actually request permission from the user!
-                https://developer.android.com/training/permissions/requesting#explain
-                move to just before every file access, add shouldShowRequestPermissionRationale(), ExplainFilePermAct
+            calls ActivityCompat.requestPermissions, but that does _not_ actually request permission from the user!
+            https://developer.android.com/training/permissions/requesting#explain
+            move to just before every file access
+                no help
+                but also not showing explanation dialog.
+                    because shouldShow... returns false!
 
+            add shouldShowRequestPermissionRationale(), ExplainFilePermAct
+                can't "set android.permission" from code!
 
 
         quit - does nothing; need play service
