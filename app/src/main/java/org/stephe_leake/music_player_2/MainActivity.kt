@@ -46,6 +46,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.preference.EditTextPreferenceDialogFragmentCompat
 
@@ -73,6 +75,54 @@ class MainActivity : AppCompatActivity()
    private var year: TextView? = null
 
    
+   private val CHECK_PERM_NEW_PLAYLIST    = 101
+   private val CHECK_PERM_LINER_NOTES     = 102
+   private val CHECK_PERM_RESET_PLAYLIST  = 103
+   private val CHECK_PERM_UPDATE_PLAYLIST = 104
+
+   private fun checkFilePermission(code : Int) : Boolean
+   // Returns true if permissions are already granted, false if
+   // they are now requested.
+   //
+   // If false, caller must return and wait for
+   // MainActivity.onRequestPermissionsResult to restart the
+   // activity indicated by 'code'.
+   {
+      val REQUIRED_PERMISSIONS = arrayOf(
+         android.Manifest.permission.READ_EXTERNAL_STORAGE,
+         android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+
+      val permissionsToRequest = mutableListOf<String>()
+      
+      for (permission in REQUIRED_PERMISSIONS)
+         {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED)
+               {
+                  permissionsToRequest.add(permission)
+               }
+         }
+      
+      if (permissionsToRequest.isNotEmpty())
+         {
+            if (this.shouldShowRequestPermissionRationale(
+                      android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
+            {
+               // See // https://developer.android.com/training/permissions/requesting#explain
+               // So far, shouldShow... returns false, so we don't
+               // get here, so this is good enough.
+               utils.alertLog(this,
+                              "We store music files in a globally accessible place, " +
+                              "so we need file read/write permission")
+            }
+            
+            ActivityCompat.requestPermissions(
+               this, permissionsToRequest.toTypedArray(), code)
+
+            return false
+         }
+      return true
+   }
+      
    ////////// Activity lifetime methods (in lifecycle order)
 
    override fun onCreate(savedInstanceState: Bundle?)
@@ -122,23 +172,50 @@ class MainActivity : AppCompatActivity()
                                            permissions : Array<String>,
                                            grantResults: IntArray)
    {
-      super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+      var someRefused : Boolean = false
       
-      if (requestCode == utils.STORAGE_PERMISSION_REQUEST_CODE)
+      super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+      if (grantResults.isEmpty())
+         return
+
+      for (result in grantResults)
          {
-            if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED))
-               {
-                  // Permission was granted
-                  utils.filePermissionGranted = true
-               }
-            else
-               {
-                  // Permission denied, handle it gracefully (e.g., inform the user)
-                  utils.filePermissionGranted = false
-                  utils.alertLog(this, "You denied access to local storage; this app cannot function without it.")
-               }
+            if (result != PackageManager.PERMISSION_GRANTED)
+               {someRefused = true}
          }
-   }
+
+      if (!someRefused)
+         {
+            // All permissions were granted.
+
+            when (requestCode)
+            {
+               CHECK_PERM_NEW_PLAYLIST ->
+                  {
+                     this.startService(
+                        Intent (utils.ACTION_DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
+                           .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_DOWNLOAD))
+                  }
+
+               CHECK_PERM_LINER_NOTES ->
+                  {
+                     // FIXME: copy from R.id.menu_liner_notes below
+                  }
+               
+               CHECK_PERM_RESET_PLAYLIST ->
+                  {
+                     // FIXME: copy from R.id.menu_reset_playlist below
+                  }
+               
+               else -> 
+                  {
+                     // Some permission denied`
+                     utils.alertLog(this, "You denied access to global storage; this app cannot function without it.")
+                  }
+            }
+         }
+   } // onRequestPermissionsResult
 
    ////////// Menu
 
@@ -186,67 +263,61 @@ class MainActivity : AppCompatActivity()
 
          R.id.menu_new_playlist ->
             {
-               utils.checkFilePermission(this)
+               var res     : Resources         = getResources()
+               var prefs   : SharedPreferences = this.getPreferences(Context.MODE_PRIVATE)
+               var serverIP: String?           =
+                  // Default in preferences.xml doesn't seem to be used.
+               prefs.getString (res.getString(R.string.server_IP_key), res.getString(R.string.server_IP_default))
                
-               if (utils.filePermissionGranted)
+               if (null == serverIP)
                   {
-                     var res     : Resources         = getResources()
-                     var prefs   : SharedPreferences = this.getPreferences(Context.MODE_PRIVATE)
-                     var serverIP: String?           =
-                        // Default in preferences.xml doesn't seem to be used.
-                     prefs.getString (res.getString(R.string.server_IP_key), res.getString(R.string.server_IP_default))
+                     utils.alertLog(this, "set Server IP in preferences")
+                  }
+               else
+                  {
+                     // Get the playlist name, which is the song category;
+                     // tell play service to download initial playlist.
                      
-                     if (null == serverIP)
-                        {
-                           utils.alertLog(this, "set Server IP in preferences")
-                        }
-                     else
-                        {
-                           // Get the playlist name, which is the song category;
-                           // tell play service to download initial playlist.
-
-                           var builder: AlertDialog.Builder = AlertDialog.Builder(this)
-                           builder.setTitle("new playlist category")
-
-                           val input: EditText = EditText(this)
-                           builder.setView(input);
-
-                           builder.setPositiveButton ("OK")
-                           {_, _ ->
-                               
-                               val playlistDir: File = File(utils.globalDirectory)
-                            val name: String = input.getText().toString()
-                            
+                     var builder: AlertDialog.Builder = AlertDialog.Builder(this)
+                     builder.setTitle("new playlist category")
+                     
+                     val input: EditText = EditText(this)
+                     builder.setView(input);
+                     
+                     builder.setPositiveButton ("OK")
+                     {_, _ ->
+                         
+                         utils.playlistBaseName = input.getText().toString()
+                      
+                      if (checkFilePermission(CHECK_PERM_NEW_PLAYLIST))
+                         {
                             this.startService(
                                Intent (utils.ACTION_DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
-                                  .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_DOWNLOAD)
-                                  .putExtra(utils.EXTRA_COMMAND_PLAYLIST, playlistDir.getAbsolutePath() +
-                                            "/" + name))
-                           }
-                           
-                           builder.setNegativeButton ("Cancel")
-                           {dialog, _ ->
-                               dialog.cancel();
-                           }
-
-                           builder.show();
-                        }
+                                  .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_DOWNLOAD))
+                         }
+                      
+                      builder.setNegativeButton ("Cancel")
+                      {dialog, _ ->
+                          dialog.cancel();
+                      }
+                      
+                      builder.show();
+                     }
                   }
             }
 
          R.id.menu_liner_notes ->
             {
-               utils.checkFilePermission(this)
-               
-               if (!utils.filePermissionGranted) {return false}
+               if (checkFilePermission(CHECK_PERM_LINER_NOTES))
+                  {
+                     //FIXME: retriever not there yet
+                     // var intent: Intent = Intent(Intent.ACTION_VIEW)
+                     // .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                     // .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                     // .setDataAndType(utils.retriever.linerUri, "application/pdf")
 
-               //FIXME: retriever not there yet
-               // var intent: Intent = Intent(Intent.ACTION_VIEW)
-               // .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-               // .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-               // .setDataAndType(utils.retriever.linerUri, "application/pdf")
-
-               // startActivity(intent)
+                     // startActivity(intent)
+                  }
             }
 
          R.id.menu_preferences ->
@@ -256,26 +327,26 @@ class MainActivity : AppCompatActivity()
             }
          
          R.id.menu_quit ->
-            {//FIXME: don't have play service yet
-             // sendBroadcast
-             //   (Intent
-             //      (utils.ACTION_PLAY_COMMAND)
-             //      .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_QUIT))
+            {
+               //FIXME: don't have play service yet
+               // sendBroadcast
+               //   (Intent
+               //      (utils.ACTION_PLAY_COMMAND)
+               //      .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_QUIT))
 
-             // stopService (Intent().setComponent(playServiceComponentName))
+               // stopService (Intent().setComponent(playServiceComponentName))
 
-             // finish()
+               // finish()
             }
 
          R.id.menu_reset_playlist ->
             {
-               utils.checkFilePermission(this)
-               
-               if (!utils.filePermissionGranted) {return false}
-
-               //FIXME: don't have play service yet
-               // sendBroadcast(Intent(utils.ACTION_PLAY_COMMAND)
-               //                 .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_RESET_PLAYLIST))
+               if (checkFilePermission(CHECK_PERM_RESET_PLAYLIST))
+                  {
+                     //FIXME: don't have play service yet
+                     // sendBroadcast(Intent(utils.ACTION_PLAY_COMMAND)
+                     //                 .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_RESET_PLAYLIST))
+                  }
             }
 
          R.id.menu_search ->
@@ -308,26 +379,25 @@ class MainActivity : AppCompatActivity()
 
          R.id.menu_update_playlist ->
             {
-               utils.checkFilePermission(this)
-               
-               if (!utils.filePermissionGranted) {return false}
+               if (checkFilePermission(CHECK_PERM_UPDATE_PLAYLIST))
+                  {
+                     //FIXME: don't have this fragment yet
+                     // var res: Resources           = getResources()
+                     // var prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+                     // var serverIP: String         = prefs.getString (res.getString(R.string.server_IP_key), null)
 
-               //FIXME: don't have this fragment yet
-               // var res: Resources           = getResources()
-               // var prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-               // var serverIP: String         = prefs.getString (res.getString(R.string.server_IP_key), null)
-
-               // if (null == serverIP)
-               //    //FIXME: don't have utils yet
-               //    // utils.alertLog(this, "set Server IP in preferences")
-               // else
-               // {
-                  //    //  var diag: PickPlaylistDialogFragment = PickPlaylistDialogFragment()
-                  //    //  var args: Bundle = Bundle()
-                  //    // args.putInt("command", utils.COMMAND_DOWNLOAD)
-                  //    // diag.setArguments(args)
-                  //    // diag.show(getFragmentManager(), "pick update playlist")
-                  // }
+                     // if (null == serverIP)
+                     //    //FIXME: don't have utils yet
+                     //    // utils.alertLog(this, "set Server IP in preferences")
+                     // else
+                     // {
+                        //    //  var diag: PickPlaylistDialogFragment = PickPlaylistDialogFragment()
+                        //    //  var args: Bundle = Bundle()
+                        //    // args.putInt("command", utils.COMMAND_DOWNLOAD)
+                        //    // diag.setArguments(args)
+                        //    // diag.show(getFragmentManager(), "pick update playlist")
+                        // }
+                  }
             }
 
          else ->
@@ -336,6 +406,6 @@ class MainActivity : AppCompatActivity()
             }
       }
       return false // continue menu processing
-   }
+   } // onOptionsItemSelected
 
 }

@@ -5,17 +5,18 @@ use same design as old app
         set useful defaults in code
 
 testing
+    eliminate EXTRA_COMMAND; add more top level commands.
+
     menu
         Create New Playlist
             calls ActivityCompat.requestPermissions, but that does _not_ actually request permission from the user!
             https://developer.android.com/training/permissions/requesting#explain
-            move to just before every file access
-                no help
-                but also not showing explanation dialog.
+                also not showing explanation dialog.
                     because shouldShow... returns false!
+                trace source code for request permission - no help, hits "delegate" with "no implementations"
+                trace in debugger in virtual device so source matches device
+                    nope; mouse doesn't work. sigh.
 
-            add shouldShowRequestPermissionRationale(), ExplainFilePermAct
-                can't "set android.permission" from code!
 
 
         quit - does nothing; need play service

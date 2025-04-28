@@ -29,8 +29,6 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 
 import java.io.File
 import java.io.FileWriter
@@ -42,9 +40,6 @@ class utils
 {
    companion object
    {
-      val STORAGE_PERMISSION_REQUEST_CODE = 101
-      var filePermissionGranted : Boolean = false
-
       val millisPerMinute : Long = 60 * 1000
       val millisPerHour   : Long = 60 * millisPerMinute
       val millisPerDay    : Long = 24 * millisPerHour
@@ -135,41 +130,6 @@ class utils
 
       // public non-member functions
 
-      fun checkFilePermission(context : Context)
-      {
-         if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
-                PackageManager.PERMISSION_GRANTED)
-         {
-            // Permission is not granted, request it
-            if (mainActivity!!.shouldShowRequestPermissionRationale(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
-               {
-                  // See // https://developer.android.com/training/permissions/requesting#explain
-                  // So far, shouldShow... returns false, so we don't
-                  // get here, so this is good enough.
-                  alertLog(context,
-                            "We store music files in a globally accessible place, " +
-                            "so we need file read/write permission")
-               }
-            
-            ActivityCompat.requestPermissions(
-               mainActivity as Activity,
-               arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
-               STORAGE_PERMISSION_REQUEST_CODE)
-         }
-         
-         if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_EXTERNAL_STORAGE) !=
-                PackageManager.PERMISSION_GRANTED)
-         {
-            // Permission is not granted, request it
-
-            // Already showed explaination when requested WRITE
-            ActivityCompat.requestPermissions(
-               mainActivity as Activity,
-               arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE),
-               STORAGE_PERMISSION_REQUEST_CODE)
-         } 
-      }
-      
       fun playlistFileName(category : String) : String 
       // return current playlist file abs path
       {
