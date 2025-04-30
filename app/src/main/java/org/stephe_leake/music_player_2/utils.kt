@@ -133,7 +133,7 @@ class utils
       fun playlistFileName(category : String) : String 
       // return current playlist file abs path
       {
-         return utils.globalDirectory + "/" + category + ".m3u"
+         return utils.appDirectory + "/" + category + ".m3u"
       }
 
       fun lastFileName(category : String) : String

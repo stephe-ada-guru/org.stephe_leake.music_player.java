@@ -62,17 +62,17 @@ class MainActivity : AppCompatActivity()
    // Main UI members
    // FIXME: delete these; use non-null local 'val's.
 
-   private var playPauseButton: ImageButton? = null
-   private var progressBar: SeekBar? = null
-   private var album: TextView? = null
-   private var albumArtist: TextView? = null
-   private var artist: TextView? = null
-   private var composer: TextView? = null
-   private var currentTime: TextView? = null
-   private var playlist: TextView? = null
-   private var title: TextView? = null
-   private var totalTime: TextView? = null
-   private var year: TextView? = null
+   private var playPauseButton : ImageButton? = null
+   private var progressBar     : SeekBar? = null
+   private var album           : TextView? = null
+   private var albumArtist     : TextView? = null
+   private var artist          : TextView? = null
+   private var composer        : TextView? = null
+   private var currentTime     : TextView? = null
+   private var playlist        : TextView? = null
+   private var title           : TextView? = null
+   private var totalTime       : TextView? = null
+   private var year            : TextView? = null
 
    
    private val CHECK_PERM_NEW_PLAYLIST    = 101
@@ -89,8 +89,10 @@ class MainActivity : AppCompatActivity()
    // activity indicated by 'code'.
    {
       val REQUIRED_PERMISSIONS = arrayOf(
-         android.Manifest.permission.READ_EXTERNAL_STORAGE,
-         android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+         android.Manifest.permission.READ_EXTERNAL_STORAGE
+         // ,
+         // android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+      )
 
       val permissionsToRequest = mutableListOf<String>()
       
@@ -295,14 +297,14 @@ class MainActivity : AppCompatActivity()
                                Intent (utils.ACTION_DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
                                   .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_DOWNLOAD))
                          }
-                      
-                      builder.setNegativeButton ("Cancel")
-                      {dialog, _ ->
-                          dialog.cancel();
-                      }
-                      
-                      builder.show();
+                     } 
+
+                     builder.setNegativeButton ("Cancel")
+                     {dialog, _ ->
+                         dialog.cancel();
                      }
+                      
+                     builder.show();
                   }
             }
 

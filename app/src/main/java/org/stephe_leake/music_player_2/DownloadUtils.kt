@@ -246,274 +246,271 @@ class DownloadUtils
          return result
       }
 
-      private fun getFile(serverIP : String,
-                          resource : String,
-                          fileName : File)
-         : StatusCount
-      {
-         // Check if 'filename' already exists locally; if not, get
-         // 'resource' from 'serverIP', store locally in 'fileName'.
-         // 'resource' shall have only path and file name.
-         //
-         // Return result.status Success if successful, Fatal or Retry
-         // for any errors (error messages in log). result.count = 1 if
-         // file was downloaded, 0 if found locally.
+      // Can't get WRITE_EXTERNAL_STORAGE permission to work, so trying just read
+      // private fun getFile(serverIP : String,
+      //                     resource : String,
+      //                     fileName : File)
+      //    : StatusCount
+      // {
+      //    // Check if 'filename' already exists locally; if not, get
+      //    // 'resource' from 'serverIP', store locally in 'fileName'.
+      //    // 'resource' shall have only path and file name.
+      //    //
+      //    // Return result.status Success if successful, Fatal or Retry
+      //    // for any errors (error messages in log). result.count = 1 if
+      //    // file was downloaded, 0 if found locally.
 
-         val result: StatusCount = StatusCount()
+      //    val result: StatusCount = StatusCount()
 
-         // File.exists throws IOException ENOENT if the directory does not exist!
-         fileName.mkdirs()
+      //    // File.exists throws IOException ENOENT if the directory does not exist!
+      //    fileName.mkdirs()
 
-         if (fileName.exists())
-            {
-               return result
-            }
-         else
-            {
-               // new file
-               result.count = 1
-            }
+      //    if (fileName.exists())
+      //       {
+      //          return result
+      //       }
+      //    else
+      //       {
+      //          // new file
+      //          result.count = 1
+      //       }
 
-         val builder: HttpUrl.Builder = HttpUrl.Builder()
-            .scheme("http")
-            .host(serverIP)
-            .port(8080)
+      //    val builder: HttpUrl.Builder = HttpUrl.Builder()
+      //       .scheme("http")
+      //       .host(serverIP)
+      //       .port(8080)
 
-         val url: HttpUrl = builder
-            .addPathSegment(resource)
-            .build()
+      //    val url: HttpUrl = builder
+      //       .addPathSegment(resource)
+      //       .build()
 
-         try
-         {
-            fileName.createNewFile()
-         }
-         catch (e: IOException)
-         {
-            log(LogLevel.Error, "cannot create file " + fileName.getAbsolutePath())
-            result.status = ProcessStatus.Fatal
-            return result
-         }
+      //    try
+      //    {
+      //       fileName.createNewFile()
+      //    }
+      //    catch (e: IOException)
+      //    {
+      //       log(LogLevel.Error, "cannot create file " + fileName.getAbsolutePath())
+      //       result.status = ProcessStatus.Fatal
+      //       return result
+      //    }
 
-         try
-         {
-            val response : Response = httpClient!!.newCall(Request.Builder().url(url).build()).execute()
+      //    try
+      //    {
+      //       val response : Response = httpClient!!.newCall(Request.Builder().url(url).build()).execute()
 
-            if (!response.isSuccessful)
-               {
-                  log(LogLevel.Error,
-                      "getFile '" + url.toString() + "' request failed: " +
-                      response.code + " " + response.message)
-                  result.status = ProcessStatus.Retry
-                  return result
-               }
+      //       if (!response.isSuccessful)
+      //          {
+      //             log(LogLevel.Error,
+      //                 "getFile '" + url.toString() + "' request failed: " +
+      //                 response.code + " " + response.message)
+      //             result.status = ProcessStatus.Retry
+      //             return result
+      //          }
 
-            val inBuf: BufferedInputStream = BufferedInputStream(response.body!!.byteStream())
-            val out: FileOutputStream = FileOutputStream(fileName)
-            val buffer = ByteArray(BUFFER_SIZE)
-            val contentLen: String = response.header("Content-Length")!!
-            val contentLength = contentLen.toInt()
-            var downloaded = 0
-            var count : Int
+      //       val inBuf: BufferedInputStream = BufferedInputStream(response.body!!.byteStream())
+      //       val out: FileOutputStream = FileOutputStream(fileName)
+      //       val buffer = ByteArray(BUFFER_SIZE)
+      //       val contentLen: String = response.header("Content-Length")!!
+      //       val contentLength = contentLen.toInt()
+      //       var downloaded = 0
+      //       var count : Int
 
-            while ((inBuf.read(buffer).also {count = it}) != -1)
-            {
-               downloaded += count
-               out.write(buffer, 0, count)
-            }
-            out.close()
-            inBuf.close()
+      //       while ((inBuf.read(buffer).also {count = it}) != -1)
+      //       {
+      //          downloaded += count
+      //          out.write(buffer, 0, count)
+      //       }
+      //       out.close()
+      //       inBuf.close()
 
-            if (downloaded != contentLength)
-               log(LogLevel.Error, "downloading '" + resource + "'; got " +
-                   downloaded + "bytes, expecting " + contentLength
-            )
-            else log(LogLevel.Verbose, "downloaded '$resource'")
+      //       if (downloaded != contentLength)
+      //          log(LogLevel.Error, "downloading '" + resource + "'; got " +
+      //              downloaded + "bytes, expecting " + contentLength
+      //       )
+      //       else log(LogLevel.Verbose, "downloaded '$resource'")
                
-            }
-         catch (e: IOException)
-         {
-            // From httpClient.newCall; connection failed after retry
-            log(LogLevel.Error, "http request failed: getFile '" + resource + "': " + e.toString())
-            result.status = ProcessStatus.Retry
-         }
-         catch (e: NumberFormatException)
-         {
-            // from parseInt; corrupted Internet transmission. 'contentLen' not visible here.
-            log(LogLevel.Error, "parseInt failed")
-            result.status = ProcessStatus.Retry
-         }
+      //       }
+      //    catch (e: IOException)
+      //    {
+      //       // From httpClient.newCall; connection failed after retry
+      //       log(LogLevel.Error, "http request failed: getFile '" + resource + "': " + e.toString())
+      //       result.status = ProcessStatus.Retry
+      //    }
+      //    catch (e: NumberFormatException)
+      //    {
+      //       // from parseInt; corrupted Internet transmission. 'contentLen' not visible here.
+      //       log(LogLevel.Error, "parseInt failed")
+      //       result.status = ProcessStatus.Retry
+      //    }
 
-         return result
-      }
+      //    return result
+      // } // getFile
 
-      fun getMetaList(serverIP : String,
-                      resource : String)
-         : StatusStrings
-      {
-         val result: StatusStrings = StatusStrings()
+      // fun getMetaList(serverIP : String,
+      //                 resource : String)
+      //    : StatusStrings
+      // {
+      //    val result: StatusStrings = StatusStrings()
 
-         val url: HttpUrl = HttpUrl.Builder()
-            .scheme("http")
-            .host(serverIP)
-            .port(8080)
-            .addPathSegments(resource)
-            .addPathSegment("meta")
-            .build()
+      //    val url: HttpUrl = HttpUrl.Builder()
+      //       .scheme("http")
+      //       .host(serverIP)
+      //       .port(8080)
+      //       .addPathSegments(resource)
+      //       .addPathSegment("meta")
+      //       .build()
 
-         ensureHttpClient()
+      //    ensureHttpClient()
 
-         try
-         {
-            val response : Response = httpClient!!.newCall(Request.Builder().url(url).build()).execute()
+      //    try
+      //    {
+      //       val response : Response = httpClient!!.newCall(Request.Builder().url(url).build()).execute()
 
-            if (!response.isSuccessful)
-               {
-                  try
-                  {
-                     result.strings = response.body!!.string().split("\r\n")
-                  }
-                  catch (e: IOException)
-                  {
-                     // From response.body(); server error possibly due to corrupted file name
-                     log(LogLevel.Error, "getMetaList request has no body: " + e.toString())
-                     result.status = ProcessStatus.Retry
-                  }
-               }
-         }
-         catch (e: IOException)
-         {
-            // From httpClient.newCall; connection failed after retry
-            log(LogLevel.Error, "http request failed: getMetaList '" + resource + "': " + e.toString())
-            result.status = ProcessStatus.Retry
-         }
+      //       if (!response.isSuccessful)
+      //          {
+      //             try
+      //             {
+      //                result.strings = response.body!!.string().split("\r\n")
+      //             }
+      //             catch (e: IOException)
+      //             {
+      //                // From response.body(); server error possibly due to corrupted file name
+      //                log(LogLevel.Error, "getMetaList request has no body: " + e.toString())
+      //                result.status = ProcessStatus.Retry
+      //             }
+      //          }
+      //    }
+      //    catch (e: IOException)
+      //    {
+      //       // From httpClient.newCall; connection failed after retry
+      //       log(LogLevel.Error, "http request failed: getMetaList '" + resource + "': " + e.toString())
+      //       result.status = ProcessStatus.Retry
+      //    }
          
-         return result
-      }
+      //    return result
+      // } // getMetaList
 
-      private fun getMeta(serverIP: String,
-                          resourcePath: String,
-                          destDir: File)
-         : ProcessStatus
-      {
-         var fileStatus: StatusCount
-         var objFile: File
+      // private fun getMeta(serverIP: String,
+      //                     resourcePath: String,
+      //                     destDir: File)
+      //    : ProcessStatus
+      // {
+      //    var fileStatus: StatusCount
+      //    var objFile: File
 
-         val files: StatusStrings = getMetaList(serverIP, resourcePath)
+      //    val files: StatusStrings = getMetaList(serverIP, resourcePath)
 
-         if (ProcessStatus.Success != files.status)
-            {
-               return files.status
-            }
+      //    if (ProcessStatus.Success != files.status)
+      //       {
+      //          return files.status
+      //       }
 
-         if (files.strings.size == 1 && files.strings.get(0).length == 0)
-            {
-               // no meta files for this directory
-               return ProcessStatus.Success
-            }
+      //    if (files.strings.size == 1 && files.strings.get(0).length == 0)
+      //       {
+      //          // no meta files for this directory
+      //          return ProcessStatus.Success
+      //       }
          
-         for (file in files.strings)
-            {
-               objFile = File(destDir, FilenameUtils.getName(file))
+      //    for (file in files.strings)
+      //       {
+      //          objFile = File(destDir, FilenameUtils.getName(file))
 
-               fileStatus = getFile(serverIP, file, objFile)
-               if (ProcessStatus.Success != fileStatus.status)
-                  {
-                     return fileStatus.status
-                  }
-            }
+      //          fileStatus = getFile(serverIP, file, objFile)
+      //          if (ProcessStatus.Success != fileStatus.status)
+      //             {
+      //                return fileStatus.status
+      //             }
+      //       }
 
-         return ProcessStatus.Success
-      }
+      //    return ProcessStatus.Success
+      // }
 
-      fun getSongs(serverIP: String,
-                   songs: List<String>,
-                   category: String,
-                   notif: DownloadNotif)
+      fun getSongs(songs    : List<String>,
+                   category : String)
          : StatusCount
       {
-         // Add all 'songs' to playlist '<category>.m3u'. Ensure all
-         // 'songs' are available locally; if not, get from
-         // 'serverIP', store in 'root/<song>' (<song> contains <album
-         // artist>/<album> directories). Also get album art, liner
-         // notes for new directories.
+         // Add all 'songs' to playlist '<category>.m3u'. 
          
          val playlistFile   : File = File(utils.playlistFileName(category))
          val playlistWriter : FileWriter
          val result         : StatusCount = StatusCount()
-         var metaStatus     : ProcessStatus
-         var fileStatus     : StatusCount
+         // var metaStatus     : ProcessStatus
+         // var fileStatus     : StatusCount
          var newSongs = 0
 
          try
          {
             playlistWriter = FileWriter(playlistFile, true) // append
-         } catch (e: IOException) {
+         }
+         catch (e: IOException)
+         {
             log(LogLevel.Error, "cannot open '" + playlistFile.getAbsolutePath() + "' for append."
             )
             result.status = ProcessStatus.Fatal
             return result
          }
 
-         notif.Update(songs.size, result.count)
+         // notif.Update(songs.size, result.count)
 
          try
          {
             for (song in songs)
                {
-                  val destDir : File = File(utils.globalDirectory, FilenameUtils.getPath(song))
-                  val songFile: File
+                  // File = File(utils.globalDirectory, FilenameUtils.getPath(song))
+                  // val songFile: File
 
-                  if (!destDir.exists())
-                     {
-                        destDir.mkdirs()
+                  // if (!destDir.exists())
+                  //    {
+                  //       destDir.mkdirs()
 
-                        metaStatus = getMeta(serverIP, FilenameUtils.getPath(song), destDir)
+                  //       metaStatus = getMeta(serverIP, FilenameUtils.getPath(song), destDir)
                         
-                        when (metaStatus)
-                        {
-                           ProcessStatus.Start, ProcessStatus.Running ->
-                              {} // programmer error
+                  //       when (metaStatus)
+                  //       {
+                  //          ProcessStatus.Start, ProcessStatus.Running ->
+                  //             {} // programmer error
                            
-                           ProcessStatus.Success ->
-                              {}
+                  //          ProcessStatus.Success ->
+                  //             {}
 
-                           ProcessStatus.Fatal, ProcessStatus.Retry ->
-                              {
-                                 // Delete dir so meta will be downloaded on retry
-                                 destDir.delete()
-                                 result.status = metaStatus
-                              }
-                        }
-                     }
+                  //          ProcessStatus.Fatal, ProcessStatus.Retry ->
+                  //             {
+                  //                // Delete dir so meta will be downloaded on retry
+                  //                destDir.delete()
+                  //                result.status = metaStatus
+                  //             }
+                  //       }
+                  //    }
 
-                  if (result.status == ProcessStatus.Success)
-                     {
-                        songFile = File(destDir, FilenameUtils.getName(song))
-                        fileStatus = getFile( serverIP, song, songFile)
+                  // if (result.status == ProcessStatus.Success)
+                  //    {
+                  //       songFile = File(destDir, FilenameUtils.getName(song))
+                  //       fileStatus = getFile( serverIP, song, songFile)
 
-                        when (fileStatus.status)
-                        {
-                           ProcessStatus.Start, ProcessStatus.Running ->
-                              {} // programmer error
+                  //       when (fileStatus.status)
+                  //       {
+                  //          ProcessStatus.Start, ProcessStatus.Running ->
+                  //             {} // programmer error
                            
-                           ProcessStatus.Success ->
-                              {
+                  //          ProcessStatus.Success ->
+                  //             {
                                  playlistWriter.write("$song\n")
-                                 result.count++
-                                 newSongs = newSongs + fileStatus.count
-                                 notif.Update(songs.size, result.count)
-                              }
+                                 // result.count++
+                                 // newSongs = newSongs + fileStatus.count
+                                 // notif.Update(songs.size, result.count)
+                     //          }
 
-                           ProcessStatus.Retry ->
-                              result.status = fileStatus.status
+                     //       ProcessStatus.Retry ->
+                     //          result.status = fileStatus.status
 
-                           ProcessStatus.Fatal ->
-                              {
-                                 result.status = fileStatus.status
-                                 notif.Error("get file failed")
-                              }
-                        }
-                     }
+                     //       ProcessStatus.Fatal ->
+                     //          {
+                     //             result.status = fileStatus.status
+                     //             notif.Error("get file failed")
+                     //          }
+                     //    }
+                     // }
                }
          }
          catch (e: IOException)

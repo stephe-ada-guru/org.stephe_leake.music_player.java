@@ -162,7 +162,7 @@ class DownloadService : Service()
 
                // Get any missing songs (should all be on phone
                // already, but this handles new music).
-               status = DownloadUtils.getSongs(serverIP, newSongs.strings, category, notif)
+               status = DownloadUtils.getSongs(newSongs.strings, category)
 
                if (status.status != ProcessStatus.Success)
                   {
