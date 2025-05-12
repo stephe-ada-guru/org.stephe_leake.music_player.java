@@ -67,7 +67,7 @@ class DownloadService : Service()
          {
             if (File(utils.globalDirectory, line).canRead())
                {
-                  if (line.equals(currentFile))
+                  if (line == currentFile)
                      startAt = songCount
                   songCount++
                }
@@ -83,7 +83,7 @@ class DownloadService : Service()
                                notif            : DownloadNotif)
    {
       var res                : Resources           = getResources()
-      var prefs              : SharedPreferences   = PreferenceManager.getDefaultSharedPreferences(this)
+      var prefs              : SharedPreferences   = utils.mainActivity!!.getPreferences(Context.MODE_PRIVATE)
       var songCountMaxStr    : String?             =
          prefs.getString(res.getString(R.string.song_count_max_key),
                          res.getString(R.string.song_count_max_default))
@@ -97,13 +97,14 @@ class DownloadService : Service()
          prefs.getString (res.getString(R.string.song_count_threshold_key),
                           res.getString(R.string.song_count_threshold_default))
 
-      var serverIP        : String?     = prefs.getString (res.getString(R.string.server_IP_key), null)
+      var serverIP        : String      = prefs.getString (res.getString(R.string.server_IP_key),
+                                                           res.getString(R.string.server_IP_default))!!
       var playlistFile    : File        = File(playlistFileName)
       var playlistDirFile : File        = File(FilenameUtils.getPath(playlistFile.getPath()))
       var category        : String      = FilenameUtils.getBaseName(playlistFileName)
       var status          : StatusCount = StatusCount()
 
-      if (serverIP == null || serverIP.equals(""))
+      if (serverIP == "")
          {
             notif.Error("Server IP preference not set")
             return
@@ -130,7 +131,7 @@ class DownloadService : Service()
                   {
                      DownloadUtils.cleanPlaylist(category)
 
-                     if (utils.playlistFileName(category).equals(playlistFileName))
+                     if (utils.playlistFileName(category) == playlistFileName)
                         {
                            // Restart playlist to show song position, count
                            sendBroadcast(
@@ -166,10 +167,10 @@ class DownloadService : Service()
 
                if (status.status != ProcessStatus.Success)
                   {
-                     return;
+                     return
                   }
 
-               if (utils.playlistFileName(utils.playlistBaseName).equals(playlistFileName))
+               if (utils.playlistFileName(utils.playlistBaseName) == playlistFileName)
                   {
                      // Restart playlist to show song position, count
                      sendBroadcast(
@@ -221,7 +222,7 @@ class DownloadService : Service()
       filter.addAction(utils.ACTION_DOWNLOAD_COMMAND)
       registerReceiver(broadcastReceiverCommand, filter, RECEIVER_NOT_EXPORTED)
 
-      val notif : DownloadNotif = DownloadNotif(
+      notif = DownloadNotif(
          context = this,
          showLogPendingIntentInit = PendingIntent.getActivity
          (this.getApplicationContext(),
@@ -241,9 +242,9 @@ class DownloadService : Service()
 
    override fun onDestroy()
    {
-      notif.Cancel();
-      unregisterReceiver(broadcastReceiverCommand);
-      super.onDestroy();
+      notif.Cancel()
+      unregisterReceiver(broadcastReceiverCommand)
+      super.onDestroy()
    }
    
    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int
@@ -254,7 +255,7 @@ class DownloadService : Service()
             // after a crash.
             return START_NOT_STICKY
          }
-      else if (intent.getAction().equals(utils.ACTION_DOWNLOAD_COMMAND))
+      else if (intent.getAction() == utils.ACTION_DOWNLOAD_COMMAND)
          {
             try {
                val res   : Resources = getResources()
@@ -264,22 +265,20 @@ class DownloadService : Service()
                   prefs.getString(res.getString(R.string.log_level_key),
                                   LogLevel.Info.toString())!!)
 
-               val intentPlaylist : String = intent.getStringExtra(utils.EXTRA_COMMAND_PLAYLIST)!!
-
-               val runner : DownloadRun = DownloadRun(notif, intentPlaylist)
+               val runner : DownloadRun = DownloadRun(notif, utils.playlistFileName(utils.playlistBaseName))
                Thread(runner).start()
 
                return START_NOT_STICKY
             }
             catch (e: Exception)
             {
-               utils.errorLog(this, "DownloadService::onCreate: ", e)
+               utils.errorLog(this, "DownloadService::onStartCommand: ", e)
                return START_NOT_STICKY
             }
          }
       else
          {
-            utils.errorLog("onStartCommand got bad intent: $intent")
+            utils.errorLog("DownloadService::onStartCommand got bad intent: $intent")
             return START_NOT_STICKY
          }
    }

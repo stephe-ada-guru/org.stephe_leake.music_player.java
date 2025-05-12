@@ -43,6 +43,8 @@ class utils
       val millisPerMinute : Long = 60 * 1000
       val millisPerHour   : Long = 60 * millisPerMinute
       val millisPerDay    : Long = 24 * millisPerHour
+
+      val notificationChannelId : String = "Stephe's Music notifications"
       
       //  Notification ids; all with null tag
       val notif_play_id     : Int = 1

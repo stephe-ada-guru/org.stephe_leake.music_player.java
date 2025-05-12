@@ -18,37 +18,28 @@
 
 package org.stephe_leake.music_player_2
 
+import android.Manifest
 import android.content.Context
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import androidx.annotation.RequiresPermission
+import androidx.core.app.NotificationCompat
 
 class DownloadNotif
-   constructor (val context: Context, showLogPendingIntentInit : PendingIntent, cancelIntent : PendingIntent)
+   constructor (
+      private val context                  : Context,
+      private val showLogPendingIntentInit : PendingIntent,
+      private val cancelIntent             : PendingIntent)
 {
-   val channelId : String = "Stephe's Music download service"
-
-   var notifMem : Notification = Notification.Builder(context, channelId).build()
+   var notifMem : Notification = NotificationCompat.Builder(context, utils.notificationChannelId).build()
    
    init {
-      val channel : NotificationChannel = NotificationChannel(
-         channelId, "Stephe's Music download channel", NotificationManager.IMPORTANCE_LOW)
-      
-      channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC)
-
-      (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-         .createNotificationChannel(channel)
-
-      update()
    }
 
    var showLogPendingIntent : PendingIntent = showLogPendingIntentInit
 
-   // AndroidStudio says this Builder constructor is deprecated, but
-   // https://developer.android.com/reference/android/app/Notification.Action.Builder
-   // doesn't.
-   var cancelAction : Notification.Action = Notification.Action.Builder(
+   var cancelAction : NotificationCompat.Action = NotificationCompat.Action.Builder(
       R.drawable.cancel, "cancel", cancelIntent).build()
 
    var playlistName : String = ""
@@ -75,11 +66,12 @@ class DownloadNotif
       this.playlistName = playlistName
    }
 
+   @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+   // Permission checked and requested in MainActivity
    fun update()
    {
-      notifMem = Notification.Builder(context, channelId)
+      notifMem = NotificationCompat.Builder(context, utils.notificationChannelId)
         .addAction (cancelAction)
-        .setAutoCancel(true) // doesn't work
         .setContentIntent(showLogPendingIntent)
         .setContentTitle("Downloading " + playlistName + " " + statusText)
         .setContentText(contentText)
@@ -88,11 +80,13 @@ class DownloadNotif
         .setSmallIcon(R.drawable.download_icon) // shown in status bar
         .build()
 
-     val notifManager : NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+     val notifManager : NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as
+     NotificationManager
                                            
      notifManager.notify(utils.notif_download_id, notifMem)
    }
 
+   @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    fun Done(msg : String)
    {
       statusText = "done " + formatCounts()
@@ -100,6 +94,7 @@ class DownloadNotif
       update()
    }
 
+   @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    fun Error(msg : String)
    {
       statusText = "error " + formatCounts()
@@ -107,6 +102,7 @@ class DownloadNotif
       update()
    }
 
+   @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    fun Update(max : Int, current : Int)
    {
       maxSongs = max

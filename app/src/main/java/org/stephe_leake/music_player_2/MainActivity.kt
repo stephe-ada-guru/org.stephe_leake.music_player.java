@@ -19,6 +19,9 @@
 package org.stephe_leake.music_player_2
 
 import android.app.AlertDialog
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -74,13 +77,23 @@ class MainActivity : AppCompatActivity()
    private var totalTime       : TextView? = null
    private var year            : TextView? = null
 
-   
    private val CHECK_PERM_NEW_PLAYLIST    = 101
    private val CHECK_PERM_LINER_NOTES     = 102
    private val CHECK_PERM_RESET_PLAYLIST  = 103
    private val CHECK_PERM_UPDATE_PLAYLIST = 104
 
-   private fun checkFilePermission(code : Int) : Boolean
+   private fun CreateNotificationChannel()
+   {
+      val channel : NotificationChannel = NotificationChannel(
+         utils.notificationChannelId, utils.notificationChannelId, NotificationManager.IMPORTANCE_LOW)
+      
+      channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC)
+
+      (this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+         .createNotificationChannel(channel)
+   }
+
+   private fun checkPermission(code : Int) : Boolean
    // Returns true if permissions are already granted, false if
    // they are now requested.
    //
@@ -89,6 +102,7 @@ class MainActivity : AppCompatActivity()
    // activity indicated by 'code'.
    {
       val REQUIRED_PERMISSIONS = arrayOf(
+         android.Manifest.permission.POST_NOTIFICATIONS,
          android.Manifest.permission.READ_EXTERNAL_STORAGE
          // ,
          // android.Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -106,19 +120,25 @@ class MainActivity : AppCompatActivity()
       
       if (permissionsToRequest.isNotEmpty())
          {
-            if (this.shouldShowRequestPermissionRationale(
-                      android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
-            {
-               // See // https://developer.android.com/training/permissions/requesting#explain
-               // So far, shouldShow... returns false, so we don't
-               // get here, so this is good enough.
-               utils.alertLog(this,
-                              "We store music files in a globally accessible place, " +
-                              "so we need file read/write permission")
-            }
+            var rationaleRequired : Boolean = false
             
-            ActivityCompat.requestPermissions(
-               this, permissionsToRequest.toTypedArray(), code)
+            for (permission in REQUIRED_PERMISSIONS)
+               {
+                  if (this.shouldShowRequestPermissionRationale(permission))
+                     {
+                        // See // https://developer.android.com/training/permissions/requesting#explain
+                        rationaleRequired = true
+                     }
+               }
+
+            if (rationaleRequired)
+               { utils.alertLog(
+                    this, "We store music files in a globally accessible place, " +
+                    "so we need file read/write permission." +
+                    " We show download status and player controls in notifications.")
+               }
+            
+            ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), code)
 
             return false
          }
@@ -156,6 +176,8 @@ class MainActivity : AppCompatActivity()
                File(utils.errorLogFileName())),
             "text/plain")
 
+      CreateNotificationChannel()
+      
       setContentView(R.layout.mainactivity)
       setSupportActionBar(findViewById(R.id.main_toolbar))
 
@@ -267,9 +289,9 @@ class MainActivity : AppCompatActivity()
             {
                var res     : Resources         = getResources()
                var prefs   : SharedPreferences = this.getPreferences(Context.MODE_PRIVATE)
-               var serverIP: String?           =
+               var serverIP: String            =
                   // Default in preferences.xml doesn't seem to be used.
-               prefs.getString (res.getString(R.string.server_IP_key), res.getString(R.string.server_IP_default))
+               prefs.getString (res.getString(R.string.server_IP_key), res.getString(R.string.server_IP_default))!!
                
                if (null == serverIP)
                   {
@@ -291,7 +313,7 @@ class MainActivity : AppCompatActivity()
                          
                          utils.playlistBaseName = input.getText().toString()
                       
-                      if (checkFilePermission(CHECK_PERM_NEW_PLAYLIST))
+                      if (checkPermission(CHECK_PERM_NEW_PLAYLIST))
                          {
                             this.startService(
                                Intent (utils.ACTION_DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
@@ -310,7 +332,7 @@ class MainActivity : AppCompatActivity()
 
          R.id.menu_liner_notes ->
             {
-               if (checkFilePermission(CHECK_PERM_LINER_NOTES))
+               if (checkPermission(CHECK_PERM_LINER_NOTES))
                   {
                      //FIXME: retriever not there yet
                      // var intent: Intent = Intent(Intent.ACTION_VIEW)
@@ -343,7 +365,7 @@ class MainActivity : AppCompatActivity()
 
          R.id.menu_reset_playlist ->
             {
-               if (checkFilePermission(CHECK_PERM_RESET_PLAYLIST))
+               if (checkPermission(CHECK_PERM_RESET_PLAYLIST))
                   {
                      //FIXME: don't have play service yet
                      // sendBroadcast(Intent(utils.ACTION_PLAY_COMMAND)
@@ -381,12 +403,13 @@ class MainActivity : AppCompatActivity()
 
          R.id.menu_update_playlist ->
             {
-               if (checkFilePermission(CHECK_PERM_UPDATE_PLAYLIST))
+               if (checkPermission(CHECK_PERM_UPDATE_PLAYLIST))
                   {
                      //FIXME: don't have this fragment yet
                      // var res: Resources           = getResources()
                      // var prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-                     // var serverIP: String         = prefs.getString (res.getString(R.string.server_IP_key), null)
+                     // var serverIP: String         = prefs.getString (res.getString(R.string.server_IP_key),
+                     //                                                 res.getString(R.string.server_IP_default))
 
                      // if (null == serverIP)
                      //    //FIXME: don't have utils yet

@@ -5,8 +5,15 @@ use same design as old app
         set useful defaults in code
         try DataStore later
 
+android 14 = api 34
+
 testing
-    eliminate EXTRA_COMMAND; add more top level commands.
+    DownloadNotif not showing
+            requests permission to show notification (no rationale)
+                but then doesn't show one. sigh
+                do commit, then debug.
+
+        move notification icon to mipmap?
 
     menu
         Create New Playlist
@@ -21,15 +28,17 @@ testing
                 delete "maxSdkVersion" on permission -> no help
 
 
-            try MediaStore access
-                still need read/write_external_storage. sigh.
+            gemini says api >= 30 causes trouble because of Scoped Storage
+                `WRITE_EXTERNAL_STORAGE` can't be used with API 30 and beyond.
+
+                downgrade to 29 in build.gradle - nope, lots of other proglems
+
+                use scoped storage. which just means use MediaStore, without any requested permissions. i think.
+                    playlists in app storage.
 
 
-            try just read - use other means to write
-                put playlist file in app storage.
-                no help. sigh.
 
-
+        eliminate EXTRA_COMMAND; add more top level commands.
 
         quit - does nothing; need play service
 
