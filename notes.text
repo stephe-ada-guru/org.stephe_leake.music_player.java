@@ -8,12 +8,7 @@ use same design as old app
 android 14 = api 34
 
 testing
-    DownloadNotif not showing
-            requests permission to show notification (no rationale)
-                but then doesn't show one. sigh
-                do commit, then debug.
-
-        move notification icon to mipmap?
+    getSongLIst fails, notification shows!
 
     menu
         Create New Playlist

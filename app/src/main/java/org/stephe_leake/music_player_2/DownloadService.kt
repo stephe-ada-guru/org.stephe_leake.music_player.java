@@ -18,6 +18,7 @@
 
 package org.stephe_leake.music_player_2
 
+import android.Manifest
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
@@ -26,6 +27,7 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.res.Resources
 import android.os.IBinder
+import androidx.annotation.RequiresPermission
 import androidx.preference.PreferenceManager
 
 import java.io.BufferedReader
@@ -79,6 +81,7 @@ class DownloadService : Service()
       return songCount - startAt - 1
    }
 
+   @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    private fun updatePlaylist (playlistFileName : String,
                                notif            : DownloadNotif)
    {

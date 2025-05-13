@@ -102,8 +102,9 @@ class MainActivity : AppCompatActivity()
    // activity indicated by 'code'.
    {
       val REQUIRED_PERMISSIONS = arrayOf(
-         android.Manifest.permission.POST_NOTIFICATIONS,
-         android.Manifest.permission.READ_EXTERNAL_STORAGE
+         android.Manifest.permission.POST_NOTIFICATIONS
+         // ,
+         // android.Manifest.permission.READ_EXTERNAL_STORAGE
          // ,
          // android.Manifest.permission.WRITE_EXTERNAL_STORAGE
       )
@@ -197,16 +198,20 @@ class MainActivity : AppCompatActivity()
                                            grantResults: IntArray)
    {
       var someRefused : Boolean = false
+      var refusedMessage : String = ""
       
       super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
       if (grantResults.isEmpty())
          return
 
-      for (result in grantResults)
+      for (i in 0 .. permissions.size - 1)
          {
-            if (result != PackageManager.PERMISSION_GRANTED)
-               {someRefused = true}
+            if (grantResults[i] != PackageManager.PERMISSION_GRANTED)
+               {
+                  someRefused = true
+                  refusedMessage += permissions[i] 
+               }
          }
 
       if (!someRefused)
@@ -234,10 +239,14 @@ class MainActivity : AppCompatActivity()
                
                else -> 
                   {
-                     // Some permission denied`
-                     utils.alertLog(this, "You denied access to global storage; this app cannot function without it.")
+                     utils.errorLog("programmer error.")
                   }
             }
+         }
+      else
+         {
+            // Some permission denied`
+            utils.alertLog(this, "You denied a required permission; " + refusedMessage)
          }
    } // onRequestPermissionsResult
 

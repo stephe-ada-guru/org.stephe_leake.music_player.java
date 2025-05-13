@@ -75,9 +75,10 @@ class DownloadNotif
         .setContentIntent(showLogPendingIntent)
         .setContentTitle("Downloading " + playlistName + " " + statusText)
         .setContentText(contentText)
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT) // make sure it shows!
         .setOngoing(true)
         .setProgress(maxSongs, currentSongs, maxSongs==0)
-        .setSmallIcon(R.drawable.download_icon) // shown in status bar
+        .setSmallIcon(R.mipmap.download_icon) // shown in status bar
         .build()
 
      val notifManager : NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as
