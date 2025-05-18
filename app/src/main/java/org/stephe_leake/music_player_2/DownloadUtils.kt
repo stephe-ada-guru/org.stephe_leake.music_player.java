@@ -210,6 +210,8 @@ class DownloadUtils
          : StatusStrings
       // randomSeed = -1 means randomize; other values used in unit tests.
       {
+         // The web server is only visible from my local network, and
+         // does not have an ssl certificate, so we use plaintext.
          val url = "http://" + serverIP + ":8080/download?" +
          "category=" + category +
          "&count=" + count.toString() +
@@ -226,15 +228,17 @@ class DownloadUtils
          {
             val response : Response = httpClient!!.newCall(request).execute()
 
-            try
-            {
-               result.strings = response.body!!.string().split("\r\n")
-            }
-            catch (e: IOException) {
-               // From response.body()
-               log(LogLevel.Error, "getNewSongsList request has no body: " + e.toString())
-               result.status = ProcessStatus.Fatal
-            }
+            if (response.body == null)
+               {
+                  log(LogLevel.Error, "getNewSongsList request has no body")
+                  result.status = ProcessStatus.Fatal
+               }
+            else
+               {
+                  val b : String = response.body!!.string() // split out for debugging
+                  result.strings = b.split("\r\n")
+                  response.close()
+               }
          }
          catch (e: IOException) {
             // From httpClient.newCall; connection failed after retry
@@ -242,9 +246,10 @@ class DownloadUtils
             result.status = ProcessStatus.Retry
          }
 
-         log(LogLevel.Info, "getNewSongsList: " + result.strings.size.toString() + " songs")
+         // Split includes an empty string at the end
+         log(LogLevel.Info, "getNewSongsList: " + (result.strings.size - 1).toString() + " songs")
          return result
-      }
+      } // getNewSongsList
 
       // Can't get WRITE_EXTERNAL_STORAGE permission to work, so trying just read
       // private fun getFile(serverIP : String,
@@ -457,60 +462,63 @@ class DownloadUtils
          {
             for (song in songs)
                {
-                  // File = File(utils.globalDirectory, FilenameUtils.getPath(song))
-                  // val songFile: File
+                  if (song != "")
+                     {
+                        // File = File(utils.globalDirectory, FilenameUtils.getPath(song))
+                        // val songFile: File
 
-                  // if (!destDir.exists())
-                  //    {
-                  //       destDir.mkdirs()
+                        // if (!destDir.exists())
+                        //    {
+                           //       destDir.mkdirs()
 
-                  //       metaStatus = getMeta(serverIP, FilenameUtils.getPath(song), destDir)
-                        
-                  //       when (metaStatus)
-                  //       {
-                  //          ProcessStatus.Start, ProcessStatus.Running ->
-                  //             {} // programmer error
+                           //       metaStatus = getMeta(serverIP, FilenameUtils.getPath(song), destDir)
                            
-                  //          ProcessStatus.Success ->
-                  //             {}
+                           //       when (metaStatus)
+                           //       {
+                              //          ProcessStatus.Start, ProcessStatus.Running ->
+                                 //             {} // programmer error
+                              
+                              //          ProcessStatus.Success ->
+                                 //             {}
 
-                  //          ProcessStatus.Fatal, ProcessStatus.Retry ->
-                  //             {
-                  //                // Delete dir so meta will be downloaded on retry
-                  //                destDir.delete()
-                  //                result.status = metaStatus
-                  //             }
-                  //       }
-                  //    }
+                              //          ProcessStatus.Fatal, ProcessStatus.Retry ->
+                                 //             {
+                                    //                // Delete dir so meta will be downloaded on retry
+                                    //                destDir.delete()
+                                    //                result.status = metaStatus
+                                    //             }
+                                    //       }
+                                    //    }
 
-                  // if (result.status == ProcessStatus.Success)
-                  //    {
-                  //       songFile = File(destDir, FilenameUtils.getName(song))
-                  //       fileStatus = getFile( serverIP, song, songFile)
+                                    // if (result.status == ProcessStatus.Success)
+                                    //    {
+                                       //       songFile = File(destDir, FilenameUtils.getName(song))
+                                       //       fileStatus = getFile( serverIP, song, songFile)
 
-                  //       when (fileStatus.status)
-                  //       {
-                  //          ProcessStatus.Start, ProcessStatus.Running ->
-                  //             {} // programmer error
-                           
-                  //          ProcessStatus.Success ->
-                  //             {
-                                 playlistWriter.write("$song\n")
-                                 // result.count++
-                                 // newSongs = newSongs + fileStatus.count
-                                 // notif.Update(songs.size, result.count)
-                     //          }
+                                       //       when (fileStatus.status)
+                                       //       {
+                                          //          ProcessStatus.Start, ProcessStatus.Running ->
+                                             //             {} // programmer error
+                                          
+                                          //          ProcessStatus.Success ->
+                                             //             {
+                                                playlistWriter.write("$song\n")
+                                                // result.count++
+                                                // newSongs = newSongs + fileStatus.count
+                                                // notif.Update(songs.size, result.count)
+                                                //          }
 
-                     //       ProcessStatus.Retry ->
-                     //          result.status = fileStatus.status
+                                                //       ProcessStatus.Retry ->
+                                                   //          result.status = fileStatus.status
 
-                     //       ProcessStatus.Fatal ->
-                     //          {
-                     //             result.status = fileStatus.status
-                     //             notif.Error("get file failed")
-                     //          }
-                     //    }
-                     // }
+                                                //       ProcessStatus.Fatal ->
+                                                   //          {
+                                                      //             result.status = fileStatus.status
+                                                      //             notif.Error("get file failed")
+                                                      //          }
+                                                      //    }
+                                                      // }
+                     }
                }
          }
          catch (e: IOException)

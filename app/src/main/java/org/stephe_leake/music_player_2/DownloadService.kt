@@ -154,7 +154,6 @@ class DownloadService : Service()
                      playlistFile.createNewFile()
                   }
 
-               // This edits the playlist, does not download any song files.
                newSongs = DownloadUtils.getNewSongsList(
                   serverIP, category, songCount, newSongCount, overSelectRatio, -1)
 
@@ -164,8 +163,9 @@ class DownloadService : Service()
                      return
                   }
 
-               // Get any missing songs (should all be on phone
-               // already, but this handles new music).
+               // Add all songs to playlist, get any missing songs
+               // (should all be on phone already, but this handles
+               // new music).
                status = DownloadUtils.getSongs(newSongs.strings, category)
 
                if (status.status != ProcessStatus.Success)
@@ -204,6 +204,7 @@ class DownloadService : Service()
                                     private val playlist: String)
       : Runnable
    {
+      @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
       override fun run()
       {
          notif.setName(FilenameUtils.getBaseName(playlist))

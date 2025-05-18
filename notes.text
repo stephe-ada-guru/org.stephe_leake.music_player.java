@@ -1,39 +1,28 @@
+c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 use same design as old app
     start search activity from menu
 
     give up on preferences
         set useful defaults in code
-        try DataStore later
+        try DataStore later; ask Gemini to add it to small project
 
 android 14 = api 34
 
 testing
-    getSongLIst fails, notification shows!
+    create new playlist
+        works, does not check if song is present, nor try to download it
+            need to change code to use MediaStore
+                which means changing playlist to store Album_Artist, album, song instead of filename.
+                need web server API version
+
+    show logfile by tapping on notification fails "can't open file"
+        add to small project
+
+    "cancel" in notification doesn't.
+
+    eliminate EXTRA_COMMAND; add more top level commands.
 
     menu
-        Create New Playlist
-            calls ActivityCompat.requestPermissions, but that does _not_ actually request permission from the user!
-            https://developer.android.com/training/permissions/requesting#explain
-                also not showing explanation dialog.
-                    because shouldShow... returns false!
-                trace source code for request permission - no help, hits "delegate" with "no implementations"
-                trace in debugger in virtual device so source matches device
-                    nope; mouse doesn't work. sigh.
-
-                delete "maxSdkVersion" on permission -> no help
-
-
-            gemini says api >= 30 causes trouble because of Scoped Storage
-                `WRITE_EXTERNAL_STORAGE` can't be used with API 30 and beyond.
-
-                downgrade to 29 in build.gradle - nope, lots of other proglems
-
-                use scoped storage. which just means use MediaStore, without any requested permissions. i think.
-                    playlists in app storage.
-
-
-
-        eliminate EXTRA_COMMAND; add more top level commands.
 
         quit - does nothing; need play service
 
