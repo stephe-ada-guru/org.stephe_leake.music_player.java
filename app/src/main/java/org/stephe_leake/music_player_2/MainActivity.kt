@@ -103,10 +103,6 @@ class MainActivity : AppCompatActivity()
    {
       val REQUIRED_PERMISSIONS = arrayOf(
          android.Manifest.permission.POST_NOTIFICATIONS
-         // ,
-         // android.Manifest.permission.READ_EXTERNAL_STORAGE
-         // ,
-         // android.Manifest.permission.WRITE_EXTERNAL_STORAGE
       )
 
       val permissionsToRequest = mutableListOf<String>()

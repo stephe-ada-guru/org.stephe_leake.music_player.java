@@ -82,8 +82,7 @@ class DownloadService : Service()
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-   private fun updatePlaylist (playlistFileName : String,
-                               notif            : DownloadNotif)
+   private fun updatePlaylist (playlistFileName : String)
    {
       var res                : Resources           = getResources()
       var prefs              : SharedPreferences   = utils.mainActivity!!.getPreferences(Context.MODE_PRIVATE)
@@ -163,6 +162,8 @@ class DownloadService : Service()
                      return
                   }
 
+               notif.Update(newSongs.strings.size, newSongCount)
+
                // Add all songs to playlist, get any missing songs
                // (should all be on phone already, but this handles
                // new music).
@@ -208,7 +209,7 @@ class DownloadService : Service()
       override fun run()
       {
          notif.setName(FilenameUtils.getBaseName(playlist))
-         updatePlaylist(playlist, notif)
+         updatePlaylist(playlist)
       }
    }
 

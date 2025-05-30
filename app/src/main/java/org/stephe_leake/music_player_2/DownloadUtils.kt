@@ -18,7 +18,8 @@
 
 package org.stephe_leake.music_player_2
 
-import android.content.Context
+import android.database.Cursor
+import android.provider.MediaStore
 
 import java.io.BufferedInputStream
 import java.io.File
@@ -59,7 +60,6 @@ class DownloadUtils
    companion object
    {
       var prefLogLevel : LogLevel = LogLevel.Info
-      val BUFFER_SIZE : Int = 8 * 1024
 
       // used in processDirEntry
       var playlistDir     : String = ""
@@ -88,7 +88,7 @@ class DownloadUtils
                httpClient = OkHttpClient.Builder()
                   .retryOnConnectionFailure(true)
                   .connectTimeout(5, TimeUnit.MINUTES) // don't have to handle retry at higher level
-                  .build();
+                  .build()
             }
       }
 
@@ -190,7 +190,7 @@ class DownloadUtils
             if ("" != FilenameUtils.getPath(playlistFilename))
                if ("" != FilenameUtils.getPath(lastFilename))
                {
-                  val deleteCount : Int = prunePlaylist(playlistFilename, lastFilename);
+                  val deleteCount : Int = prunePlaylist(playlistFilename, lastFilename)
                   log(LogLevel.Info, category + " playlist cleaned: " + deleteCount + " songs deleted")
                }
          }
@@ -212,8 +212,9 @@ class DownloadUtils
       {
          // The web server is only visible from my local network, and
          // does not have an ssl certificate, so we use plaintext.
-         val url = "http://" + serverIP + ":8080/download?" +
-         "category=" + category +
+         val url = "http://" + serverIP + ":8080/get_new_songs_list?" +
+         "API=2" + 
+         "&category=" + category +
          "&count=" + count.toString() +
          "&new_count=" + newCount.toString() +
          "&over_select_ratio=" + overSelectRatio.toString() +
@@ -228,15 +229,19 @@ class DownloadUtils
          {
             val response : Response = httpClient!!.newCall(request).execute()
 
-            if (response.body == null)
+            if (response.code < 200 || response.code > 299)
+               {
+                  log(LogLevel.Error, "getNewSongsList server error: " + response.message)
+                  result.status = ProcessStatus.Fatal
+               }
+            else if (response.body == null)
                {
                   log(LogLevel.Error, "getNewSongsList request has no body")
                   result.status = ProcessStatus.Fatal
                }
             else
                {
-                  val b : String = response.body!!.string() // split out for debugging
-                  result.strings = b.split("\r\n")
+                  result.strings = response.body!!.string().split("\r\n")
                   response.close()
                }
          }
@@ -246,8 +251,7 @@ class DownloadUtils
             result.status = ProcessStatus.Retry
          }
 
-         // Split includes an empty string at the end
-         log(LogLevel.Info, "getNewSongsList: " + (result.strings.size - 1).toString() + " songs")
+         log(LogLevel.Info, "getNewSongsList: " + result.strings.size.toString() + " songs")
          return result
       } // getNewSongsList
 
@@ -286,6 +290,7 @@ class DownloadUtils
       //       .port(8080)
 
       //    val url: HttpUrl = builder
+      //       .addParameter("API", "2")
       //       .addPathSegment(resource)
       //       .build()
 
@@ -431,12 +436,15 @@ class DownloadUtils
       //    return ProcessStatus.Success
       // }
 
+      // Add all 'songs' to playlist '<category>.m3u', notify user if
+      // not already in MediaStore.
+      //
+      // A song item has the format:
+      // "Album_Artist", "album", "title", "filename"
       fun getSongs(songs    : List<String>,
                    category : String)
          : StatusCount
       {
-         // Add all 'songs' to playlist '<category>.m3u'. 
-         
          val playlistFile   : File = File(utils.playlistFileName(category))
          val playlistWriter : FileWriter
          val result         : StatusCount = StatusCount()
@@ -450,75 +458,45 @@ class DownloadUtils
          }
          catch (e: IOException)
          {
-            log(LogLevel.Error, "cannot open '" + playlistFile.getAbsolutePath() + "' for append."
-            )
+            log(LogLevel.Error, "cannot open '" + playlistFile.getAbsolutePath() + "' for append.")
             result.status = ProcessStatus.Fatal
             return result
          }
-
-         // notif.Update(songs.size, result.count)
 
          try
          {
             for (song in songs)
                {
-                  if (song != "")
+                  val data : List<String> = song.split (", ")
+                  val Album_Artist = data.get(0) // FIXME: Album_Artist may be empty- don't match?
+                  val Album = data.get(1)
+                  val Title = data.get(2)
+                  val Filename = data.get(3)
+
+                  var cursor : Cursor? = utils.mainActivity!!.contentResolver.query(
+                     MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                     /* projection */ arrayOf(MediaStore.Audio.AlbumColumns.ARTIST,
+                                              MediaStore.Audio.AlbumColumns.ALBUM,
+                                              MediaStore.Audio.AudioColumns.TITLE),
+                     /* selection  */ "${MediaStore.Audio.AlbumColumns.ARTIST} = ? AND " + 
+                     "${MediaStore.Audio.AlbumColumns.ALBUM} = ? AND " +
+                     "${MediaStore.Audio.AudioColumns.TITLE} = ?",
+                     /* selectionArgs */ arrayOf(Album_Artist.slice(1 .. Album_Artist.length - 1),
+                                                 Album.slice(1 .. Album.length - 1),
+                                                 Title.slice(1 .. Title.length - 1)),
+                     /* sortOrder */ null)
+                  
+                  // The syntax that gemini gives for .use is _not_ correct!
+                  if (cursor == null || !cursor.moveToFirst())
                      {
-                        // File = File(utils.globalDirectory, FilenameUtils.getPath(song))
-                        // val songFile: File
-
-                        // if (!destDir.exists())
-                        //    {
-                           //       destDir.mkdirs()
-
-                           //       metaStatus = getMeta(serverIP, FilenameUtils.getPath(song), destDir)
-                           
-                           //       when (metaStatus)
-                           //       {
-                              //          ProcessStatus.Start, ProcessStatus.Running ->
-                                 //             {} // programmer error
-                              
-                              //          ProcessStatus.Success ->
-                                 //             {}
-
-                              //          ProcessStatus.Fatal, ProcessStatus.Retry ->
-                                 //             {
-                                    //                // Delete dir so meta will be downloaded on retry
-                                    //                destDir.delete()
-                                    //                result.status = metaStatus
-                                    //             }
-                                    //       }
-                                    //    }
-
-                                    // if (result.status == ProcessStatus.Success)
-                                    //    {
-                                       //       songFile = File(destDir, FilenameUtils.getName(song))
-                                       //       fileStatus = getFile( serverIP, song, songFile)
-
-                                       //       when (fileStatus.status)
-                                       //       {
-                                          //          ProcessStatus.Start, ProcessStatus.Running ->
-                                             //             {} // programmer error
-                                          
-                                          //          ProcessStatus.Success ->
-                                             //             {
-                                                playlistWriter.write("$song\n")
-                                                // result.count++
-                                                // newSongs = newSongs + fileStatus.count
-                                                // notif.Update(songs.size, result.count)
-                                                //          }
-
-                                                //       ProcessStatus.Retry ->
-                                                   //          result.status = fileStatus.status
-
-                                                //       ProcessStatus.Fatal ->
-                                                   //          {
-                                                      //             result.status = fileStatus.status
-                                                      //             notif.Error("get file failed")
-                                                      //          }
-                                                      //    }
-                                                      // }
+                        // not found; we can't download it to a specific directory, so tell the user to download it
+                        // FIXME: use Files mediaStore interface?
+                        result.status = ProcessStatus.Retry
+                        log(LogLevel.Info, "not found '" + Filename + "'")
                      }
+                  cursor?.close()
+                  
+                  playlistWriter.write("$song\n")    
                }
          }
          catch (e: IOException)
@@ -546,7 +524,7 @@ class DownloadUtils
 
          // File objects hold the corresponding disk file locked; later
          // unit test cannot delete them.
-      }
+      } // getSongs
 
       fun readNotes(noteFile : File)
          : String

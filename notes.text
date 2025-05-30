@@ -9,11 +9,13 @@ use same design as old app
 android 14 = api 34
 
 testing
+    smm compiled, not running
+
     create new playlist
-        works, does not check if song is present, nor try to download it
-            need to change code to use MediaStore
-                which means changing playlist to store Album_Artist, album, song instead of filename.
-                need web server API version
+        code changed to use MediaStore
+            gets "internal server error" before it gets to my code. sigh
+            run Aunit tests
+                need aunit_ext Alire stuff
 
     show logfile by tapping on notification fails "can't open file"
         add to small project
