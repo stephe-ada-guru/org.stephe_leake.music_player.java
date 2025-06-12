@@ -495,7 +495,8 @@ class DownloadUtils
                         log(LogLevel.Info, "not found '" + Filename + "'")
                      }
                   cursor?.close()
-                  
+
+                  // Write even if not found; user will download the song later.
                   playlistWriter.write("$song\n")    
                }
          }

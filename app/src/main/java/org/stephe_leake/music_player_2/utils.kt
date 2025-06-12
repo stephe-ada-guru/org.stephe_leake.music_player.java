@@ -111,7 +111,7 @@ class utils
       var appDirectory : String = ""
       // Absolute path to application-specific directory, containing
       // files used to interface with Stephe's Music manager (smm);
-      // .last files, notes files, error log.
+      // playlist files, .last files, notes files, error log.
       //
       // Set by Activity to getExternalStorageDir().
 

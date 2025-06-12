@@ -64,6 +64,15 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation("androidx.preference:preference-ktx:$preference_version")
+
+    implementation ("androidx.media3:media3-common:1.3.1")
+    implementation ("androidx.media3:media3-exoplayer:1.3.1")
+
+    // session and controller    
+    implementation ("androidx.media3:media3-session:1.3.1")
+
+    implementation("com.google.guava:guava:32.1.3-android")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
