@@ -70,6 +70,9 @@ import java.util.zip.Inflater
 
 import org.apache.commons.io.FilenameUtils
 
+import org.json.JSONObject
+import org.json.JSONTokener
+
 import org.stephe_leake.music_player_2.BuildConfig
 import org.stephe_leake.music_player_2.PrefActivity
 
@@ -176,11 +179,11 @@ class MainActivity : AppCompatActivity()
 
          // FIXME: find playlist index from utils.appDirectory + "/" + basename.last
          playlistFile.forEachLine{line ->
-            val data : List<String> = line.split (", ")
-            val Album_Artist = data.get(0) // FIXME: Album_Artist may be empty- don't match?
-            val Album = data.get(1)
-            val Title = data.get(2)
-            val Filename = data.get(3)
+               val data : JSONObject = JSONTokener(line).nextValue() as JSONObject
+            val Album_Artist = data.getString("Album_Artist") // FIXME: Album_Artist may be empty- don't match?
+            val Album = data.getString("Album")
+            val Title = data.getString("Title")
+            val Filename = data.getString("File_Name")
 
             var cursor : Cursor? = utils.mainActivity!!.contentResolver.query(
               MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL),
@@ -197,7 +200,7 @@ class MainActivity : AppCompatActivity()
                   // The syntax that gemini gives for .use is _not_ correct!
                   if (cursor == null || !cursor.moveToFirst())
                      {
-                        // not found
+                        // not found. Also checked in DownloadUtils.getSongs, but it might get deleted.
                         utils.alertLog(this, "not found '" + Filename + "'")
                      }
                   else

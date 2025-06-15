@@ -47,6 +47,9 @@ import org.apache.commons.io.filefilter.OrFileFilter
 import org.apache.commons.io.filefilter.SuffixFileFilter
 import org.apache.commons.io.filefilter.TrueFileFilter
 
+import org.json.JSONObject
+import org.json.JSONTokener
+
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -218,6 +221,8 @@ class DownloadUtils
          "&count=" + count.toString() +
          "&new_count=" + newCount.toString() +
          "&over_select_ratio=" + overSelectRatio.toString() +
+         "&record_downloaded=" + if (utils.playlistBaseName == "instrumental" || utils.playlistBaseName == "vocal")
+             "true" else "false" +
          (if (-1 == randomSeed) "" else "&seed=$randomSeed")
 
          val request : Request = Request.Builder().url(url).build()
@@ -255,192 +260,6 @@ class DownloadUtils
          return result
       } // getNewSongsList
 
-      // Can't get WRITE_EXTERNAL_STORAGE permission to work, so trying just read
-      // private fun getFile(serverIP : String,
-      //                     resource : String,
-      //                     fileName : File)
-      //    : StatusCount
-      // {
-      //    // Check if 'filename' already exists locally; if not, get
-      //    // 'resource' from 'serverIP', store locally in 'fileName'.
-      //    // 'resource' shall have only path and file name.
-      //    //
-      //    // Return result.status Success if successful, Fatal or Retry
-      //    // for any errors (error messages in log). result.count = 1 if
-      //    // file was downloaded, 0 if found locally.
-
-      //    val result: StatusCount = StatusCount()
-
-      //    // File.exists throws IOException ENOENT if the directory does not exist!
-      //    fileName.mkdirs()
-
-      //    if (fileName.exists())
-      //       {
-      //          return result
-      //       }
-      //    else
-      //       {
-      //          // new file
-      //          result.count = 1
-      //       }
-
-      //    val builder: HttpUrl.Builder = HttpUrl.Builder()
-      //       .scheme("http")
-      //       .host(serverIP)
-      //       .port(8080)
-
-      //    val url: HttpUrl = builder
-      //       .addParameter("API", "2")
-      //       .addPathSegment(resource)
-      //       .build()
-
-      //    try
-      //    {
-      //       fileName.createNewFile()
-      //    }
-      //    catch (e: IOException)
-      //    {
-      //       log(LogLevel.Error, "cannot create file " + fileName.getAbsolutePath())
-      //       result.status = ProcessStatus.Fatal
-      //       return result
-      //    }
-
-      //    try
-      //    {
-      //       val response : Response = httpClient!!.newCall(Request.Builder().url(url).build()).execute()
-
-      //       if (!response.isSuccessful)
-      //          {
-      //             log(LogLevel.Error,
-      //                 "getFile '" + url.toString() + "' request failed: " +
-      //                 response.code + " " + response.message)
-      //             result.status = ProcessStatus.Retry
-      //             return result
-      //          }
-
-      //       val inBuf: BufferedInputStream = BufferedInputStream(response.body!!.byteStream())
-      //       val out: FileOutputStream = FileOutputStream(fileName)
-      //       val buffer = ByteArray(BUFFER_SIZE)
-      //       val contentLen: String = response.header("Content-Length")!!
-      //       val contentLength = contentLen.toInt()
-      //       var downloaded = 0
-      //       var count : Int
-
-      //       while ((inBuf.read(buffer).also {count = it}) != -1)
-      //       {
-      //          downloaded += count
-      //          out.write(buffer, 0, count)
-      //       }
-      //       out.close()
-      //       inBuf.close()
-
-      //       if (downloaded != contentLength)
-      //          log(LogLevel.Error, "downloading '" + resource + "'; got " +
-      //              downloaded + "bytes, expecting " + contentLength
-      //       )
-      //       else log(LogLevel.Verbose, "downloaded '$resource'")
-               
-      //       }
-      //    catch (e: IOException)
-      //    {
-      //       // From httpClient.newCall; connection failed after retry
-      //       log(LogLevel.Error, "http request failed: getFile '" + resource + "': " + e.toString())
-      //       result.status = ProcessStatus.Retry
-      //    }
-      //    catch (e: NumberFormatException)
-      //    {
-      //       // from parseInt; corrupted Internet transmission. 'contentLen' not visible here.
-      //       log(LogLevel.Error, "parseInt failed")
-      //       result.status = ProcessStatus.Retry
-      //    }
-
-      //    return result
-      // } // getFile
-
-      // fun getMetaList(serverIP : String,
-      //                 resource : String)
-      //    : StatusStrings
-      // {
-      //    val result: StatusStrings = StatusStrings()
-
-      //    val url: HttpUrl = HttpUrl.Builder()
-      //       .scheme("http")
-      //       .host(serverIP)
-      //       .port(8080)
-      //       .addPathSegments(resource)
-      //       .addPathSegment("meta")
-      //       .build()
-
-      //    ensureHttpClient()
-
-      //    try
-      //    {
-      //       val response : Response = httpClient!!.newCall(Request.Builder().url(url).build()).execute()
-
-      //       if (!response.isSuccessful)
-      //          {
-      //             try
-      //             {
-      //                result.strings = response.body!!.string().split("\r\n")
-      //             }
-      //             catch (e: IOException)
-      //             {
-      //                // From response.body(); server error possibly due to corrupted file name
-      //                log(LogLevel.Error, "getMetaList request has no body: " + e.toString())
-      //                result.status = ProcessStatus.Retry
-      //             }
-      //          }
-      //    }
-      //    catch (e: IOException)
-      //    {
-      //       // From httpClient.newCall; connection failed after retry
-      //       log(LogLevel.Error, "http request failed: getMetaList '" + resource + "': " + e.toString())
-      //       result.status = ProcessStatus.Retry
-      //    }
-         
-      //    return result
-      // } // getMetaList
-
-      // private fun getMeta(serverIP: String,
-      //                     resourcePath: String,
-      //                     destDir: File)
-      //    : ProcessStatus
-      // {
-      //    var fileStatus: StatusCount
-      //    var objFile: File
-
-      //    val files: StatusStrings = getMetaList(serverIP, resourcePath)
-
-      //    if (ProcessStatus.Success != files.status)
-      //       {
-      //          return files.status
-      //       }
-
-      //    if (files.strings.size == 1 && files.strings.get(0).length == 0)
-      //       {
-      //          // no meta files for this directory
-      //          return ProcessStatus.Success
-      //       }
-         
-      //    for (file in files.strings)
-      //       {
-      //          objFile = File(destDir, FilenameUtils.getName(file))
-
-      //          fileStatus = getFile(serverIP, file, objFile)
-      //          if (ProcessStatus.Success != fileStatus.status)
-      //             {
-      //                return fileStatus.status
-      //             }
-      //       }
-
-      //    return ProcessStatus.Success
-      // }
-
-      // Add all 'songs' to playlist '<category>.m3u', notify user if
-      // not already in MediaStore.
-      //
-      // A song item has the format:
-      // "Album_Artist", "album", "title", "filename"
       fun getSongs(songs    : List<String>,
                    category : String)
          : StatusCount
@@ -467,11 +286,11 @@ class DownloadUtils
          {
             for (song in songs)
                {
-                  val data : List<String> = song.split (", ")
-                  val Album_Artist = data.get(0) // FIXME: Album_Artist may be empty- don't match?
-                  val Album = data.get(1)
-                  val Title = data.get(2)
-                  val Filename = data.get(3)
+                  val data : JSONObject = JSONTokener(song).nextValue() as JSONObject
+                  val Album_Artist = data.getString("Album_Artist") // FIXME: Album_Artist may be empty- don't match?
+                  val Album = data.getString("Album")
+                  val Title = data.getString("Title")
+                  val Filename = data.getString("File_Name")
 
                   var cursor : Cursor? = utils.mainActivity!!.contentResolver.query(
                      MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,

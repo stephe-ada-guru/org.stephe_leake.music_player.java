@@ -2,19 +2,10 @@ c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/m
 c:/Projects/smm.main/notes.text
 
 testing
-    select playlist
-        hammer song screws up; because of split bug
-            ignore ',' inside quotes
-                or something
-                use json syntax
-                    org.json in Android, gnatcoll.json in Ada
-
-
     add Player.Listener in MainActivity to update UI display
-
-    only record last played for vocal, instrumental
-        "file" API records last_downloaded; direct get does not.
-        need different mechanism for API 2
+        includes playlist name
+        service does sendStickyBroadcast, every 1000 milliseconds, triggered by sendEmptyMessage
+        activity does onRecieve.
 
     implement playback resumption?
 
