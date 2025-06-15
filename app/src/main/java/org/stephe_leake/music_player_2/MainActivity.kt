@@ -93,6 +93,7 @@ class MainActivity : AppCompatActivity()
    private val CHECK_PERM_LINER_NOTES     = 102
    private val CHECK_PERM_RESET_PLAYLIST  = 103
    private val CHECK_PERM_UPDATE_PLAYLIST = 104
+   private val CHECK_PERM_PICK_PLAYLIST   = 105
 
    private var mediaController : Player? = null
    
@@ -182,14 +183,15 @@ class MainActivity : AppCompatActivity()
             val Filename = data.get(3)
 
             var cursor : Cursor? = utils.mainActivity!!.contentResolver.query(
-              MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+              MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL),
               /* projection */ arrayOf(MediaStore.Audio.Media._ID),
-              /* selection  */ "${MediaStore.Audio.AlbumColumns.ARTIST} = ? AND " +
+              /* selection  */ "${MediaStore.MediaColumns.ALBUM_ARTIST} = ? AND " +
               "${MediaStore.Audio.AlbumColumns.ALBUM} = ? AND " +
               "${MediaStore.Audio.AudioColumns.TITLE} = ?",
-              /* selectionArgs */ arrayOf(Album_Artist.slice(1 .. Album_Artist.length - 1),
-                                          Album.slice(1 .. Album.length - 1),
-                                          Title.slice(1 .. Title.length - 1)),
+              /* selectionArgs */ arrayOf(Album_Artist.removeSurrounding("\""),
+                                          Album.removeSurrounding("\""),
+                                          Title.removeSurrounding("\"")
+              ),
                      /* sortOrder */ null)
 
                   // The syntax that gemini gives for .use is _not_ correct!
@@ -203,13 +205,7 @@ class MainActivity : AppCompatActivity()
                         val songId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID))
                         val item : MediaItem = MediaItem.Builder()
                            .setUri(ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI , songId))
-                        // FIXME: Gemini suggests setting metadata here; let's see if that's done for us.
-                        // .setMediaMetadata(
-                           //    MediaMetadata.Builder()
-                           //       .setTitle(songTitle)
-                           //       .setArtist(artist)
                            .build()
-
                         mediaController?.addMediaItem(item)
                      }
 
@@ -293,9 +289,9 @@ class MainActivity : AppCompatActivity()
       val playlist = utils.findTextViewById(this, R.id.playlist)
       playlist.setOnClickListener()
       {
-         if (checkPermission(CHECK_PERM_NEW_PLAYLIST))
+         if (checkPermission(CHECK_PERM_PICK_PLAYLIST))
             {
-               showPlaylistPickerDialog() { filename -> playlistToPlayer(filename)}
+               showPlaylistPickerDialog() {filename -> playlistToPlayer(filename)}
             }
       }
 
@@ -335,6 +331,11 @@ class MainActivity : AppCompatActivity()
                            .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_DOWNLOAD))
                   }
 
+               CHECK_PERM_PICK_PLAYLIST ->
+                  {
+                     showPlaylistPickerDialog() {filename -> playlistToPlayer(filename)}
+                  }
+               
                CHECK_PERM_LINER_NOTES ->
                   {
                      // FIXME: copy from R.id.menu_liner_notes below

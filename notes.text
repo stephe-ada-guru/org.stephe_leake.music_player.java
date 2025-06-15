@@ -1,23 +1,30 @@
 c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
+c:/Projects/smm.main/notes.text
 
 testing
     select playlist
-        all permissions requested and granted
-        still no files in 'best' list found. sigh.
-        VLC finds them.
+        hammer song screws up; because of split bug
+            ignore ',' inside quotes
+                or something
+                use json syntax
+                    org.json in Android, gnatcoll.json in Ada
 
 
     add Player.Listener in MainActivity to update UI display
+
+    only record last played for vocal, instrumental
+        "file" API records last_downloaded; direct get does not.
+        need different mechanism for API 2
 
     implement playback resumption?
 
     Declare the Media3 media button receiver
         https://developer.android.com/media/media3/session/background-playback?hl=en#buttons
 
-    play playlist
+    implement search activity
 
-    create new playlist
-        works
+    standard notification doesn't display album
+        can override?
 
     show logfile by tapping on notification fails "can't open file"
         add to small project
