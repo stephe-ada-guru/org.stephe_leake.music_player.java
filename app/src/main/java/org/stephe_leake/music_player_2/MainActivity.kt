@@ -34,6 +34,7 @@ import android.content.res.Resources
 import android.database.Cursor
 import android.os.Bundle
 import android.provider.MediaStore
+import android.provider.MediaStore.MediaColumns
 import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
@@ -58,6 +59,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.media3.session.MediaController
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.SessionToken
 import androidx.preference.EditTextPreferenceDialogFragmentCompat
@@ -76,20 +78,16 @@ import org.json.JSONTokener
 import org.stephe_leake.music_player_2.BuildConfig
 import org.stephe_leake.music_player_2.PrefActivity
 
+import android.view.View.GONE;
+import android.view.View.VISIBLE;
+
 class MainActivity : AppCompatActivity()
 {
    // Main UI members
    // FIXME: delete these; use non-null local 'val's.
 
-   private var playPauseButton : ImageButton? = null
    private var progressBar     : SeekBar? = null
-   private var album           : TextView? = null
-   private var albumArtist     : TextView? = null
-   private var artist          : TextView? = null
-   private var composer        : TextView? = null
    private var currentTime     : TextView? = null
-   private var title           : TextView? = null
-   private var totalTime       : TextView? = null
    private var year            : TextView? = null
 
    private val CHECK_PERM_NEW_PLAYLIST    = 101
@@ -122,8 +120,7 @@ class MainActivity : AppCompatActivity()
       val REQUIRED_PERMISSIONS = arrayOf(
          android.Manifest.permission.POST_NOTIFICATIONS,
          android.Manifest.permission.READ_MEDIA_AUDIO,
-         android.Manifest.permission.READ_MEDIA_IMAGES
-     )
+         android.Manifest.permission.READ_MEDIA_IMAGES)
 
       val permissionsToRequest = mutableListOf<String>()
       
@@ -163,71 +160,92 @@ class MainActivity : AppCompatActivity()
    }
 
    private fun playlistToPlayer(filename : String)
-      {
-         // Start playing playlist 'filename' (app local path).
-         val absFilename  : String = utils.appDirectory + "/" + filename
-         val playlistFile : File = File (absFilename)
-         
-         if (!playlistFile.canRead())
-            {
-               // This is an SMM error, or failing sdcard
-               utils.errorLog("can't read " + absFilename)
-               return
-            }
+   {
+      // Start playing playlist 'filename' (app local path).
 
-         utils.playlistBaseName = FilenameUtils.getBaseName(filename)
+      mediaController?.clearMediaItems()
+      
+      val absFilename  : String = utils.appDirectory + "/" + filename
+      val playlistFile : File = File (absFilename)
+      
+      if (!playlistFile.canRead())
+         {
+            // This is an SMM error, or failing sdcard
+            utils.errorLog("can't read " + absFilename)
+            return
+         }
 
-         // FIXME: find playlist index from utils.appDirectory + "/" + basename.last
-         playlistFile.forEachLine{line ->
-               val data : JSONObject = JSONTokener(line).nextValue() as JSONObject
-            val Album_Artist = data.getString("Album_Artist") // FIXME: Album_Artist may be empty- don't match?
-            val Album = data.getString("Album")
-            val Title = data.getString("Title")
-            val Filename = data.getString("File_Name")
+      utils.playlistBaseName = FilenameUtils.getBaseName(filename)
 
-            var cursor : Cursor? = utils.mainActivity!!.contentResolver.query(
-              MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL),
-              /* projection */ arrayOf(MediaStore.Audio.Media._ID),
-              /* selection  */ "${MediaStore.MediaColumns.ALBUM_ARTIST} = ? AND " +
-              "${MediaStore.Audio.AlbumColumns.ALBUM} = ? AND " +
-              "${MediaStore.Audio.AudioColumns.TITLE} = ?",
-              /* selectionArgs */ arrayOf(Album_Artist.removeSurrounding("\""),
-                                          Album.removeSurrounding("\""),
-                                          Title.removeSurrounding("\"")
-              ),
-                     /* sortOrder */ null)
+      // FIXME: find playlist index from utils.appDirectory + "/" + basename.last
+      playlistFile.forEachLine{line ->
+                                  val data : JSONObject = JSONTokener(line).nextValue() as JSONObject
+                               val Album_Artist = data.getString("Album_Artist") // FIXME: Album_Artist may be empty- don't match?
+                               val Album = data.getString("Album")
+                               val Title = data.getString("Title")
+                               val Filename = data.getString("File_Name")
 
-                  // The syntax that gemini gives for .use is _not_ correct!
-                  if (cursor == null || !cursor.moveToFirst())
-                     {
-                        // not found. Also checked in DownloadUtils.getSongs, but it might get deleted.
-                        utils.alertLog(this, "not found '" + Filename + "'")
-                     }
-                  else
-                     {
-                        val songId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID))
-                        val item : MediaItem = MediaItem.Builder()
-                           .setUri(ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI , songId))
-                           .build()
-                        mediaController?.addMediaItem(item)
-                     }
+                               var cursor : Cursor? = utils.mainActivity!!.contentResolver.query(
+                                  MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL),
+                                  /* projection */ arrayOf(MediaStore.Audio.Media._ID,
+                                                           MediaStore.MediaColumns.ARTIST,
+                                                           MediaStore.MediaColumns.COMPOSER,
+                                                           MediaStore.MediaColumns.YEAR),
+                                  /* selection  */ "${MediaStore.MediaColumns.ALBUM_ARTIST} = ? AND " +
+                                  "${MediaStore.Audio.AlbumColumns.ALBUM} = ? AND " +
+                                  "${MediaStore.Audio.AudioColumns.TITLE} = ?",
+                                  /* selectionArgs */ arrayOf(Album_Artist.removeSurrounding("\""),
+                                                              Album.removeSurrounding("\""),
+                                                              Title.removeSurrounding("\"")
+                                  ),
+                                  /* sortOrder */ null)
 
-                  cursor?.close()
-               } // forEachLine
+                               // The syntax that gemini gives for .use is _not_ correct!
+                               if (cursor == null || !cursor.moveToFirst())
+                                  {
+                                     // not found. Also checked in DownloadUtils.getSongs, but it might get deleted.
+                                     utils.alertLog(this, "not found '" + Filename + "'")
+                                  }
+                               else
+                                  {
+                                     val songId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID))
+                                     val artist =
+                                        cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.ARTIST))
+                                     val composer =
+                                        cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.COMPOSER))
+                                     val year =
+                                        cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.YEAR))
+                                     val metaData = androidx.media3.common.MediaMetadata.Builder()
+                                        .setAlbumArtist(Album_Artist)
+                                        .setAlbumTitle(Album)
+                                        .setTitle(Title)
+                                        .setArtist(artist)
+                                        .setComposer(composer)
+                                        .setReleaseYear(year.toInt())
+                                        .build()
+                                     val item : MediaItem = MediaItem.Builder()
+                                        .setUri(ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI , songId))
+                                        .setMediaMetadata(metaData)
+                                        .build()
+                                     mediaController?.addMediaItem(item)
+                                  }
 
-         mediaController?.prepare()
-         mediaController?.play() 
-      } // playlistToPlayer
+                               cursor?.close()
+      } // forEachLine
+
+      mediaController?.prepare()
+      mediaController?.play() 
+   } // playlistToPlayer
 
    private fun showPlaylistPickerDialog(onPlaylistSelected: (String) -> Unit)
    {
       val playlistDir : File = File (utils.appDirectory)
       
       val playlistFilter : FilenameFilter = FilenameFilter{ _, name -> name.endsWith(".m3u", ignoreCase = true) }
-      val playlists      : Array<String>  = playlistDir.list(playlistFilter)
+      val playlists = playlistDir.list(playlistFilter)
       val builder = AlertDialog.Builder(this)
 
-      if (playlists.isEmpty())
+      if (playlists == null || playlists.isEmpty())
          {
             builder.setTitle("no playlists found")
                .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss()}
@@ -244,6 +262,119 @@ class MainActivity : AppCompatActivity()
       dialog.show()
    }
 
+   private val playerListener = object : Player.Listener
+   {
+      private fun updateText(view: TextView, content: CharSequence?)
+      {
+         if (content == null || content.length == 0)
+            view.setVisibility(GONE)
+         else
+            {
+               view.setVisibility(VISIBLE)
+               view.setText(content)
+            }
+      }
+
+      private fun updateText(
+         view: TextView,
+         content: CharSequence?,
+         compare1: CharSequence?,
+         compare2: CharSequence?)
+      {
+         if (content == null || content.length == 0) view.setVisibility(GONE)
+            else if (content == compare1) view.setVisibility(GONE)
+            else if (content == compare2) view.setVisibility(GONE)
+            else {
+               view.setVisibility(VISIBLE)
+               view.setText(content)
+            }
+      }
+
+      private fun updateDisplay(mediaItem: MediaItem)
+      {
+         // FIXME: need to rename album art to have
+         // global unique file names. Or drop
+         // displaying album art.
+
+         // FIXME: add year, composer to metadata?
+         
+         val playlistView = utils.findTextViewById(utils.mainActivity!!, R.id.playlist)
+         val yearView = utils.findTextViewById(utils.mainActivity!!, R.id.year)
+         val composerView = utils.findTextViewById(utils.mainActivity!!, R.id.composer)
+         val artistView = utils.findTextViewById(utils.mainActivity!!, R.id.artist)
+         val albumArtistView = utils.findTextViewById(utils.mainActivity!!, R.id.albumArtist)
+         val albumView = utils.findTextViewById(utils.mainActivity!!, R.id.album)
+         val titleView = utils.findTextViewById(utils.mainActivity!!, R.id.title)
+         // val totalTime = utils.findTextViewById(utils.mainActivity!!, R.id.totalTime)
+         
+         val metadata = mediaItem.mediaMetadata
+         val yearInt = metadata.releaseYear ?: 0
+         val yearText = if (yearInt == 0) "" else yearInt.toString()
+         val composerText = metadata.composer ?: ""
+         val titleText = metadata.title ?: ""
+         val artistText = metadata.artist ?: ""
+         val albumArtistText = metadata.albumArtist ?: ""
+         val albumText = metadata.albumTitle ?: ""
+
+         playlistView.setText(utils.playlistBaseName)
+         
+         updateText(composerView, composerText, artistText, albumArtistText)
+         updateText(artistView, artistText, albumArtistText, null)
+         updateText(albumArtistView, albumArtistText, null, null)
+         updateText(yearView, yearText)
+         albumView.setText(albumText)
+         titleView.setText(titleText)
+
+         // trackDuration = utils.retriever.duration.toLong()
+
+         // totalTime.setText(utils.makeTimeString(utils.mainActivity!!, trackDuration))
+      } // updateDisplay
+      
+      override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int)
+      {
+         super.onMediaItemTransition(mediaItem, reason)
+
+         if (mediaItem == null)
+            {
+               // Playlist ended
+               val composerView = utils.findTextViewById(utils.mainActivity!!, R.id.composer)
+               val artistView = utils.findTextViewById(utils.mainActivity!!, R.id.artist)
+               val albumArtistView = utils.findTextViewById(utils.mainActivity!!, R.id.albumArtist)
+               val yearView = utils.findTextViewById(utils.mainActivity!!, R.id.year)
+               val albumView = utils.findTextViewById(utils.mainActivity!!, R.id.album)
+               val titleView = utils.findTextViewById(utils.mainActivity!!, R.id.title)
+               // val totalTime = utils.findTextViewById(utils.mainActivity!!, R.id.totalTime)
+
+               composerView.setText("")
+               artistView.setText("")
+               albumArtistView.setText("")
+               yearView.setText("")
+               albumView.setText("")
+               titleView.setText("")
+            }
+         else
+            {
+               // Apparently 'reason' is not reliable, so we always update
+               // Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT 
+               // Player.MEDIA_ITEM_TRANSITION_REASON_AUTO>
+               // Player.MEDIA_ITEM_TRANSITION_REASON_SEEK>
+               // Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED
+               updateDisplay (mediaItem)                       
+            }
+      } // onMediaItemTransition
+
+      override fun onPlaybackStateChanged(state : Int)
+      {
+         val playPauseButton = utils.mainActivity?.findViewById(R.id.play_pause) as ImageButton
+
+         if (mediaController != null && mediaController!!.isPlaying) 
+            playPauseButton.setImageResource(R.drawable.pause)
+         else 
+            playPauseButton.setImageResource(R.drawable.play)
+      } // onPlaybackStateChanged
+      
+   } // playerListener
+   
    ////////// Activity lifetime methods (in lifecycle order)
 
    override fun onCreate(savedInstanceState: Bundle?)
@@ -282,13 +413,6 @@ class MainActivity : AppCompatActivity()
 
       // Set up displays, top to bottom left to right
       
-      album       = utils.findTextViewById(this, R.id.album)
-      albumArtist = utils.findTextViewById(this, R.id.albumArtist)
-      artist      = utils.findTextViewById(this, R.id.artist)
-      composer    = utils.findTextViewById(this, R.id.composer)
-      title       = utils.findTextViewById(this, R.id.title)
-      year        = utils.findTextViewById(this, R.id.year)
-
       val playlist = utils.findTextViewById(this, R.id.playlist)
       playlist.setOnClickListener()
       {
@@ -364,16 +488,25 @@ class MainActivity : AppCompatActivity()
 
    override fun onStart()
    {
-       super.onStart()
-       val sessionToken = SessionToken(this, ComponentName(this, PlayService::class.java))
+      super.onStart()
+      val sessionToken = SessionToken(this, ComponentName(this, PlayService::class.java))
 
       val controllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
       controllerFuture.addListener(
          {
             mediaController = controllerFuture.get()
+            mediaController!!.addListener(playerListener)
+
          }, MoreExecutors.directExecutor())
    } // onStart
-    
+   
+   override fun onDestroy()
+   {
+      mediaController?.removeListener(playerListener)
+      
+      super.onDestroy()
+   }
+
    ////////// Menu
 
    override fun onCreateOptionsMenu(menu: Menu): Boolean
@@ -428,6 +561,9 @@ class MainActivity : AppCompatActivity()
                
                if (null == serverIP)
                   {
+                     // can't get here with current default for
+                     // serverIP, but keep it in case we get
+                     // preferences working properly.
                      utils.alertLog(this, "set Server IP in preferences")
                   }
                else
@@ -458,7 +594,7 @@ class MainActivity : AppCompatActivity()
                      {dialog, _ ->
                          dialog.cancel();
                      }
-                      
+                     
                      builder.show();
                   }
             }

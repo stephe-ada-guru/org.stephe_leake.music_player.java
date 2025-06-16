@@ -2,10 +2,14 @@ c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/m
 c:/Projects/smm.main/notes.text
 
 testing
-    add Player.Listener in MainActivity to update UI display
-        includes playlist name
-        service does sendStickyBroadcast, every 1000 milliseconds, triggered by sendEmptyMessage
-        activity does onRecieve.
+    implement in-app buttons
+        prev, pause/play, next
+        notes
+
+    implement playlist memory
+        .last
+        position
+            was in a preference; fix that?
 
     implement playback resumption?
 
@@ -13,9 +17,6 @@ testing
         https://developer.android.com/media/media3/session/background-playback?hl=en#buttons
 
     implement search activity
-
-    standard notification doesn't display album
-        can override?
 
     show logfile by tapping on notification fails "can't open file"
         add to small project
@@ -51,6 +52,10 @@ use abs filename via MediaStore.Files  interface?
     nope; only "displayname" = basename (no directory info)
         can get directory info from "parent" field, use that to disambiguate
         might as well use Album_Artist, Album, Title.
+
+standard notification doesn't display album
+    can override?
+    not with API > 33. sigh.
 
 
  Resources

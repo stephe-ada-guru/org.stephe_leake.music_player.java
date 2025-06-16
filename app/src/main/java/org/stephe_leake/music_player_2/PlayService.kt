@@ -48,6 +48,7 @@ class PlayService : MediaSessionService()
          }
 
       mediaSession.release()
+      // can't set mediaSession null
       
       super.onDestroy()
    }
