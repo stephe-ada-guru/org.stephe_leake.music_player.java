@@ -20,6 +20,7 @@
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:gravity="top"
     android:layout_width="match_parent"
@@ -46,32 +47,59 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:weightSum="1">
-      <!-- albumArt
-           year
+
+      <!-- WORKAROUND: the player controls keep disappearing, so we set the height; good for my phone/tablet -->
+      <!-- 150 dp; only shows play/pause -->
+      <!-- 200 dp; shows all. sigh. -->
+      <androidx.media3.ui.PlayerView
+          android:id="@+id/player_view"
+          android:layout_width="match_parent"
+          android:layout_height="200dp"
+          android:visibility="visible"
+          android:gravity="center"
+          app:use_controller="true"
+          app:show_shuffle_button="false"
+          app:show_subtitle_button="false"
+          app:keep_content_on_player_reset="true"
+          app:show_buffering="always"
+          app:show_vr_button="false"
+          app:use_artwork="true"
+          app:image_display_mode="fit"
+          app:hide_on_touch="false"
+          app:auto_show="false"/>
+
+      <TextView
+          android:id="@+id/playlist"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:gravity="center"
+          android:focusable="true"
+          android:text="@string/null_playlist"
+          android:textAppearance="?android:attr/textAppearanceLarge"
+          android:weightSum="1"/>
+
+      <!-- year
            composer
            album artist
            artists
            album
            title
-           prev/play/next buttons | time
-           seekbar
            notes buttons
-           playlist
       -->
-      <HorizontalScrollView
-          android:layout_width="match_parent"
-          android:layout_height="wrap_content" >
-        <LinearLayout
-            android:id="@+id/albumArtLinear"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal" >
-        </LinearLayout>
-      </HorizontalScrollView>
-      <View
-          android:layout_width="match_parent"
-          android:layout_height="1dp"
-          android:background="#ff7f7f7f" />  <!-- separator -->
+      <!-- <HorizontalScrollView -->
+      <!--     android:layout_width="match_parent" -->
+      <!--     android:layout_height="wrap_content" > -->
+      <!--   <LinearLayout -->
+      <!--       android:id="@+id/albumArtLinear" -->
+      <!--       android:layout_width="wrap_content" -->
+      <!--       android:layout_height="wrap_content" -->
+      <!--       android:orientation="horizontal" > -->
+      <!--   </LinearLayout> -->
+      <!-- </HorizontalScrollView> -->
+      <!-- <View -->
+      <!--     android:layout_width="match_parent" -->
+      <!--     android:layout_height="1dp" -->
+      <!--     android:background="#ff7f7f7f" />  <!-\- separator -\-> -->
       <TextView
           android:layout_width="match_parent"
           android:layout_height="wrap_content"
@@ -138,81 +166,6 @@
           android:layout_width="match_parent"
           android:layout_height="1dp"
           android:background="#ffffffff"/> <!-- separator -->
-      <LinearLayout
-          android:layout_width="match_parent"
-          android:layout_height="wrap_content"
-          android:paddingTop="1dip"
-          android:paddingBottom="4dip"
-          android:orientation="horizontal">
-        <!-- prev/play/next buttons | time -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:layout_gravity="bottom"
-            android:background="#ff5a5a5a"
-            android:layout_marginTop="1dip"
-            android:layout_marginBottom="2dip"
-            android:gravity="center"> <!-- background for transparent part of buttons -->
-          <!-- prev/play/next buttons -->
-          <ImageButton
-              android:id="@+id/prev"
-              android:src="@drawable/previous"
-              android:layout_width="wrap_content"
-              android:layout_height="match_parent"
-              android:layout_marginLeft="4dip"
-              android:layout_marginRight="4dip"
-              android:background="#00000000"/> <!-- transparent -->
-          <ImageButton
-              android:id="@+id/play_pause"
-              android:src="@drawable/play"
-              android:layout_width="wrap_content"
-              android:layout_height="match_parent"
-              android:layout_marginLeft="4dip"
-              android:layout_marginRight="4dip"
-              android:background="#00000000"/> <!-- transparent -->
-          <ImageButton
-              android:id="@+id/next"
-              android:src="@drawable/next"
-              android:layout_width="wrap_content"
-              android:layout_height="match_parent"
-              android:layout_marginLeft="4dip"
-              android:layout_marginRight="4dip"
-              android:background="#00000000"/> <!-- transparent -->
-        </LinearLayout>
-        <LinearLayout
-            android:orientation="vertical"
-            android:gravity="top"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:weightSum="1">
-          <!-- times -->
-          <TextView
-              android:id="@+id/currenttime"
-              android:textAppearance="?android:attr/textAppearanceMedium"
-              android:textSize="12sp"
-              android:textStyle="bold"
-              android:gravity="center_horizontal"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content" />
-          <TextView
-              android:id="@+id/totaltime"
-              android:textAppearance="?android:attr/textAppearanceMedium"
-              android:textSize="12sp"
-              android:textStyle="bold"
-              android:gravity="center_horizontal"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content" />
-        </LinearLayout>
-      </LinearLayout>
-      <SeekBar
-          android:id="@android:id/progress"
-          style="?android:attr/progressBarStyleHorizontal"
-          android:layout_width="match_parent"
-          android:layout_height="36dip"
-          android:paddingLeft="8dip"
-          android:paddingRight="8dip"
-          android:paddingBottom="4dip" />
       <LinearLayout
           style="?android:attr/buttonBarButtonStyle"
           android:id="@+id/notes_buttons_1"
@@ -308,14 +261,6 @@
             android:textColor="#ffefefef"
             android:onClick="onClickNote"/>
       </LinearLayout>
-      <TextView
-          android:id="@+id/playlist"
-          android:layout_width="match_parent"
-          android:layout_height="wrap_content"
-          android:gravity="center"
-          android:focusable="true"
-          android:text="@string/null_playlist"
-          android:textAppearance="?android:attr/textAppearanceLarge"/>
     </LinearLayout>
   </ScrollView>
 </LinearLayout>

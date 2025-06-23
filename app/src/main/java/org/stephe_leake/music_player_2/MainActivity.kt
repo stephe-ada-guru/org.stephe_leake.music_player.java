@@ -36,13 +36,11 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.MediaStore.MediaColumns
 import android.util.Log
+import android.view.View
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.SeekBar
-import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -62,6 +60,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.SessionToken
+import androidx.media3.ui.PlayerView
 import androidx.preference.EditTextPreferenceDialogFragmentCompat
 
 import com.google.common.util.concurrent.MoreExecutors
@@ -80,15 +79,13 @@ import org.stephe_leake.music_player_2.PrefActivity
 
 import android.view.View.GONE;
 import android.view.View.VISIBLE;
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
 
 class MainActivity : AppCompatActivity()
 {
    // Main UI members
    // FIXME: delete these; use non-null local 'val's.
-
-   private var progressBar     : SeekBar? = null
-   private var currentTime     : TextView? = null
-   private var year            : TextView? = null
 
    private val CHECK_PERM_NEW_PLAYLIST    = 101
    private val CHECK_PERM_LINER_NOTES     = 102
@@ -329,10 +326,16 @@ class MainActivity : AppCompatActivity()
 
          // totalTime.setText(utils.makeTimeString(utils.mainActivity!!, trackDuration))
       } // updateDisplay
-      
+
+      // PlayerControlView is "unstable", but adding this causes mysterious compilation errors
+      // @OptIn(UnstableApi::class)
       override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int)
       {
          super.onMediaItemTransition(mediaItem, reason)
+
+         // // The player controls keep hiding; bring them back
+         val playerView = findViewById<PlayerView>(R.id.player_view)
+         playerView.showController()
 
          if (mediaItem == null)
             {
@@ -363,18 +366,8 @@ class MainActivity : AppCompatActivity()
             }
       } // onMediaItemTransition
 
-      override fun onPlaybackStateChanged(state : Int)
-      {
-         val playPauseButton = utils.mainActivity?.findViewById(R.id.play_pause) as ImageButton
-
-         if (mediaController != null && mediaController!!.isPlaying) 
-            playPauseButton.setImageResource(R.drawable.pause)
-         else 
-            playPauseButton.setImageResource(R.drawable.play)
-      } // onPlaybackStateChanged
-      
    } // playerListener
-   
+
    ////////// Activity lifetime methods (in lifecycle order)
 
    override fun onCreate(savedInstanceState: Bundle?)
@@ -421,7 +414,6 @@ class MainActivity : AppCompatActivity()
                showPlaylistPickerDialog() {filename -> playlistToPlayer(filename)}
             }
       }
-
    } //onCreate
 
    override fun onRequestPermissionsResult(requestCode : Int,
@@ -486,6 +478,7 @@ class MainActivity : AppCompatActivity()
          }
    } // onRequestPermissionsResult
 
+   // @OptIn(UnstableApi::class)
    override fun onStart()
    {
       super.onStart()
@@ -497,8 +490,32 @@ class MainActivity : AppCompatActivity()
             mediaController = controllerFuture.get()
             mediaController!!.addListener(playerListener)
 
+            val playerView = findViewById<PlayerView>(R.id.player_view)
+            playerView.setPlayer(mediaController);
+
          }, MoreExecutors.directExecutor())
    } // onStart
+
+   override fun onResume()
+   {
+      super.onResume()
+
+      val playerView = findViewById<PlayerView>(R.id.player_view)
+      playerView.onResume();
+   }
+   
+   override fun onPause()
+   {
+      super.onPause();
+
+      val playerView = findViewById<PlayerView>(R.id.player_view)
+      playerView.onPause();
+   }
+   
+   override fun onStop()
+   {
+      super.onStop()
+   }
    
    override fun onDestroy()
    {

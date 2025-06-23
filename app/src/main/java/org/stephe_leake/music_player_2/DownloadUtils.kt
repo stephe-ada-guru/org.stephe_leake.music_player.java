@@ -106,10 +106,10 @@ class DownloadUtils
             {
                if (lowercase)
                   {
-                     result.addLast(line.lowercase(Locale.getDefault()))
+                     result.add(line.lowercase(Locale.getDefault()))
                   }
                else
-                  result.addLast(line)
+                  result.add(line)
             }
          return result;
       }

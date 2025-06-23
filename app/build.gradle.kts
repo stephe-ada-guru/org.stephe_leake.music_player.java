@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "org.stephe_leake.music_player_2"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "org.stephe_leake.music_player_2"
@@ -65,11 +65,12 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation("androidx.preference:preference-ktx:$preference_version")
 
-    implementation ("androidx.media3:media3-common:1.3.1")
-    implementation ("androidx.media3:media3-exoplayer:1.3.1")
-
+    implementation ("androidx.media3:media3-common:1.7.1")
+    implementation ("androidx.media3:media3-exoplayer:1.7.1")
+    implementation ("androidx.media3:media3-ui:1.7.1")
+    
     // session and controller    
-    implementation ("androidx.media3:media3-session:1.3.1")
+    implementation ("androidx.media3:media3-session:1.7.1")
 
     implementation("com.google.guava:guava:32.1.3-android")
 
