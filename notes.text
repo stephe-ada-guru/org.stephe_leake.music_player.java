@@ -2,12 +2,6 @@ c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/m
 c:/Projects/smm.main/notes.text
 
 testing
-    implement playlist memory
-        last_playlist
-        .last song
-        position
-            was in a preference; fix that?
-
     notes
         clicking "category" crashes app.
             because xml declares onClickNote but that's not in code
@@ -52,6 +46,7 @@ use same design as old app
 give up on preferences
     set useful defaults in code
     try DataStore later; ask Gemini to add it to small project
+    JetPack DataStore requires code generated from a .proto file; just broken
 
 use abs filename via MediaStore.Files  interface?
     nope; only "displayname" = basename (no directory info)
@@ -67,15 +62,19 @@ standard notification doesn't display album
 tablet: Android 14 = api 34
 phone:  Android 14
 
-https://developer.android.com/jetpack/androidx/releases/media3
+versions
+    https://developer.android.com/jetpack/androidx/releases/media3
+    https://github.com/protocolbuffers/protobuf/releases
+    https://developer.android.com/jetpack/androidx/versions - appcompat
 
-                https://github.com/androidx/media/issues/651
-                    use PlayerView!
 
-                    slightly better: pause button shows briefly, then hides, doesn't come back on click
+https://github.com/androidx/media/issues/651
+    use PlayerView!
 
-                https://github.com/androidx/media/tree/release/demos/session
-                    not much help
+    slightly better: pause button shows briefly, then hides, doesn't come back on click
+
+https://github.com/androidx/media/tree/release/demos/session
+    not much help
 
 AndroidStudio doesn't understand git worktree (sigh)
     gradle sync in work_1 fails mysteriously (sigh)

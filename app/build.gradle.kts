@@ -52,9 +52,6 @@ android {
 
 dependencies {
 
-   // version from https://developer.android.com/jetpack/androidx/releases/preference?hl=en#kts
-   val preference_version = "1.2.1"
-   
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -63,8 +60,12 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation("androidx.preference:preference-ktx:$preference_version")
 
+    implementation("androidx.appcompat:appcompat:1.7.1") 
+ 
+    implementation("androidx.datastore:datastore-preferences:1.1.7") 
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.1")
+ 
     implementation ("androidx.media3:media3-common:1.7.1")
     implementation ("androidx.media3:media3-exoplayer:1.7.1")
     implementation ("androidx.media3:media3-ui:1.7.1")
