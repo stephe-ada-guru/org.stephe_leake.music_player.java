@@ -37,6 +37,7 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.view.View
 import android.widget.EditText
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -44,6 +45,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.media3.common.MediaMetadata
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.Preferences
@@ -59,6 +61,7 @@ import androidx.media3.ui.PlayerView
 
 import com.google.common.util.concurrent.MoreExecutors
 
+import java.io.BufferedWriter
 import java.io.File
 import java.io.FilenameFilter
 
@@ -76,6 +79,8 @@ import org.json.JSONTokener
 
 import android.view.View.GONE
 import android.view.View.VISIBLE
+import android.widget.Button
+import java.io.FileWriter
 
 class MainActivity : AppCompatActivity()
 {
@@ -87,7 +92,7 @@ class MainActivity : AppCompatActivity()
 
    private var mediaController : Player? = null
 
-   private var playlistIndex : Int = -1
+   private var playlistIndex : Int = -1 // playlist is 1 indexed.
    private var playlistPos   : Long = -1
    
    private fun CreateNotificationChannel()
@@ -449,6 +454,29 @@ class MainActivity : AppCompatActivity()
 
    } // playerListener
 
+   public fun onClickNote(v : View)
+   {
+      val buttonText = (((v as Button).getText() as String).replace('\n', ' '));
+      val controller = mediaController!!
+      val index = controller.currentMediaItemIndex
+
+      if (index > 0 && utils.playlistBaseName != "")
+      {
+         val noteFileName = utils.appDirectory + "/" + utils.playlistBaseName + ".note"
+         val metaData = controller.currentMediaItem!!.mediaMetadata
+         val data = JSONObject()
+            .put("Album_Artist", metaData.albumArtist)
+            .put("Album", metaData.albumTitle)
+            .put("Title", metaData.title)
+         
+         val writer = BufferedWriter(FileWriter(noteFileName, true)); // append
+
+         writer.write(data.toString() + ' ' + buttonText);
+         writer.newLine();
+         writer.close();
+      }
+   }
+   
    ////////// Activity lifetime methods (in lifecycle order)
 
    override fun onCreate(savedInstanceState: Bundle?)

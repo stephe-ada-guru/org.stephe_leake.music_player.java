@@ -1,38 +1,33 @@
 c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 c:/Projects/smm.main/notes.text
 
-testing
-    notes
-        clicking "category" crashes app.
-            because xml declares onClickNote but that's not in code
+find liner_notes.pdf?
+    using MediaStore Files collection
+    rename to album_artist-album-*
 
-    find liner_notes.pdf?
-        using MediaStore Files collection
-        rename to album_artist-album-*
+implement playback resumption?
 
-    implement playback resumption?
+Declare the Media3 media button receiver
+    https://developer.android.com/media/media3/session/background-playback?hl=en#buttons
 
-    Declare the Media3 media button receiver
-        https://developer.android.com/media/media3/session/background-playback?hl=en#buttons
+implement search activity
 
-    implement search activity
+show logfile by tapping on notification fails "can't open file"
+    add to small project
 
-    show logfile by tapping on notification fails "can't open file"
-        add to small project
+"cancel" in notification doesn't.
 
-    "cancel" in notification doesn't.
+eliminate EXTRA_COMMAND; add more top level commands.
 
-    eliminate EXTRA_COMMAND; add more top level commands.
+write Ada code to rename liner_notes.pdf to <album_artist>_<album>_liner_notes.pdf
 
-    write Ada code to rename liner_notes.pdf to <album_artist>_<album>_liner_notes.pdf
+menu
 
-    menu
+    quit - does nothing; need play service
 
-        quit - does nothing; need play service
+    search - does nothing; need new search activity
 
-        search - does nothing; need new search activity
-
-        share - does nothing; need utils.retriever. which needs play service.
+    share - does nothing; need utils.retriever. which needs play service.
 
 Need "clear playlist" and "delete playlist"; instrumental got screwed up.
 
