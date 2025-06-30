@@ -1,12 +1,6 @@
 c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 c:/Projects/smm.main/notes.text
 
-find liner_notes.pdf?
-    using MediaStore Files collection
-    rename to album_artist-album-*
-
-implement playback resumption?
-
 Declare the Media3 media button receiver
     https://developer.android.com/media/media3/session/background-playback?hl=en#buttons
 
@@ -51,6 +45,11 @@ use abs filename via MediaStore.Files  interface?
 standard notification doesn't display album
     can override?
     not with API > 33. sigh.
+
+find liner_notes.pdf?
+    using MediaStore Files collection
+    rename to album_artist-album-*
+    gemini says the code is right, but it fails. sigh.
 
 
  Resources

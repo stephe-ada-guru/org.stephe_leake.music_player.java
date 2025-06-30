@@ -85,10 +85,9 @@ import java.io.FileWriter
 class MainActivity : AppCompatActivity()
 {
    private val CHECK_PERM_NEW_PLAYLIST    = 101
-   private val CHECK_PERM_LINER_NOTES     = 102
-   private val CHECK_PERM_RESET_PLAYLIST  = 103
-   private val CHECK_PERM_UPDATE_PLAYLIST = 104
-   private val CHECK_PERM_PICK_PLAYLIST   = 105
+   private val CHECK_PERM_RESET_PLAYLIST  = 102
+   private val CHECK_PERM_UPDATE_PLAYLIST = 103
+   private val CHECK_PERM_PICK_PLAYLIST   = 104
 
    private var mediaController : Player? = null
 
@@ -239,7 +238,7 @@ class MainActivity : AppCompatActivity()
          }
    }
    
-   private fun playlistToPlayer(filename : String)
+   private fun playlistToPlayer(filename : String, play : Boolean)
    {
       // Start playing playlist 'filename' (app local path).
 
@@ -316,7 +315,9 @@ class MainActivity : AppCompatActivity()
 
       mediaController?.prepare()
       mediaController?.seekTo(playlistIndex, playlistPos)
-      mediaController?.play() 
+
+      if (play)
+         mediaController?.play() 
    } // playlistToPlayer
 
    private fun showPlaylistPickerDialog(onPlaylistSelected: (String) -> Unit)
@@ -520,11 +521,14 @@ class MainActivity : AppCompatActivity()
       {
          if (checkPermission(CHECK_PERM_PICK_PLAYLIST))
             {
-               showPlaylistPickerDialog() {filename -> playlistToPlayer(filename)}
+               showPlaylistPickerDialog() {filename -> playlistToPlayer(filename, play = true)}
             }
       }
 
-   } //onCreate
+      // Ensure this runs before OnStart
+      dataStoreScope.launch {readPlaylistName()}
+
+   } // onCreate
 
    override fun onRequestPermissionsResult(requestCode : Int,
                                            permissions : Array<String>,
@@ -562,12 +566,7 @@ class MainActivity : AppCompatActivity()
 
                CHECK_PERM_PICK_PLAYLIST ->
                   {
-                     showPlaylistPickerDialog() {filename -> playlistToPlayer(filename)}
-                  }
-               
-               CHECK_PERM_LINER_NOTES ->
-                  {
-                     // FIXME: copy from R.id.menu_liner_notes below
+                     showPlaylistPickerDialog() {filename -> playlistToPlayer(filename, play = true)}
                   }
                
                CHECK_PERM_RESET_PLAYLIST ->
@@ -602,9 +601,8 @@ class MainActivity : AppCompatActivity()
 
             val playerView = findViewById<PlayerView>(R.id.player_view)
             playerView.setPlayer(mediaController)
-            dataStoreScope.launch {readPlaylistName()}
-            if (utils.playlistBaseName != "")
-               playlistToPlayer(utils.playlistBaseName + ".m3u")            
+               if (utils.playlistBaseName != "")
+               playlistToPlayer(utils.playlistBaseName + ".m3u", play = false)            
          }, MoreExecutors.directExecutor())
    } // onStart
 
@@ -649,8 +647,8 @@ class MainActivity : AppCompatActivity()
    {
       super.onPrepareOptionsMenu(menu)
 
-      //FIXME: don't have utils yet
-      // menu.findItem(MENU_LINER_NOTES).setEnabled(utils.retriever.linerNotesExist())
+      menu.findItem(R.id.menu_liner_notes).setEnabled(
+         (mediaController != null && mediaController!!.currentMediaItemIndex > 0))
 
       return true
    }
@@ -730,16 +728,33 @@ class MainActivity : AppCompatActivity()
 
          R.id.menu_liner_notes ->
             {
-               if (checkPermission(CHECK_PERM_LINER_NOTES))
-                  {
-                     //FIXME: retriever not there yet
-                     // var intent: Intent = Intent(Intent.ACTION_VIEW)
-                     // .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                     // .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                     // .setDataAndType(utils.retriever.linerUri, "application/pdf")
+               val metaData = mediaController!!.currentMediaItem!!.mediaMetadata
+               val fileName = metaData.albumArtist.toString() + "-" + metaData.albumTitle + "-" + "liner_notes.pdf"
 
-                     // startActivity(intent)
+               var cursor : Cursor? = this.contentResolver.query(
+                  MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL),
+                  arrayOf(MediaStore.Files.FileColumns._ID),
+                  "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE ?",
+                  arrayOf(fileName),
+                  null)
+
+               if (cursor == null || !cursor.moveToFirst())
+                  {
+                     utils.alertLog(this, "not found '" + fileName + "'")
                   }
+               else
+                  {
+                     val fileId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID))
+                     var intent: Intent = Intent(Intent.ACTION_VIEW)
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        .setDataAndType(
+                           ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fileId),
+                           "application/pdf")
+                     
+                     startActivity(intent)
+                  }
+               
+               cursor?.close()
             }
 
          R.id.menu_preferences ->
