@@ -27,7 +27,7 @@ import org.stephe_leake.music_player_2.utils
 
 class MPBroadcastReceiver : android.content.BroadcastReceiver()
 {
-   // Intent filter set for utils.ACTION_DOWNLOAD_COMMAND
+   // Intent filter set for utils.DOWNLOAD_COMMAND
    override fun onReceive(context : Context, intent : Intent)
    {
       when (intent.getIntExtra(utils.EXTRA_COMMAND, -1))

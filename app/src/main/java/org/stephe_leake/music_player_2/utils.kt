@@ -29,12 +29,24 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 
 import java.io.File
 import java.io.FileWriter
 import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.Locale
+
+import kotlinx.coroutines.flow.firstOrNull
+
+private const val PLAYLIST_PREFERENCES_NAME = "playlist_prefs"
+val Context.playlistState : DataStore<Preferences> by preferencesDataStore(name = PLAYLIST_PREFERENCES_NAME)
 
 class utils
 {
@@ -49,32 +61,10 @@ class utils
       //  Notification ids; all with null tag
       val notif_play_id     : Int = 1
       val notif_download_id : Int = 2
-      
-      //  Commands to play and download, sent via broadcast Intent actions. Alphabetical order
-      //  Only one action, so we can add commands without adding to the reciever filter.
-      val ACTION_PLAY_COMMAND     : String = "org.stephe_leake.stephes_music.action.play_command"
-      val ACTION_DOWNLOAD_COMMAND : String = "org.stephe_leake.stephes_music.action.download_command"
 
-      // according to android docs, extra field names must inlude the package prefix (no explanation of why)
-      val EXTRA_COMMAND          : String = "org.stephe_leake.stephes_music.extra.command"
-      val EXTRA_COMMAND_POSITION : String = "org.stephe_leake.stephes_music.action.command_position"
-      val EXTRA_COMMAND_PLAYLIST : String = "org.stephe_leake.stephes_music.action.command_playlist"
-      val EXTRA_COMMAND_STATE    : String = "org.stephe_leake.stephes_music.action.command_state"
-      
-      // play service commands
-      const val COMMAND_JUMP           : Int = 4
-      const val COMMAND_NEXT           : Int = 5
-      const val COMMAND_NOTE           : Int = 6
-      const val COMMAND_PAUSE          : Int = 7
-      const val COMMAND_PLAY           : Int = 8
-      const val COMMAND_PLAYLIST       : Int = 9 // playlist : string (abs file name). play it
-      const val COMMAND_PREVIOUS       : Int = 10
-      const val COMMAND_QUIT           : Int = 11
-      const val COMMAND_RESET_PLAYLIST : Int = 12
-      const val COMMAND_SAVE_STATE     : Int = 13
-      const val COMMAND_SEEK           : Int = 14 // position  int (milliseconds)
-      const val COMMAND_TOGGLEPAUSE    : Int = 15
-      const val COMMAND_UPDATE_DISPLAY : Int = 16
+      val EXTRA_COMMAND            : String = "org.stephe_leake.stephes_music.extra.command"
+      val DOWNLOAD_COMMAND         : String = "download_command"
+      val RESTART_PLAYLIST_COMMAND : String = "restart_playlist_command"
 
       // download service commands
       val COMMAND_CANCEL_DOWNLOAD : Int = 2
@@ -119,7 +109,7 @@ class utils
       // Globally accessible directory where music and playlist files
       // are stored.
       // 
-      // Preferences don't work, so this needs a valid default
+      // FIXME: Preferences don't work, so this needs a valid default
 
       var playlistBaseName : String = ""
       // Current playlist file name; relative to globalDirectory,
@@ -133,17 +123,96 @@ class utils
       // public non-member functions
 
       fun playlistFileName(category : String) : String 
-      // return current playlist file abs path
+      // return current playlist file app-relative path
       {
-         return utils.appDirectory + "/" + category + ".m3u"
+         return category + ".m3u"
       }
 
-      fun lastFileName(category : String) : String
-      // Absolute location of .last file
+      var tempPlaylistName : String = ""
+      var playlistCount : Int = -1 // count of songs in playlist
+      var playlistIndex : Int = -1 // playlist is 1 indexed.
+      var playlistPos   : Long = -1
+   
+      object PlaylistPreferenceKeys
       {
-         return utils.appDirectory + "/" + category + ".last"
+         val NAME  = stringPreferencesKey("name")
+         
+         fun count(Name : String) : Preferences.Key<Int> {return intPreferencesKey(Name + "-count")}
+         fun index(Name : String) : Preferences.Key<Int> {return intPreferencesKey(Name + "-index")}
+         fun pos(Name : String) : Preferences.Key<Long> {return longPreferencesKey(Name + "-pos")}
       }
+      
+      suspend fun clearSavedState()
+      {
+         mainActivity!!.playlistState.edit {
+            preferences ->
+               preferences[PlaylistPreferenceKeys.NAME] = ""
+            preferences[PlaylistPreferenceKeys.count(utils.playlistBaseName)] = 0
+            preferences[PlaylistPreferenceKeys.index(utils.playlistBaseName)] = 0
+            preferences[PlaylistPreferenceKeys.pos(utils.playlistBaseName)] = 0
+         }
+      } // clearSavedState
 
+      suspend fun writeState(count : Int, index : Int, pos : Long)
+      {
+         mainActivity!!.playlistState.edit {
+            preferences ->
+               preferences[PlaylistPreferenceKeys.NAME] = utils.playlistBaseName
+            preferences[PlaylistPreferenceKeys.count(utils.playlistBaseName)] = count
+            preferences[PlaylistPreferenceKeys.index(utils.playlistBaseName)] = index
+            preferences[PlaylistPreferenceKeys.pos(utils.playlistBaseName)] = pos
+         }
+      }// writeState
+
+      suspend fun readPlaylistIndexPos(playlist : String)
+      // Result in tempPlaylistName
+      {
+         val preferences = mainActivity!!.playlistState.data.firstOrNull()
+         if (preferences == null)
+            {
+               // Never set
+               playlistIndex = 1
+               playlistPos = 1
+            }
+         else
+            {
+               var temp : Int? = preferences.get(PlaylistPreferenceKeys.index(playlist))
+               if (temp == null)
+                  {
+                     // Never set
+                     playlistIndex = 1
+                     playlistPos = 1
+                  }
+               else
+                  {
+                     playlistIndex = temp
+                     playlistPos = preferences.get(PlaylistPreferenceKeys.pos(playlist))!!
+                  }
+            }
+      }
+      
+      suspend fun readPlaylistName()
+      // result in utils.playlistBaseName
+      {
+         val preferences = mainActivity!!.playlistState.data.firstOrNull()
+         if (preferences == null)
+            tempPlaylistName = ""
+         else
+            {
+               var temp : String? = preferences.get(PlaylistPreferenceKeys.NAME)
+               if (temp == null)
+                  {
+                     // Never set
+                     tempPlaylistName = ""
+                  }
+               else
+                  {
+                     tempPlaylistName = temp
+                  }
+            }
+      }
+   
+      // FIXME: using this?
       fun notesFileName(category : String) : String
       {
          return utils.appDirectory + "/" + category + ".note"

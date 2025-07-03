@@ -28,10 +28,19 @@ import android.content.SharedPreferences
 import android.content.res.Resources
 import android.os.IBinder
 import androidx.annotation.RequiresPermission
+
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
 import java.io.IOException
+
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 import org.apache.commons.io.FilenameUtils
 
@@ -42,45 +51,26 @@ class DownloadService : Service()
    
    ////////// private methods (alphabetical order)
 
-   fun countSongsRemaining(category : String, playlistFile : File) : Int 
+   suspend fun countSongsRemaining(category : String) : Int 
    {
-      // Duplicate the part of restoreState that gets playlistPos
-      val lastFileName : String = utils.lastFileName(category)
+      utils.readPlaylistIndexPos(category)
+      
+      return utils.playlistCount - utils.playlistIndex - 1
+   }
 
-      var inFile    : BufferedReader = BufferedReader (FileReader (playlistFile))
-      var line      : String?        = inFile.readLine()
-      var songCount : Int            = 0
-      var startAt   : Int            = 0
+   object DownloadEvents
+   {
+      private val _events = MutableSharedFlow<String>()
+      val events: SharedFlow<String> = _events.asSharedFlow()
 
-      var currentFile : String = ""
-
-      if (File(lastFileName).exists()) try
-         {
-            var reader : BufferedReader = BufferedReader(FileReader(lastFileName))
-
-            currentFile = reader.readLine()
-            reader.close()
-         }
-      catch (ignored : IOException) {}
-
-      while (line != null)
-         {
-            if (File(utils.globalDirectory, line).canRead())
-               {
-                  if (line == currentFile)
-                     startAt = songCount
-                  songCount++
-               }
-            line = inFile.readLine()
-         }
-
-      inFile.close()
-
-      return songCount - startAt - 1
+      suspend fun sendRestartPlaylist()
+      {
+         _events.emit(utils.RESTART_PLAYLIST_COMMAND)
+      }
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-   private fun updatePlaylist (playlistFileName : String)
+   private suspend fun updatePlaylist (playlistFileName : String)
    {
       var res                : Resources           = getResources()
       var prefs              : SharedPreferences   = utils.mainActivity!!.getPreferences(Context.MODE_PRIVATE)
@@ -115,7 +105,7 @@ class DownloadService : Service()
 
       try
       {
-         val songsRemaining  : Int   = if (playlistFile.exists()) {countSongsRemaining(category, playlistFile)} else 0
+         val songsRemaining  : Int   = if (playlistFile.exists()) {countSongsRemaining(category)} else 0
          val songCountMax    : Int   = Integer.parseInt(songCountMaxStr!!)
          val songCountThresh : Int   = Integer.parseInt(songCountThreshStr!!)
          val overSelectRatio : Float = overSelectRatioStr!!.toFloat()
@@ -130,16 +120,6 @@ class DownloadService : Service()
                if (playlistFile.exists())
                   {
                      DownloadUtils.cleanPlaylist(category)
-
-                     if (utils.playlistFileName(category) == playlistFileName)
-                        {
-                           // Restart playlist to show song position, count
-                           sendBroadcast(
-                              Intent (utils.ACTION_PLAY_COMMAND)
-                                 .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_PLAYLIST)
-                                 .putExtra(utils.EXTRA_COMMAND_PLAYLIST, playlistFileName)
-                                 .putExtra(utils.EXTRA_COMMAND_STATE, PlayState.Paused.toInt()))
-                        }
 
                      status.status = DownloadUtils.sendNotes(serverIP, category)
                      if (status.status != ProcessStatus.Success)
@@ -162,24 +142,21 @@ class DownloadService : Service()
 
                notif.Update(newSongs.strings.size, newSongCount)
 
-               // Add all songs to playlist, get any missing songs
+               // Add all songs to playlist, log any missing songs
                // (should all be on phone already, but this handles
                // new music).
                status = DownloadUtils.getSongs(newSongs.strings, category)
 
-               if (status.status != ProcessStatus.Success)
-                  {
-                     return
-                  }
-
                if (utils.playlistFileName(utils.playlistBaseName) == playlistFileName)
                   {
                      // Restart playlist to show song position, count
-                     sendBroadcast(
-                        Intent (utils.ACTION_PLAY_COMMAND)
-                           .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_PLAYLIST)
-                           .putExtra(utils.EXTRA_COMMAND_PLAYLIST, playlistFileName)
-                           .putExtra(utils.EXTRA_COMMAND_STATE, PlayState.Paused.toInt()))
+                     DownloadEvents.sendRestartPlaylist()
+                  }
+
+               if (status.status != ProcessStatus.Success)
+                  {
+                     // FIXME: add error message to status, show in notification here.
+                     return
                   }
 
                notif.Done("")
@@ -207,7 +184,7 @@ class DownloadService : Service()
       override fun run()
       {
          notif.setName(FilenameUtils.getBaseName(playlist))
-         updatePlaylist(playlist)
+         CoroutineScope(Dispatchers.IO).launch{updatePlaylist(playlist)}
       }
    }
 
@@ -222,7 +199,7 @@ class DownloadService : Service()
       super.onCreate()
 
       val filter : IntentFilter = IntentFilter()
-      filter.addAction(utils.ACTION_DOWNLOAD_COMMAND)
+      filter.addAction(utils.DOWNLOAD_COMMAND)
       registerReceiver(broadcastReceiverCommand, filter, RECEIVER_NOT_EXPORTED)
 
       notif = DownloadNotif(
@@ -258,7 +235,7 @@ class DownloadService : Service()
             // after a crash.
             return START_NOT_STICKY
          }
-      else if (intent.getAction() == utils.ACTION_DOWNLOAD_COMMAND)
+      else if (intent.getAction() == utils.DOWNLOAD_COMMAND)
          {
             try {
                // FIXME: Use DataStore<Preferences>

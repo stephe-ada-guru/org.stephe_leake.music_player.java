@@ -69,10 +69,10 @@ dependencies {
     implementation ("androidx.media3:media3-common:1.7.1")
     implementation ("androidx.media3:media3-exoplayer:1.7.1")
     implementation ("androidx.media3:media3-ui:1.7.1")
-    
-    // session and controller    
-    implementation ("androidx.media3:media3-session:1.7.1")
+    implementation ("androidx.media3:media3-session:1.7.1")// session and controller    
 
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    
     implementation("com.google.guava:guava:32.1.3-android")
 
     testImplementation(libs.junit)

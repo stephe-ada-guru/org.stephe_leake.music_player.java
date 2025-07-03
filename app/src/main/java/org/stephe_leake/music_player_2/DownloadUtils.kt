@@ -95,12 +95,12 @@ class DownloadUtils
             }
       }
 
-      fun readPlaylist(playlistFilename : String, lowercase : Boolean) : List<String> 
+      fun readPlaylist(playlistFilename : String, lowercase : Boolean) : MutableList<String> 
       {
          // Read playlist file, return list of files (lowercase) in it.
          val playlistFile : File = File(playlistFilename)
 
-         var result : LinkedList<String> = LinkedList<String>()
+         var result : MutableList<String> = mutableListOf<String>()
 
          for (line : String in FileUtils.lineIterator(playlistFile))
             {
@@ -115,86 +115,50 @@ class DownloadUtils
       }
 
       fun prunePlaylist(playlistFilename : String,
-                        lastFilename     : String)
-         : Int
+                        lastIndex        : Int)
       // Delete lines from start of playlist file up to but not including
-      // line in last file; that song is currently being played.
+      // line lastIndex; that song is currently being played.
       //
       // Return delete count.
       //
       // throws IOException if can't read or write playlistFilename
       {
-         var deleteCount : Int = 0
-
          try {
-            val lines      : List<String>     = readPlaylist(playlistFilename, false)
-            val input      : LineNumberReader = LineNumberReader(FileReader(lastFilename))
-            val lastPlayed : String?          = input.readLine()
-            var found      : Boolean          = false
+            val lines  : MutableList<String> = readPlaylist(playlistFilename, false)
+            val output : FileWriter = FileWriter(playlistFilename) // Erases file
 
-            input.close()
-
-            if (null == lastPlayed)
+            for (i in 1 .. lastIndex - 1)
                {
-                  // last file is empty; nothing to delete
+                  lines.removeAt(0)
                }
-            else
+            
+            for (line in lines)
                {
-                  // Check if lastPlayed is in playlist
-                  for (line in lines)
-                     {
-                        if (!found)
-                           found = line == lastPlayed
-                     }
-
-                  if (found)
-                     {
-                        val output : FileWriter = FileWriter(playlistFilename) // Erases file
-
-                        found = false
-
-                        for (line in lines)
-                           {
-                              if (!found)
-                                 {
-                                    found = line == lastPlayed
-                                 }
-                              if (found)
-                                 output.write(line + "\n")
-                              else
-                                 deleteCount++
-                           }
-                        output.close()
-                     }
+                     output.write(line + "\n")
                }
+            output.close()
          }
          catch (e: FileNotFoundException)
          { // from 'FileReader(lastFilename)'; file not found; same as empty; do nothing
          }
-
-         return deleteCount
       }
 
-      public fun cleanPlaylist(category : String)
+      suspend fun cleanPlaylist(category : String)
       {
-         // Delete lines in category.m3u that are before song in
-         // appDir/category.last.
-         //
-         // Directory names end in '/'
+         // Delete lines in category.m3u that are before preferences(category).index
 
-         // We can't declare a File object for lastFile; that prevents
-         // delete in prunePlaylist.
          val playlistFilename : String = utils.playlistFileName(category)
-         val lastFilename     : String = utils.lastFileName (category)
+
+         utils.readPlaylistIndexPos(category)
 
          try
          {
             // getPath() returns empty string if file does not exist
             if ("" != FilenameUtils.getPath(playlistFilename))
-               if ("" != FilenameUtils.getPath(lastFilename))
+               if (utils.playlistIndex > 0)
                {
-                  val deleteCount : Int = prunePlaylist(playlistFilename, lastFilename)
-                  log(LogLevel.Info, category + " playlist cleaned: " + deleteCount + " songs deleted")
+                  prunePlaylist(playlistFilename, utils.playlistIndex)
+                  log(LogLevel.Info, category + " playlist cleaned: " + (utils.playlistIndex - 1) + " songs deleted")
                }
          }
          catch (e : IOException)

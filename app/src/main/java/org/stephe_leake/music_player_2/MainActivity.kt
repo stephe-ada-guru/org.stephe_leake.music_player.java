@@ -22,22 +22,26 @@ import android.app.AlertDialog
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.ContentUris
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.database.Cursor
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -45,7 +49,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.media3.common.MediaMetadata
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.Preferences
@@ -64,8 +67,8 @@ import com.google.common.util.concurrent.MoreExecutors
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FilenameFilter
+import java.io.FileWriter
 
-import kotlin.collections.firstOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
@@ -77,10 +80,9 @@ import org.apache.commons.io.FilenameUtils
 import org.json.JSONObject
 import org.json.JSONTokener
 
+import android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION
 import android.view.View.GONE
 import android.view.View.VISIBLE
-import android.widget.Button
-import java.io.FileWriter
 
 class MainActivity : AppCompatActivity()
 {
@@ -91,9 +93,6 @@ class MainActivity : AppCompatActivity()
 
    private var mediaController : Player? = null
 
-   private var playlistIndex : Int = -1 // playlist is 1 indexed.
-   private var playlistPos   : Long = -1
-   
    private fun CreateNotificationChannel()
    {
       val channel = NotificationChannel(
@@ -119,7 +118,7 @@ class MainActivity : AppCompatActivity()
          android.Manifest.permission.READ_MEDIA_IMAGES)
 
       val permissionsToRequest = mutableListOf<String>()
-      
+
       for (permission in REQUIRED_PERMISSIONS)
          {
             if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED)
@@ -155,89 +154,6 @@ class MainActivity : AppCompatActivity()
       return true
    }
 
-   // WORKAROUND: Despite what Gemini says, "lifecycleScope" is _not_
-   // visible. So we do this:
-      private val dataStoreScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
-   private val PLAYLIST_PREFERENCES_NAME = "playlist_prefs"
-
-   private val playlistState : DataStore<Preferences> by preferencesDataStore(name = PLAYLIST_PREFERENCES_NAME)
-
-   private object PlaylistPreferenceKeys
-   {
-      val NAME  = stringPreferencesKey("name")
-      
-      fun index(Name : String) : Preferences.Key<Int> {return intPreferencesKey(Name + "-index")}
-      fun pos(Name : String) : Preferences.Key<Long> {return longPreferencesKey(Name + "-pos")}
-   }
-   
-   suspend fun writeState(index : Int, pos : Long)
-   {
-      playlistState.edit {
-         preferences ->
-            preferences[PlaylistPreferenceKeys.NAME] = utils.playlistBaseName
-         preferences[PlaylistPreferenceKeys.index(utils.playlistBaseName)] = index
-         preferences[PlaylistPreferenceKeys.pos(utils.playlistBaseName)] = pos
-      }
-   }// writeState
-
-   suspend fun clearSavedState()
-   {
-      playlistState.edit {
-         preferences ->
-            preferences[PlaylistPreferenceKeys.NAME] = ""
-         preferences[PlaylistPreferenceKeys.index(utils.playlistBaseName)] = 1
-         preferences[PlaylistPreferenceKeys.pos(utils.playlistBaseName)] = 1
-      }
-   } // clearSavedState
-
-   suspend fun readPlaylistIndexPos()
-   {
-      val preferences = playlistState.data.firstOrNull()
-      if (preferences == null)
-         {
-            // Never set
-            playlistIndex = 1
-            playlistPos = 1
-         }
-      else
-         {
-            var temp : Int? = preferences.get(PlaylistPreferenceKeys.index(utils.playlistBaseName))
-            if (temp == null)
-               {
-                  // Never set
-                  playlistIndex = 1
-                  playlistPos = 1
-               }
-            else
-               {
-                  playlistIndex = temp
-                  playlistPos = preferences.get(PlaylistPreferenceKeys.pos(utils.playlistBaseName))!!
-               }
-         }
-   }
-   
-   suspend fun readPlaylistName()
-   // result in utils.playlistBaseName
-   {
-      val preferences = playlistState.data.firstOrNull()
-      if (preferences == null)
-         utils.playlistBaseName = ""
-      else
-         {
-            var temp : String? = preferences.get(PlaylistPreferenceKeys.NAME)
-            if (temp == null)
-               {
-                  // Never set
-                  utils.playlistBaseName = ""
-               }
-            else
-               {
-                  utils.playlistBaseName = temp
-               }
-         }
-   }
-   
    private fun playlistToPlayer(filename : String, play : Boolean)
    {
       // Start playing playlist 'filename' (app local path).
@@ -255,7 +171,7 @@ class MainActivity : AppCompatActivity()
          }
 
       utils.playlistBaseName = FilenameUtils.getBaseName(filename)
-      dataStoreScope.launch {readPlaylistIndexPos()}
+      CoroutineScope(Dispatchers.IO).launch {utils.readPlaylistIndexPos(utils.playlistBaseName)}
       
       playlistFile.forEachLine{
          line ->
@@ -285,6 +201,7 @@ class MainActivity : AppCompatActivity()
             {
                // not found. Also checked in DownloadUtils.getSongs, but it might get deleted.
                utils.alertLog(this, "not found '" + Filename + "'")
+               utils.errorLog("not found '" + Filename + "'")
             }
          else
             {
@@ -295,6 +212,7 @@ class MainActivity : AppCompatActivity()
                   cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.COMPOSER))
                val year =
                   cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.YEAR))
+
                val metaData = androidx.media3.common.MediaMetadata.Builder()
                   .setAlbumArtist(Album_Artist)
                   .setAlbumTitle(Album)
@@ -314,12 +232,26 @@ class MainActivity : AppCompatActivity()
       } // forEachLine
 
       mediaController?.prepare()
-      mediaController?.seekTo(playlistIndex, playlistPos)
+      mediaController?.seekTo(utils.playlistIndex, utils.playlistPos)
 
       if (play)
          mediaController?.play() 
    } // playlistToPlayer
 
+   val commandReceiver = object : BroadcastReceiver()
+   {
+      override fun onReceive(context: Context?, intent: Intent?)
+      {
+         if (intent?.action == utils.RESTART_PLAYLIST_COMMAND)
+            {
+               if (utils.playlistBaseName.isNotEmpty())
+                  {
+                     playlistToPlayer(utils.playlistFileName(utils.playlistBaseName), play = false)
+                  }
+            }
+      }
+   }
+   
    private fun showPlaylistPickerDialog(onPlaylistSelected: (String) -> Unit)
    {
       val playlistDir = File (utils.appDirectory)
@@ -420,7 +352,7 @@ class MainActivity : AppCompatActivity()
          if (mediaItem == null)
             {
                // Playlist ended.
-               dataStoreScope.launch {clearSavedState()}
+               CoroutineScope(Dispatchers.IO).launch {utils.clearSavedState()}
                
                val composerView = utils.findTextViewById(utils.mainActivity!!, R.id.composer)
                val artistView = utils.findTextViewById(utils.mainActivity!!, R.id.artist)
@@ -446,9 +378,10 @@ class MainActivity : AppCompatActivity()
                // Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED
 
                // Can't call mediaController methods from another thread
+               val count = mediaController!!.mediaItemCount
                val index = mediaController!!.currentMediaItemIndex
                val pos = mediaController!!.currentPosition
-               dataStoreScope.launch {writeState(index, pos)}
+               CoroutineScope(Dispatchers.IO).launch {utils.writeState(count, index, pos)}
                updateDisplay (mediaItem)                       
             }
       } // onMediaItemTransition
@@ -495,7 +428,7 @@ class MainActivity : AppCompatActivity()
          .setDataAndType(
             FileProvider.getUriForFile(
                this,
-               BuildConfig.APPLICATION_ID + ".provider",
+               applicationContext.packageName + ".provider",
                File(DownloadUtils.downloadLogFileName())),
             "text/plain")
 
@@ -505,7 +438,7 @@ class MainActivity : AppCompatActivity()
          .setDataAndType(
             FileProvider.getUriForFile(
                this,
-               BuildConfig.APPLICATION_ID + ".provider",
+               applicationContext.packageName + ".provider",
                File(utils.errorLogFileName())),
             "text/plain")
 
@@ -526,7 +459,7 @@ class MainActivity : AppCompatActivity()
       }
 
       // Ensure this runs before OnStart
-      dataStoreScope.launch {readPlaylistName()}
+      CoroutineScope(Dispatchers.IO).launch {utils.readPlaylistName()}
 
    } // onCreate
 
@@ -559,9 +492,7 @@ class MainActivity : AppCompatActivity()
             {
                CHECK_PERM_NEW_PLAYLIST ->
                   {
-                     this.startService(
-                        Intent (utils.ACTION_DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
-                           .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_DOWNLOAD))
+                     this.startService(Intent (utils.DOWNLOAD_COMMAND, null, this, DownloadService::class.java))
                   }
 
                CHECK_PERM_PICK_PLAYLIST ->
@@ -643,16 +574,6 @@ class MainActivity : AppCompatActivity()
       return true // display menu
    }
 
-   override fun onPrepareOptionsMenu(menu: Menu): Boolean 
-   {
-      super.onPrepareOptionsMenu(menu)
-
-      menu.findItem(R.id.menu_liner_notes).setEnabled(
-         (mediaController != null && mediaController!!.currentMediaItemIndex > 0))
-
-      return true
-   }
-
    override fun onOptionsItemSelected(item: MenuItem): Boolean
    {
       when (item.getItemId())
@@ -711,9 +632,7 @@ class MainActivity : AppCompatActivity()
                       
                       if (checkPermission(CHECK_PERM_NEW_PLAYLIST))
                          {
-                            this.startService(
-                               Intent (utils.ACTION_DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
-                                  .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_DOWNLOAD))
+                            this.startService(Intent (utils.DOWNLOAD_COMMAND, null, this, DownloadService::class.java))
                          }
                      } 
 
@@ -726,56 +645,12 @@ class MainActivity : AppCompatActivity()
                   }
             }
 
-         R.id.menu_liner_notes ->
-            {
-               val metaData = mediaController!!.currentMediaItem!!.mediaMetadata
-               val fileName = metaData.albumArtist.toString() + "-" + metaData.albumTitle + "-" + "liner_notes.pdf"
-
-               var cursor : Cursor? = this.contentResolver.query(
-                  MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL),
-                  arrayOf(MediaStore.Files.FileColumns._ID),
-                  "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE ?",
-                  arrayOf(fileName),
-                  null)
-
-               if (cursor == null || !cursor.moveToFirst())
-                  {
-                     utils.alertLog(this, "not found '" + fileName + "'")
-                  }
-               else
-                  {
-                     val fileId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID))
-                     var intent: Intent = Intent(Intent.ACTION_VIEW)
-                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        .setDataAndType(
-                           ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fileId),
-                           "application/pdf")
-                     
-                     startActivity(intent)
-                  }
-               
-               cursor?.close()
-            }
-
          R.id.menu_preferences ->
             {
                // We don't need a result
                this.startActivity(Intent(utils.mainActivity, PrefActivity::class.java))
             }
          
-         R.id.menu_quit ->
-            {
-               //FIXME: don't have play service yet
-               // sendBroadcast
-               //   (Intent
-               //      (utils.ACTION_PLAY_COMMAND)
-               //      .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_QUIT))
-
-               // stopService (Intent().setComponent(playServiceComponentName))
-
-               // finish()
-            }
-
          R.id.menu_reset_playlist ->
             {
                if (checkPermission(CHECK_PERM_RESET_PLAYLIST))

@@ -1,17 +1,24 @@
 c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 c:/Projects/smm.main/notes.text
 
-Declare the Media3 media button receiver
-    https://developer.android.com/media/media3/session/background-playback?hl=en#buttons
+resume app restarts current song
+
+restart playlist after updating it
+    see Gemini for localbroadcast manager
+    edited, not tested
+
+show playlist position, count
+
+review/eliminate *_COMMAND; add more top level commands.
+
+review/eliminate utils.kt *
 
 implement search activity
 
 show logfile by tapping on notification fails "can't open file"
     add to small project
 
-"cancel" in notification doesn't.
-
-eliminate EXTRA_COMMAND; add more top level commands.
+"cancel" in download notification doesn't.
 
 write Ada code to rename liner_notes.pdf to <album_artist>_<album>_liner_notes.pdf
 
@@ -46,10 +53,13 @@ standard notification doesn't display album
     can override?
     not with API > 33. sigh.
 
-find liner_notes.pdf?
+find liner_notes.pdf
     using MediaStore Files collection
     rename to album_artist-album-*
     gemini says the code is right, but it fails. sigh.
+
+    use MANAGE_EXTERNAL_STORAGE, file operations.
+        can't get provider to work. give up.
 
 
  Resources
