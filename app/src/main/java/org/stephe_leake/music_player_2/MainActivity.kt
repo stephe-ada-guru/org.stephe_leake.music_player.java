@@ -45,6 +45,10 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -91,6 +95,8 @@ class MainActivity : AppCompatActivity()
    private val CHECK_PERM_UPDATE_PLAYLIST = 103
    private val CHECK_PERM_PICK_PLAYLIST   = 104
 
+   private val viewModel : MainViewModel by viewModels()
+   
    private var mediaController : Player? = null
 
    private fun CreateNotificationChannel()
@@ -458,9 +464,23 @@ class MainActivity : AppCompatActivity()
             }
       }
 
-      // Ensure this runs before OnStart
-      CoroutineScope(Dispatchers.IO).launch {utils.readPlaylistName()}
+      lifecycleScope.launch {
+         repeatOnLifecycle(Lifecycle.State.STARTED)
+         {
+            viewModel.isPlayerReadyToInitialize.collect{ // called when it changes state
+            isReady ->
+                 if (isReady)
+                 {
+                    val playlistName : String = viewModel.playlistBaseName.value!! // It can't be null!
 
+                    if (playlistName.isNotEmpty())
+                       {
+                          playlistToPlayer(playlistName + ".m3u", play = false)
+                       } 
+                 } 
+            }
+        }
+      }
    } // onCreate
 
    override fun onRequestPermissionsResult(requestCode : Int,
@@ -532,9 +552,9 @@ class MainActivity : AppCompatActivity()
 
             val playerView = findViewById<PlayerView>(R.id.player_view)
             playerView.setPlayer(mediaController)
-               if (utils.playlistBaseName != "")
-               playlistToPlayer(utils.playlistBaseName + ".m3u", play = false)            
-         }, MoreExecutors.directExecutor())
+
+            viewModel.setMediaControllerReady(true)
+           }, MoreExecutors.directExecutor())
    } // onStart
 
    override fun onResume()

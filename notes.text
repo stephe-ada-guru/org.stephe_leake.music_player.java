@@ -2,10 +2,12 @@ c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/m
 c:/Projects/smm.main/notes.text
 
 resume app restarts current song
+    playlistIndex, pos need to be in viewmodel, updated when playlistname is
 
-restart playlist after updating it
-    see Gemini for localbroadcast manager
-    edited, not tested
+move other state objects and preferences from utils into viewmodel?
+
+review launch
+    what threads are needed/used?
 
 show playlist position, count
 
