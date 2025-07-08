@@ -21,7 +21,9 @@ package org.stephe_leake.music_player_2
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.datastore.preferences.core.edit
 
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,35 +31,119 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+import org.stephe_leake.music_player_2.PlaylistPreferenceKeys
+
+data class PlaylistState(
+   val baseName: String = "",      // Current playlist file name (empty if no playlist)
+   val count: Int = 0,             // Count of songs in playlist
+   val index: Int = 0,             // Current song in playlist (1-indexed, 0 if none)
+   val pos: Long = 0L              // Current position in song (milliseconds, 0 if none)
+)
+
 class MainViewModel(application : Application) : AndroidViewModel(application)
 {
-   private val _playlistBaseName = MutableStateFlow<String?>(null)
-   val playlistBaseName: StateFlow<String?> = _playlistBaseName.asStateFlow()
+   private val _playlistState = MutableStateFlow<PlaylistState>(PlaylistState())
+   val playlistState: StateFlow<PlaylistState> = _playlistState.asStateFlow()
+   
+   suspend fun clearSavedState()
+   // Called when a playlist reaches the end.
+   {
+      val current = _playlistState.value
+      
+      utils.mainActivity!!.playlistPrefsState.edit {
+         preferences ->
+            preferences[PlaylistPreferenceKeys.NAME] = ""
+         if (current.baseName != "")
+            {
+               preferences[PlaylistPreferenceKeys.count(current.baseName)] = 0
+               preferences[PlaylistPreferenceKeys.index(current.baseName)] = 0
+               preferences[PlaylistPreferenceKeys.pos(current.baseName)] = 0
+
+               _playlistState.value = PlaylistState(
+                  baseName = "",
+                  count = 0,
+                  index = 0,
+                  pos = 0)
+            }
+      }
+   } // clearSavedState
+
+   suspend fun writeState(count : Int, index : Int, pos : Long)
+   {
+      val current = _playlistState.value
+
+      if (current.baseName != "")
+         {
+            utils.mainActivity!!.playlistPrefsState.edit {
+               preferences ->
+                  preferences[PlaylistPreferenceKeys.NAME] = current.baseName
+               preferences[PlaylistPreferenceKeys.count(current.baseName)] = count
+               preferences[PlaylistPreferenceKeys.index(current.baseName)] = index
+               preferences[PlaylistPreferenceKeys.pos(current.baseName)] = pos
+
+               _playlistState.value = PlaylistState(
+                  baseName = current.baseName,
+                  count = count,
+                  index = index,
+                  pos = pos)
+            }
+         }
+   }// writeState
+
+   private suspend fun readPlaylistState()
+   {
+      val preferences = utils.mainActivity!!.playlistPrefsState.data.firstOrNull()
+      if (preferences == null)
+         {
+            // Never set
+            _playlistState.value = PlaylistState(
+               baseName = "",
+               count = 0,
+               index = 0,
+               pos = 0)
+         }
+      else
+         {
+            var temp : String? = preferences.get(PlaylistPreferenceKeys.NAME)
+            if (temp == null)
+               {
+                  // Never set
+                  _playlistState.value = PlaylistState(
+                     baseName = "",
+                     count = 0,
+                     index = 0,
+                     pos = 0)
+               }
+            else
+               {
+                  _playlistState.value = PlaylistState(
+                     baseName = temp,
+                     count = preferences.get(PlaylistPreferenceKeys.count(temp))!!,
+                     index = preferences.get(PlaylistPreferenceKeys.index(temp))!!,
+                     pos = preferences.get(PlaylistPreferenceKeys.pos(temp))!!)
+               }
+         }
+   }
    
    private val _isMediaControllerReady = MutableStateFlow(false)
    val isMediaControllerReady: StateFlow<Boolean> = _isMediaControllerReady.asStateFlow()
 
    val isPlayerReadyToInitialize: StateFlow<Boolean> =
-      combine(_playlistBaseName, _isMediaControllerReady)
-   { playlistName, controllerReady ->
-        playlistName != null && controllerReady
+      combine(_playlistState, _isMediaControllerReady)
+   {currentPlaylistState, mediaControllerReady ->
+        mediaControllerReady
    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), false)
 
-
-   // Store a reference to your utils if needed, or pass context
-   // private val appUtils = utils // Assuming utils is an object or accessible
-
    init {
-      loadPlaylistName()
+      loadPlaylistState()
    }
    
-   private fun loadPlaylistName()
+   private fun loadPlaylistState()
    {
       viewModelScope.launch {
-         // Maybe this is better? doc all the reasons for utils.mainActivity(= application!?)
+         // FIXME: Maybe this is better? doc all the reasons for utils.mainActivity(= application!?)
          // val context = getApplication<Application>().applicationContext
-         utils.readPlaylistName() 
-         _playlistBaseName.value = utils.tempPlaylistName // Update StateFlow with the value read by utils
+         readPlaylistState() 
       }
    }
    

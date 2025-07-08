@@ -148,17 +148,16 @@ class DownloadUtils
          // Delete lines in category.m3u that are before preferences(category).index
 
          val playlistFilename : String = utils.playlistFileName(category)
-
-         utils.readPlaylistIndexPos(category)
+         val counts = utils.readPlaylistCounts(category)
 
          try
          {
             // getPath() returns empty string if file does not exist
             if ("" != FilenameUtils.getPath(playlistFilename))
-               if (utils.playlistIndex > 0)
+               if (counts.index > 0)
                {
-                  prunePlaylist(playlistFilename, utils.playlistIndex)
-                  log(LogLevel.Info, category + " playlist cleaned: " + (utils.playlistIndex - 1) + " songs deleted")
+                  prunePlaylist(playlistFilename, counts.index)
+                  log(LogLevel.Info, category + " playlist cleaned: " + (counts.index - 1) + " songs deleted")
                }
          }
          catch (e : IOException)
@@ -185,7 +184,7 @@ class DownloadUtils
          "&count=" + count.toString() +
          "&new_count=" + newCount.toString() +
          "&over_select_ratio=" + overSelectRatio.toString() +
-         "&record_downloaded=" + if (utils.playlistBaseName == "instrumental" || utils.playlistBaseName == "vocal")
+         "&record_downloaded=" + if (category == "instrumental" || category == "vocal")
              "true" else "false" +
          (if (-1 == randomSeed) "" else "&seed=$randomSeed")
 

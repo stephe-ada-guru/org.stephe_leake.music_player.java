@@ -95,6 +95,8 @@ class MainActivity : AppCompatActivity()
    private val CHECK_PERM_UPDATE_PLAYLIST = 103
    private val CHECK_PERM_PICK_PLAYLIST   = 104
 
+   private var newPlaylistIntent = Intent()
+   
    private val viewModel : MainViewModel by viewModels()
    
    private var mediaController : Player? = null
@@ -160,7 +162,7 @@ class MainActivity : AppCompatActivity()
       return true
    }
 
-   private fun playlistToPlayer(filename : String, play : Boolean)
+   private suspend fun playlistToPlayer(filename : String, play : Boolean)
    {
       // Start playing playlist 'filename' (app local path).
 
@@ -168,6 +170,7 @@ class MainActivity : AppCompatActivity()
       
       val absFilename  = utils.appDirectory + "/" + filename
       val playlistFile = File (absFilename)
+      val counts =       utils.readPlaylistCounts(FilenameUtils.getBaseName(filename))
       
       if (!playlistFile.canRead())
          {
@@ -176,9 +179,6 @@ class MainActivity : AppCompatActivity()
             return
          }
 
-      utils.playlistBaseName = FilenameUtils.getBaseName(filename)
-      CoroutineScope(Dispatchers.IO).launch {utils.readPlaylistIndexPos(utils.playlistBaseName)}
-      
       playlistFile.forEachLine{
          line ->
             val data : JSONObject = JSONTokener(line).nextValue() as JSONObject
@@ -238,7 +238,7 @@ class MainActivity : AppCompatActivity()
       } // forEachLine
 
       mediaController?.prepare()
-      mediaController?.seekTo(utils.playlistIndex, utils.playlistPos)
+      mediaController?.seekTo(counts.index, counts.pos)
 
       if (play)
          mediaController?.play() 
@@ -250,9 +250,11 @@ class MainActivity : AppCompatActivity()
       {
          if (intent?.action == utils.RESTART_PLAYLIST_COMMAND)
             {
-               if (utils.playlistBaseName.isNotEmpty())
+               if (viewModel.playlistState.value.baseName.isNotEmpty())
                   {
-                     playlistToPlayer(utils.playlistFileName(utils.playlistBaseName), play = false)
+                     lifecycleScope.launch {
+                        playlistToPlayer(utils.playlistFileName(viewModel.playlistState.value.baseName),
+                                         play = mediaController!!.isPlaying())}
                   }
             }
       }
@@ -285,6 +287,15 @@ class MainActivity : AppCompatActivity()
 
    private val playerListener = object : Player.Listener
    {
+      public fun saveState()
+      {
+         // Can't call mediaController methods from another thread
+         val count = mediaController!!.mediaItemCount
+         val index = mediaController!!.currentMediaItemIndex
+         val pos = mediaController!!.currentPosition
+         lifecycleScope.launch {viewModel.writeState(count, index, pos)}
+      }
+      
       private fun updateText(view: TextView, content: CharSequence?)
       {
          if (content == null || content.length == 0)
@@ -311,7 +322,7 @@ class MainActivity : AppCompatActivity()
             }
       }
 
-      private fun updateDisplay(mediaItem: MediaItem)
+      fun updateDisplay(mediaItem: MediaItem)
       {
          // FIXME: need to rename album art to have
          // global unique file names. Or drop
@@ -337,7 +348,7 @@ class MainActivity : AppCompatActivity()
          val albumArtistText = metadata.albumArtist ?: ""
          val albumText = metadata.albumTitle ?: ""
 
-         playlistView.setText(utils.playlistBaseName)
+         playlistView.setText(viewModel.playlistState.value.baseName)
          
          updateText(composerView, composerText, artistText, albumArtistText)
          updateText(artistView, artistText, albumArtistText, null)
@@ -351,6 +362,18 @@ class MainActivity : AppCompatActivity()
          // totalTime.setText(utils.makeTimeString(utils.mainActivity!!, trackDuration))
       } // updateDisplay
 
+      override fun onIsPlayingChanged(isPlaying: Boolean)
+      {
+         if (isPlaying)
+            {
+               // nothing to do here
+            }
+         else
+            {
+               saveState()
+            }
+      } // onIsPlayingChanged
+      
       override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int)
       {
          super.onMediaItemTransition(mediaItem, reason)
@@ -358,7 +381,7 @@ class MainActivity : AppCompatActivity()
          if (mediaItem == null)
             {
                // Playlist ended.
-               CoroutineScope(Dispatchers.IO).launch {utils.clearSavedState()}
+               lifecycleScope.launch {viewModel.clearSavedState()}
                
                val composerView = utils.findTextViewById(utils.mainActivity!!, R.id.composer)
                val artistView = utils.findTextViewById(utils.mainActivity!!, R.id.artist)
@@ -383,11 +406,7 @@ class MainActivity : AppCompatActivity()
                // Player.MEDIA_ITEM_TRANSITION_REASON_SEEK>
                // Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED
 
-               // Can't call mediaController methods from another thread
-               val count = mediaController!!.mediaItemCount
-               val index = mediaController!!.currentMediaItemIndex
-               val pos = mediaController!!.currentPosition
-               CoroutineScope(Dispatchers.IO).launch {utils.writeState(count, index, pos)}
+               saveState()
                updateDisplay (mediaItem)                       
             }
       } // onMediaItemTransition
@@ -400,9 +419,9 @@ class MainActivity : AppCompatActivity()
       val controller = mediaController!!
       val index = controller.currentMediaItemIndex
 
-      if (index > 0 && utils.playlistBaseName != "")
+      if (index > 0 && viewModel.playlistState.value.baseName != "")
       {
-         val noteFileName = utils.appDirectory + "/" + utils.playlistBaseName + ".note"
+         val noteFileName = utils.appDirectory + "/" + viewModel.playlistState.value.baseName + ".note"
          val metaData = controller.currentMediaItem!!.mediaMetadata
          val data = JSONObject()
             .put("Album_Artist", metaData.albumArtist)
@@ -460,26 +479,35 @@ class MainActivity : AppCompatActivity()
       {
          if (checkPermission(CHECK_PERM_PICK_PLAYLIST))
             {
-               showPlaylistPickerDialog() {filename -> playlistToPlayer(filename, play = true)}
+               showPlaylistPickerDialog() {
+                  filename ->
+                     lifecycleScope.launch{playlistToPlayer(filename, play = true)}}
             }
       }
 
       lifecycleScope.launch {
-         repeatOnLifecycle(Lifecycle.State.STARTED)
-         {
-            viewModel.isPlayerReadyToInitialize.collect{ // called when it changes state
+         viewModel.isPlayerReadyToInitialize.collect{
+            // called when it changes state
             isReady ->
-                 if (isReady)
-                 {
-                    val playlistName : String = viewModel.playlistBaseName.value!! // It can't be null!
-
-                    if (playlistName.isNotEmpty())
-                       {
-                          playlistToPlayer(playlistName + ".m3u", play = false)
-                       } 
-                 } 
-            }
-        }
+               if (isReady)
+               {
+                  if (mediaController!!.isPlaying())
+                     {
+                        // UI was killed, but service still active; update UI
+                        if (mediaController!!.currentMediaItem != null)
+                           playerListener.updateDisplay (mediaController!!.currentMediaItem!!)
+                     }
+                  else
+                     {
+                     val playlistName : String = viewModel.playlistState.value.baseName
+                     
+                     if (playlistName.isNotEmpty())
+                        {
+                           playlistToPlayer(utils.playlistFileName(playlistName), play = false)
+                        }
+                  }
+               } 
+         }
       }
    } // onCreate
 
@@ -512,12 +540,14 @@ class MainActivity : AppCompatActivity()
             {
                CHECK_PERM_NEW_PLAYLIST ->
                   {
-                     this.startService(Intent (utils.DOWNLOAD_COMMAND, null, this, DownloadService::class.java))
+                     this.startService(newPlaylistIntent)
                   }
 
                CHECK_PERM_PICK_PLAYLIST ->
                   {
-                     showPlaylistPickerDialog() {filename -> playlistToPlayer(filename, play = true)}
+                     showPlaylistPickerDialog() {
+                        filename -> lifecycleScope.launch {playlistToPlayer(filename, play = true)}
+                     }
                   }
                
                CHECK_PERM_RESET_PLAYLIST ->
@@ -560,7 +590,6 @@ class MainActivity : AppCompatActivity()
    override fun onResume()
    {
       super.onResume()
-
       val playerView = findViewById<PlayerView>(R.id.player_view)
       playerView.onResume()
    }
@@ -580,6 +609,7 @@ class MainActivity : AppCompatActivity()
    
    override fun onDestroy()
    {
+      playerListener.saveState()
       mediaController?.removeListener(playerListener)
       
       super.onDestroy()
@@ -647,12 +677,13 @@ class MainActivity : AppCompatActivity()
                      
                      builder.setPositiveButton ("OK")
                      {_, _ ->
-                         
-                         utils.playlistBaseName = input.getText().toString()
+
+                         newPlaylistIntent = Intent (utils.DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
+                         .putExtra(utils.EXTRA_PLAYLIST_NAME, input.getText().toString())
                       
                       if (checkPermission(CHECK_PERM_NEW_PLAYLIST))
                          {
-                            this.startService(Intent (utils.DOWNLOAD_COMMAND, null, this, DownloadService::class.java))
+                            this.startService(newPlaylistIntent)
                          }
                      } 
 

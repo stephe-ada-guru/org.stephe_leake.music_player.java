@@ -46,7 +46,22 @@ import java.util.Locale
 import kotlinx.coroutines.flow.firstOrNull
 
 private const val PLAYLIST_PREFERENCES_NAME = "playlist_prefs"
-val Context.playlistState : DataStore<Preferences> by preferencesDataStore(name = PLAYLIST_PREFERENCES_NAME)
+val Context.playlistPrefsState : DataStore<Preferences> by preferencesDataStore(name = PLAYLIST_PREFERENCES_NAME)
+
+public object PlaylistPreferenceKeys
+{
+   val NAME  = stringPreferencesKey("name")
+   
+   fun count(Name : String) : Preferences.Key<Int> {return intPreferencesKey(Name + "-count")}
+   fun index(Name : String) : Preferences.Key<Int> {return intPreferencesKey(Name + "-index")}
+   fun pos(Name : String) : Preferences.Key<Long> {return longPreferencesKey(Name + "-pos")}
+}
+      
+data class PlaylistCounts(
+   val count: Int = 0,             // Count of songs in playlist
+   val index: Int = 0,             // Current song in playlist (1-indexed, 0 if none)
+   val pos: Long = 0L              // Current position in song (milliseconds, 0 if none)
+)
 
 class utils
 {
@@ -63,6 +78,7 @@ class utils
       val notif_download_id : Int = 2
 
       val EXTRA_COMMAND            : String = "org.stephe_leake.stephes_music.extra.command"
+      val EXTRA_PLAYLIST_NAME      : String = "PLAYLIST_NAME"
       val DOWNLOAD_COMMAND         : String = "download_command"
       val RESTART_PLAYLIST_COMMAND : String = "restart_playlist_command"
 
@@ -111,11 +127,6 @@ class utils
       // 
       // FIXME: Preferences don't work, so this needs a valid default
 
-      var playlistBaseName : String = ""
-      // Current playlist file name; relative to globalDirectory,
-      // without extension (suitable for user display). Empty if no
-      // playlist is current.
-
       val logFileExt : String = ".txt"
 
       val errorLogFileBaseName : String = "error_log"
@@ -128,51 +139,16 @@ class utils
          return category + ".m3u"
       }
 
-      var tempPlaylistName : String = ""
-      var playlistCount : Int = -1 // count of songs in playlist
-      var playlistIndex : Int = -1 // playlist is 1 indexed.
-      var playlistPos   : Long = -1
-   
-      object PlaylistPreferenceKeys
+      suspend fun readPlaylistCounts(playlist : String) : PlaylistCounts
       {
-         val NAME  = stringPreferencesKey("name")
-         
-         fun count(Name : String) : Preferences.Key<Int> {return intPreferencesKey(Name + "-count")}
-         fun index(Name : String) : Preferences.Key<Int> {return intPreferencesKey(Name + "-index")}
-         fun pos(Name : String) : Preferences.Key<Long> {return longPreferencesKey(Name + "-pos")}
-      }
-      
-      suspend fun clearSavedState()
-      {
-         mainActivity!!.playlistState.edit {
-            preferences ->
-               preferences[PlaylistPreferenceKeys.NAME] = ""
-            preferences[PlaylistPreferenceKeys.count(utils.playlistBaseName)] = 0
-            preferences[PlaylistPreferenceKeys.index(utils.playlistBaseName)] = 0
-            preferences[PlaylistPreferenceKeys.pos(utils.playlistBaseName)] = 0
-         }
-      } // clearSavedState
-
-      suspend fun writeState(count : Int, index : Int, pos : Long)
-      {
-         mainActivity!!.playlistState.edit {
-            preferences ->
-               preferences[PlaylistPreferenceKeys.NAME] = utils.playlistBaseName
-            preferences[PlaylistPreferenceKeys.count(utils.playlistBaseName)] = count
-            preferences[PlaylistPreferenceKeys.index(utils.playlistBaseName)] = index
-            preferences[PlaylistPreferenceKeys.pos(utils.playlistBaseName)] = pos
-         }
-      }// writeState
-
-      suspend fun readPlaylistIndexPos(playlist : String)
-      // Result in tempPlaylistName
-      {
-         val preferences = mainActivity!!.playlistState.data.firstOrNull()
+         val preferences = mainActivity!!.playlistPrefsState.data.firstOrNull()
          if (preferences == null)
             {
                // Never set
-               playlistIndex = 1
-               playlistPos = 1
+               return PlaylistCounts(
+                  count = 0,
+                  index = 0,
+                  pos = 0)
             }
          else
             {
@@ -180,34 +156,37 @@ class utils
                if (temp == null)
                   {
                      // Never set
-                     playlistIndex = 1
-                     playlistPos = 1
+                     return PlaylistCounts(
+                        count = 0,
+                        index = 0,
+                        pos = 0)
                   }
                else
                   {
-                     playlistIndex = temp
-                     playlistPos = preferences.get(PlaylistPreferenceKeys.pos(playlist))!!
+                     return PlaylistCounts(
+                        count = preferences.get(PlaylistPreferenceKeys.count(playlist))!!,
+                        index = temp,
+                        pos = preferences.get(PlaylistPreferenceKeys.pos(playlist))!!)
                   }
             }
       }
       
-      suspend fun readPlaylistName()
-      // result in utils.playlistBaseName
+      suspend fun readPlaylistName() : String
       {
-         val preferences = mainActivity!!.playlistState.data.firstOrNull()
+         val preferences = mainActivity!!.playlistPrefsState.data.firstOrNull()
          if (preferences == null)
-            tempPlaylistName = ""
+            return ""
          else
             {
                var temp : String? = preferences.get(PlaylistPreferenceKeys.NAME)
                if (temp == null)
                   {
                      // Never set
-                     tempPlaylistName = ""
+                     return ""
                   }
                else
                   {
-                     tempPlaylistName = temp
+                     return temp
                   }
             }
       }

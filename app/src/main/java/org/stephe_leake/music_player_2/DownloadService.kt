@@ -53,9 +53,9 @@ class DownloadService : Service()
 
    suspend fun countSongsRemaining(category : String) : Int 
    {
-      utils.readPlaylistIndexPos(category)
+      val counts = utils.readPlaylistCounts(category) 
       
-      return utils.playlistCount - utils.playlistIndex - 1
+      return counts.count - counts.index - 1
    }
 
    object DownloadEvents
@@ -90,7 +90,7 @@ class DownloadService : Service()
       var serverIP        : String      = prefs.getString (res.getString(R.string.server_IP_key),
                                                            res.getString(R.string.server_IP_default))!!
       var playlistFile    : File        = File(playlistFileName)
-      var playlistDirFile : File        = File(FilenameUtils.getPath(playlistFile.getPath()))
+      var playlistDirFile : File        = File(FilenameUtils.getPath(playlistFile.path))
       var category        : String      = FilenameUtils.getBaseName(playlistFileName)
       var status          : StatusCount = StatusCount()
 
@@ -147,7 +147,7 @@ class DownloadService : Service()
                // new music).
                status = DownloadUtils.getSongs(newSongs.strings, category)
 
-               if (utils.playlistFileName(utils.playlistBaseName) == playlistFileName)
+               if (utils.readPlaylistName() == category)
                   {
                      // Restart playlist to show song position, count
                      DownloadEvents.sendRestartPlaylist()
@@ -246,7 +246,7 @@ class DownloadService : Service()
                //    prefs.getString(res.getString(R.string.log_level_key),
                //                    LogLevel.Info.toString())!!)
 
-               val runner : DownloadRun = DownloadRun(notif, utils.playlistFileName(utils.playlistBaseName))
+               val runner : DownloadRun = DownloadRun(notif, intent.getStringExtra(utils.EXTRA_PLAYLIST_NAME)!!)
                Thread(runner).start()
 
                return START_NOT_STICKY
