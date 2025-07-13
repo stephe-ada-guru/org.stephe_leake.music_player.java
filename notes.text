@@ -1,34 +1,28 @@
 c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 c:/Projects/smm.main/notes.text
 
-move playlist, log files to global
-    so we don't need to fix fileProvider
-
-review launch
-    what threads are needed/used?
+revert liner_notes.adb code using <album_artist>_<album>_liner_notes.pdf
 
 show playlist position, count
 
-review/eliminate *_COMMAND; add more top level commands.
+implement all preferences
+    ask gemini about UI to edit
 
 review/eliminate utils.kt *
 
+fix menu | update playlist
+
 implement search activity
 
-show logfile by tapping on notification fails "can't open file"
-    add to small project
-
-"cancel" in download notification doesn't.
-
-write Ada code to rename liner_notes.pdf to <album_artist>_<album>_liner_notes.pdf
+showed albumart for alice's restaurant
+    in .mp3 file?
+    add all others?
 
 menu
 
-    quit - does nothing; need play service
-
     search - does nothing; need new search activity
 
-    share - does nothing; need utils.retriever. which needs play service.
+    share - does nothing
 
 Need "clear playlist" and "delete playlist"; instrumental got screwed up.
 
@@ -59,7 +53,8 @@ find liner_notes.pdf
     gemini says the code is right, but it fails. sigh.
 
     use MANAGE_EXTERNAL_STORAGE, file operations.
-        can't get provider to work. give up.
+        can't get provider to work for files in app local storage. give up.
+        file provider works if log files are in global storage. sigh.
 
 
  Resources

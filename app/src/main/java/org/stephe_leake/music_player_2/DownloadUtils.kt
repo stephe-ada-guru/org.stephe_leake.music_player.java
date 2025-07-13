@@ -73,7 +73,7 @@ class DownloadUtils
 
       fun downloadLogFileName() : String
       {
-         return utils.appDirectory + "/" + downloadLogFileBaseName + utils.logFileExt
+         return utils.logFileName(downloadLogFileBaseName)
       }
 
       fun log(level : LogLevel, msg : String)
@@ -147,23 +147,23 @@ class DownloadUtils
       {
          // Delete lines in category.m3u that are before preferences(category).index
 
-         val playlistFilename : String = utils.playlistFileName(category)
+         val playlistFileName : String = utils.playlistFileName(category)
          val counts = utils.readPlaylistCounts(category)
 
          try
          {
             // getPath() returns empty string if file does not exist
-            if ("" != FilenameUtils.getPath(playlistFilename))
+            if ("" != FilenameUtils.getPath(playlistFileName))
                if (counts.index > 0)
                {
-                  prunePlaylist(playlistFilename, counts.index)
+                  prunePlaylist(playlistFileName, counts.index)
                   log(LogLevel.Info, category + " playlist cleaned: " + (counts.index - 1) + " songs deleted")
                }
          }
          catch (e : IOException)
          {
             // from prunePlaylist (which calls readPlaylist)
-            log(LogLevel.Error, "cannot read/write playlist '" + playlistFilename + "'")
+            log(LogLevel.Error, "cannot read/write playlist '" + playlistFileName + "'")
          }
       }
       
@@ -249,34 +249,19 @@ class DownloadUtils
          {
             for (song in songs)
                {
+                  // Searching MediaStore.Audio on metadata is not
+                  // reliable, so we use direct file access.
                   val data : JSONObject = JSONTokener(song).nextValue() as JSONObject
-                  val Album_Artist = data.getString("Album_Artist") // FIXME: Album_Artist may be empty- don't match?
-                  val Album = data.getString("Album")
-                  val Title = data.getString("Title")
-                  val Filename = data.getString("File_Name")
-
-                  var cursor : Cursor? = utils.mainActivity!!.contentResolver.query(
-                     MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                     /* projection */ arrayOf(MediaStore.Audio.AlbumColumns.ARTIST,
-                                              MediaStore.Audio.AlbumColumns.ALBUM,
-                                              MediaStore.Audio.AudioColumns.TITLE),
-                     /* selection  */ "${MediaStore.Audio.AlbumColumns.ARTIST} = ? AND " + 
-                     "${MediaStore.Audio.AlbumColumns.ALBUM} = ? AND " +
-                     "${MediaStore.Audio.AudioColumns.TITLE} = ?",
-                     /* selectionArgs */ arrayOf(Album_Artist.slice(1 .. Album_Artist.length - 1),
-                                                 Album.slice(1 .. Album.length - 1),
-                                                 Title.slice(1 .. Title.length - 1)),
-                     /* sortOrder */ null)
+                  val FileName = utils.globalDirectory + "/" + data.getString("File_Name")
+                  val file = File (FileName)
                   
-                  // The syntax that gemini gives for .use is _not_ correct!
-                  if (cursor == null || !cursor.moveToFirst())
+                  if (!file.exists())
                      {
                         // not found; we can't download it to a specific directory, so tell the user to download it
-                        // FIXME: use Files mediaStore interface?
+                        // FIXME: with MANAGE_EXTERNAL_STORAGE, can write song file to correct directory
                         result.status = ProcessStatus.Retry
-                        log(LogLevel.Info, "not found '" + Filename + "'")
+                        log(LogLevel.Info, "not found '" + FileName + "'")
                      }
-                  cursor?.close()
 
                   // Write even if not found; user will download the song later.
                   playlistWriter.write("$song\n")    

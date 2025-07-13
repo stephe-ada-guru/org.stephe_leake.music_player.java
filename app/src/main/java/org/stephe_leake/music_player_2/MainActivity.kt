@@ -33,9 +33,11 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.database.Cursor
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.Settings
 import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
@@ -94,6 +96,8 @@ class MainActivity : AppCompatActivity()
    private val CHECK_PERM_RESET_PLAYLIST  = 102
    private val CHECK_PERM_UPDATE_PLAYLIST = 103
    private val CHECK_PERM_PICK_PLAYLIST   = 104
+   private val CHECK_PERM_MANAGE_EXTERNAL_STORAGE = 105 
+
 
    private var newPlaylistIntent = Intent()
    
@@ -126,7 +130,19 @@ class MainActivity : AppCompatActivity()
          android.Manifest.permission.READ_MEDIA_IMAGES)
 
       val permissionsToRequest = mutableListOf<String>()
+      
+      var result = true
 
+      // Request MANAGE_EXTERNAL_STORAGE to read/write playlist, logs, songs.
+      if (!Environment.isExternalStorageManager())
+         {
+            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+            intent.addCategory("android.intent.category.DEFAULT")
+            intent.data = Uri.parse("package:${applicationContext.packageName}")
+            startActivityForResult(intent, CHECK_PERM_MANAGE_EXTERNAL_STORAGE)
+            result = false
+         }
+        
       for (permission in REQUIRED_PERMISSIONS)
          {
             if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED)
@@ -157,18 +173,18 @@ class MainActivity : AppCompatActivity()
             
             ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), code)
 
-            return false
+            result = false
          }
-      return true
+      return result
    }
 
    private suspend fun playlistToPlayer(filename : String, play : Boolean)
    {
-      // Start playing playlist 'filename' (app local path).
+      // Start playing playlist 'filename' (relative to utils.globalDirectory).
 
       mediaController?.clearMediaItems()
       
-      val absFilename  = utils.appDirectory + "/" + filename
+      val absFilename  = utils.globalDirectory + "/" + filename
       val playlistFile = File (absFilename)
       val counts =       utils.readPlaylistCounts(FilenameUtils.getBaseName(filename))
       
@@ -262,7 +278,7 @@ class MainActivity : AppCompatActivity()
    
    private fun showPlaylistPickerDialog(onPlaylistSelected: (String) -> Unit)
    {
-      val playlistDir = File (utils.appDirectory)
+      val playlistDir = File (utils.globalDirectory)
       
       val playlistFilter = FilenameFilter{ _, name -> name.endsWith(".m3u", ignoreCase = true) }
       val playlists = playlistDir.list(playlistFilter)
@@ -590,6 +606,7 @@ class MainActivity : AppCompatActivity()
    override fun onResume()
    {
       super.onResume()
+
       val playerView = findViewById<PlayerView>(R.id.player_view)
       playerView.onResume()
    }
@@ -679,7 +696,7 @@ class MainActivity : AppCompatActivity()
                      {_, _ ->
 
                          newPlaylistIntent = Intent (utils.DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
-                         .putExtra(utils.EXTRA_PLAYLIST_NAME, input.getText().toString())
+                         .putExtra(utils.EXTRA_PLAYLIST_CATEGORY, input.getText().toString())
                       
                       if (checkPermission(CHECK_PERM_NEW_PLAYLIST))
                          {

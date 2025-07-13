@@ -78,7 +78,7 @@ class utils
       val notif_download_id : Int = 2
 
       val EXTRA_COMMAND            : String = "org.stephe_leake.stephes_music.extra.command"
-      val EXTRA_PLAYLIST_NAME      : String = "PLAYLIST_NAME"
+      val EXTRA_PLAYLIST_CATEGORY  : String = "PLAYLIST_CATEGORY"
       val DOWNLOAD_COMMAND         : String = "download_command"
       val RESTART_PLAYLIST_COMMAND : String = "restart_playlist_command"
 
@@ -116,13 +116,12 @@ class utils
 
       var appDirectory : String = ""
       // Absolute path to application-specific directory, containing
-      // files used to interface with Stephe's Music manager (smm);
-      // playlist files, .last files, notes files, error log.
+      // notes files.
       //
       // Set by Activity to getExternalStorageDir().
 
       val globalDirectory : String = "/storage/emulated/0/Music/Music"
-      // Globally accessible directory where music and playlist files
+      // Globally accessible directory where music, playlist, log files
       // are stored.
       // 
       // FIXME: Preferences don't work, so this needs a valid default
@@ -131,12 +130,11 @@ class utils
 
       val errorLogFileBaseName : String = "error_log"
 
-      // public non-member functions
-
       fun playlistFileName(category : String) : String 
-      // return current playlist file app-relative path
+      // return 'category' playlist file absolute path
       {
-         return category + ".m3u"
+         // In global so user can look at it to see what's been played recently
+         return "$globalDirectory/$category.m3u"
       }
 
       suspend fun readPlaylistCounts(playlist : String) : PlaylistCounts
@@ -191,7 +189,6 @@ class utils
             }
       }
    
-      // FIXME: using this?
       fun notesFileName(category : String) : String
       {
          return utils.appDirectory + "/" + category + ".note"
@@ -224,25 +221,31 @@ class utils
          }
       }
       
-      fun errorLogFileName() : String
+      fun logFileName(logFileBaseName : String) : String
       {
-         return appDirectory + "/" + errorLogFileBaseName + logFileExt
+         // In global so user can read it (file provider doesn't work)
+         return globalDirectory + "/" + logFileBaseName + logFileExt
       }
 
-      fun log(level : LogLevel, msg : String, logFileBaseName : String)
+      fun errorLogFileName() : String
       {
-         // The error log file is in app local storage, so we don't need file permissions.
-         
+         return logFileName(errorLogFileBaseName)
+      }
+      
+      fun log(level : LogLevel, msg : String, logFileBaseName : String)
+      // errors go in utils.errorLogFileBaseName, download messages in
+      // DownloadUtils.downloadLogFileBaseName
+      {
          val fmt       : SimpleDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss : ", Locale.US)
          val time      : Long     = System.currentTimeMillis() // local time zone
          val timeStamp : String   = fmt.format(time)
          val levelImg  : String   = logImage (level)
-         val logFile   : File     = File(errorLogFileName())
-         val writer : PrintWriter = PrintWriter(FileWriter(errorLogFileName(), true)) // append
+         val logFile   : File     = File(logFileName(logFileBaseName))
+         val writer : PrintWriter = PrintWriter(FileWriter(logFileName(logFileBaseName), true)) // append
          
          if (logFile.exists() && time - logFile.lastModified() > 4 * utils.millisPerHour)
             {
-               val oldLogFileName : String = logFileBaseName + "_1" + logFileExt
+               val oldLogFileName : String = globalDirectory + "/" + logFileBaseName + "_1" + logFileExt
                val oldLogFile     : File   = File(oldLogFileName)
                
                if (oldLogFile.exists())

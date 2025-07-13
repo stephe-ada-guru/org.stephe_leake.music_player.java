@@ -70,7 +70,7 @@ class DownloadService : Service()
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-   private suspend fun updatePlaylist (playlistFileName : String)
+   private suspend fun updatePlaylist (category : String)
    {
       var res                : Resources           = getResources()
       var prefs              : SharedPreferences   = utils.mainActivity!!.getPreferences(Context.MODE_PRIVATE)
@@ -89,9 +89,8 @@ class DownloadService : Service()
 
       var serverIP        : String      = prefs.getString (res.getString(R.string.server_IP_key),
                                                            res.getString(R.string.server_IP_default))!!
-      var playlistFile    : File        = File(playlistFileName)
+      var playlistFile    : File        = File(utils.playlistFileName(category))
       var playlistDirFile : File        = File(FilenameUtils.getPath(playlistFile.path))
-      var category        : String      = FilenameUtils.getBaseName(playlistFileName)
       var status          : StatusCount = StatusCount()
 
       if (serverIP == "")
@@ -140,7 +139,7 @@ class DownloadService : Service()
                      return
                   }
 
-               notif.Update(newSongs.strings.size, newSongCount)
+               notif.Update(newSongs.strings.size)
 
                // Add all songs to playlist, log any missing songs
                // (should all be on phone already, but this handles
@@ -155,7 +154,7 @@ class DownloadService : Service()
 
                if (status.status != ProcessStatus.Success)
                   {
-                     // FIXME: add error message to status, show in notification here.
+                     notif.Error("check local/get songs from server failed")
                      return
                   }
 
@@ -177,14 +176,14 @@ class DownloadService : Service()
    }
 
    internal inner class DownloadRun(private val notif   : DownloadNotif,
-                                    private val playlist: String)
+                                    private val category: String)
       : Runnable
    {
       @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
       override fun run()
       {
-         notif.setName(FilenameUtils.getBaseName(playlist))
-         CoroutineScope(Dispatchers.IO).launch{updatePlaylist(playlist)}
+         notif.initialize(FilenameUtils.getBaseName(category))
+         CoroutineScope(Dispatchers.IO).launch{updatePlaylist(category)}
       }
    }
 
@@ -246,10 +245,10 @@ class DownloadService : Service()
                //    prefs.getString(res.getString(R.string.log_level_key),
                //                    LogLevel.Info.toString())!!)
 
-               val runner : DownloadRun = DownloadRun(notif, intent.getStringExtra(utils.EXTRA_PLAYLIST_NAME)!!)
-               Thread(runner).start()
+                  val runner : DownloadRun = DownloadRun(notif, intent.getStringExtra(utils.EXTRA_PLAYLIST_CATEGORY)!!)
+                  Thread(runner).start()
 
-               return START_NOT_STICKY
+                  return START_NOT_STICKY
             }
             catch (e: Exception)
             {

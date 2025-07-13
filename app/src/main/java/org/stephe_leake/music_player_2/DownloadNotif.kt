@@ -46,14 +46,13 @@ class DownloadNotif
    var statusText   : String = ""
    var contentText  : String = "..."
    var maxSongs     : Int = 0
-   var currentSongs : Int = 0
 
    fun formatCounts() : String
    {
       if (maxSongs == 0)
          return ""
       else
-         return "$currentSongs/$maxSongs"
+         return "$maxSongs"
    }
 
    fun getNotif() : Notification
@@ -61,9 +60,13 @@ class DownloadNotif
       return notifMem
    }
 
-   fun setName(playlistName : String)
+   fun initialize(playlistName : String)
    {
       this.playlistName = playlistName
+      statusText = ""
+      contentText = "..."
+      maxSongs = 0
+      update()
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
@@ -77,7 +80,6 @@ class DownloadNotif
         .setContentText(contentText)
         .setPriority(NotificationCompat.PRIORITY_DEFAULT) // make sure it shows!
         .setOngoing(true)
-        .setProgress(maxSongs, currentSongs, maxSongs==0)
         .setSmallIcon(R.mipmap.download_icon) // shown in status bar
         .build()
 
@@ -104,10 +106,9 @@ class DownloadNotif
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-   fun Update(max : Int, current : Int)
+   fun Update(max : Int)
    {
       maxSongs = max
-      currentSongs = current
       statusText = formatCounts()
       update()
    }
