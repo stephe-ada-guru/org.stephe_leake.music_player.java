@@ -96,8 +96,6 @@ class MainActivity : AppCompatActivity()
    private val CHECK_PERM_RESET_PLAYLIST  = 102
    private val CHECK_PERM_UPDATE_PLAYLIST = 103
    private val CHECK_PERM_PICK_PLAYLIST   = 104
-   private val CHECK_PERM_MANAGE_EXTERNAL_STORAGE = 105 
-
 
    private var newPlaylistIntent = Intent()
    
@@ -139,10 +137,10 @@ class MainActivity : AppCompatActivity()
             val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
             intent.addCategory("android.intent.category.DEFAULT")
             intent.data = Uri.parse("package:${applicationContext.packageName}")
-            startActivityForResult(intent, CHECK_PERM_MANAGE_EXTERNAL_STORAGE)
+            startActivity(intent)
             result = false
          }
-        
+
       for (permission in REQUIRED_PERMISSIONS)
          {
             if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED)
@@ -234,7 +232,11 @@ class MainActivity : AppCompatActivity()
                   cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.COMPOSER))
                val year =
                   cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.YEAR))
+               val file = File(utils.globalDirectory + "/" + Filename)
+               val extra = Bundle()
 
+               extra.putString("Liner_Notes", file.getParent() + "/" + "liner_notes.pdf")
+               
                val metaData = androidx.media3.common.MediaMetadata.Builder()
                   .setAlbumArtist(Album_Artist)
                   .setAlbumTitle(Album)
@@ -242,6 +244,7 @@ class MainActivity : AppCompatActivity()
                   .setArtist(artist)
                   .setComposer(composer)
                   .setReleaseYear(year.toInt())
+                  .setExtras(extra)
                   .build()
                val item : MediaItem = MediaItem.Builder()
                   .setUri(ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI , songId))
@@ -436,20 +439,20 @@ class MainActivity : AppCompatActivity()
       val index = controller.currentMediaItemIndex
 
       if (index > 0 && viewModel.playlistState.value.baseName != "")
-      {
-         val noteFileName = utils.appDirectory + "/" + viewModel.playlistState.value.baseName + ".note"
-         val metaData = controller.currentMediaItem!!.mediaMetadata
-         val data = JSONObject()
-            .put("Album_Artist", metaData.albumArtist)
-            .put("Album", metaData.albumTitle)
-            .put("Title", metaData.title)
-         
-         val writer = BufferedWriter(FileWriter(noteFileName, true)); // append
+         {
+            val noteFileName = utils.appDirectory + "/" + viewModel.playlistState.value.baseName + ".note"
+            val metaData = controller.currentMediaItem!!.mediaMetadata
+            val data = JSONObject()
+               .put("Album_Artist", metaData.albumArtist)
+               .put("Album", metaData.albumTitle)
+               .put("Title", metaData.title)
+            
+            val writer = BufferedWriter(FileWriter(noteFileName, true)); // append
 
-         writer.write(data.toString() + ' ' + buttonText);
-         writer.newLine();
-         writer.close();
-      }
+            writer.write(data.toString() + ' ' + buttonText);
+            writer.newLine();
+            writer.close();
+         }
    }
    
    ////////// Activity lifetime methods (in lifecycle order)
@@ -515,13 +518,13 @@ class MainActivity : AppCompatActivity()
                      }
                   else
                      {
-                     val playlistName : String = viewModel.playlistState.value.baseName
-                     
-                     if (playlistName.isNotEmpty())
-                        {
-                           playlistToPlayer(utils.playlistFileName(playlistName), play = false)
-                        }
-                  }
+                        val playlistName : String = viewModel.playlistState.value.baseName
+                        
+                        if (playlistName.isNotEmpty())
+                           {
+                              playlistToPlayer(utils.playlistFileName(playlistName), play = false)
+                           }
+                     }
                } 
          }
       }
@@ -600,7 +603,7 @@ class MainActivity : AppCompatActivity()
             playerView.setPlayer(mediaController)
 
             viewModel.setMediaControllerReady(true)
-           }, MoreExecutors.directExecutor())
+         }, MoreExecutors.directExecutor())
    } // onStart
 
    override fun onResume()
@@ -639,6 +642,20 @@ class MainActivity : AppCompatActivity()
       val Inf: MenuInflater = getMenuInflater()
       Inf.inflate(R.menu.main_menu, menu)
       return true // display menu
+   }
+
+   override fun onPrepareOptionsMenu(menu: Menu): Boolean 
+   {
+      super.onPrepareOptionsMenu(menu)
+
+      if (mediaController == null) {return false}
+      if (mediaController!!.currentMediaItem == null) {return false}
+
+      val metaData = mediaController!!.currentMediaItem!!.mediaMetadata
+      val file = File(metaData.extras!!.getString("Liner_Notes")!!)
+      menu.findItem(R.id.menu_liner_notes).setEnabled(file.exists())
+
+      return true
    }
 
    override fun onOptionsItemSelected(item: MenuItem): Boolean
@@ -711,6 +728,22 @@ class MainActivity : AppCompatActivity()
                      
                      builder.show()
                   }
+            }
+
+         R.id.menu_liner_notes ->
+            {
+               val metaData = mediaController!!.currentMediaItem!!.mediaMetadata
+               val file = File(metaData.extras!!.getString("Liner_Notes")!!)
+               val contentUri: Uri? =  FileProvider.getUriForFile(
+                  this,
+                  "${this.applicationContext.packageName}.provider",
+                  file)
+
+               var intent: Intent = Intent(Intent.ACTION_VIEW)
+                  .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                  .setDataAndType(contentUri, "application/pdf")
+               
+               startActivity(intent)
             }
 
          R.id.menu_preferences ->
