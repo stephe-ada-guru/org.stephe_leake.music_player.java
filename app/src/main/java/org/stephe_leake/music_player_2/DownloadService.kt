@@ -182,7 +182,7 @@ class DownloadService : Service()
       @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
       override fun run()
       {
-         notif.initialize(FilenameUtils.getBaseName(category))
+         notif.initialize(category)
          CoroutineScope(Dispatchers.IO).launch{updatePlaylist(category)}
       }
    }

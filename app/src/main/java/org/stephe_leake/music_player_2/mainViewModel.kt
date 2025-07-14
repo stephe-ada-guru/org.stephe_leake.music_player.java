@@ -36,7 +36,7 @@ import org.stephe_leake.music_player_2.PlaylistPreferenceKeys
 data class PlaylistState(
    val baseName: String = "",      // Current playlist file name (empty if no playlist)
    val count: Int = 0,             // Count of songs in playlist
-   val index: Int = 0,             // Current song in playlist (1-indexed, 0 if none)
+   val index: Int = -1,             // Current song in playlist (0 indexed, -1 if none)
    val pos: Long = 0L              // Current position in song (milliseconds, 0 if none)
 )
 
@@ -56,18 +56,32 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
          if (current.baseName != "")
             {
                preferences[PlaylistPreferenceKeys.count(current.baseName)] = 0
-               preferences[PlaylistPreferenceKeys.index(current.baseName)] = 0
+               preferences[PlaylistPreferenceKeys.index(current.baseName)] = -1
                preferences[PlaylistPreferenceKeys.pos(current.baseName)] = 0
 
                _playlistState.value = PlaylistState(
                   baseName = "",
                   count = 0,
-                  index = 0,
+                  index = -1,
                   pos = 0)
             }
       }
    } // clearSavedState
 
+   suspend fun writeCategory(category : String)
+   {
+      utils.mainActivity!!.playlistPrefsState.edit {
+         preferences ->
+            preferences[PlaylistPreferenceKeys.NAME] = category
+      }
+         
+      _playlistState.value = PlaylistState(
+         baseName = category,
+         count = 0,
+         index = -1,
+         pos = 0)
+   } // writeCategory
+      
    suspend fun writeState(count : Int, index : Int, pos : Long)
    {
       val current = _playlistState.value
@@ -99,7 +113,7 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
             _playlistState.value = PlaylistState(
                baseName = "",
                count = 0,
-               index = 0,
+               index = -1,
                pos = 0)
          }
       else
@@ -111,7 +125,7 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
                   _playlistState.value = PlaylistState(
                      baseName = "",
                      count = 0,
-                     index = 0,
+                     index = -1,
                      pos = 0)
                }
             else

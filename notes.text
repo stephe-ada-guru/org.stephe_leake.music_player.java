@@ -1,10 +1,6 @@
 c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 c:/Projects/smm.main/notes.text
 
-revert liner_notes.adb code using <album_artist>_<album>_liner_notes.pdf
-
-show playlist position, count
-
 implement all preferences
     ask gemini about UI to edit
 
@@ -18,13 +14,13 @@ showed albumart for alice's restaurant
     in .mp3 file?
     add all others?
 
-menu
+    or restore albumart scroll?
 
-    search - does nothing; need new search activity
-
-    share - does nothing
+implement menu | share
 
 Need "clear playlist" and "delete playlist"; instrumental got screwed up.
+
+review FIXME
 
 text in buttons is too light!
     test on phone

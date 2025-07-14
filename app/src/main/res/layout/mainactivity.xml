@@ -72,16 +72,6 @@
           app:hide_on_touch="true"
           app:auto_show="false"/>
 
-      <TextView
-          android:id="@+id/playlist"
-          android:layout_width="match_parent"
-          android:layout_height="wrap_content"
-          android:gravity="center"
-          android:focusable="true"
-          android:text="@string/null_playlist"
-          android:textAppearance="?android:attr/textAppearanceLarge"
-          android:weightSum="1"/>
-
       <!-- year
            composer
            album artist
@@ -265,6 +255,17 @@
             android:textColor="#ffefefef"
             android:onClick="onClickNote"/>
       </LinearLayout>
+
+      <TextView
+          android:id="@+id/playlist"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:gravity="center"
+          android:focusable="true"
+          android:text="@string/null_playlist"
+          android:textAppearance="?android:attr/textAppearanceLarge"
+          android:weightSum="1"/>
+
     </LinearLayout>
   </ScrollView>
 </LinearLayout>
