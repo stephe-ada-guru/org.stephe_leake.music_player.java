@@ -18,13 +18,21 @@
   write to the Free Software Foundation, 51 Franklin Street, Suite
   500, Boston, MA 02110-1335, USA.
 -->
-<androidx.fragment.app.FragmentContainerView
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:tag="frag"
-    android:id="@+id/main_pref_frag"
-    android:name="org.stephe_leake.music_player_2.MainPreferenceFragment"
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
-    android:layout_weight="1">
-</androidx.fragment.app.FragmentContainerView>
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".PrefActivity">
+
+  <androidx.fragment.app.FragmentContainerView
+      android:id="@+id/pref_container"
+      android:layout_width="0dp"
+      android:layout_height="0dp"
+      app:layout_constraintTop_toTopOf="parent"
+      app:layout_constraintBottom_toBottomOf="parent"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

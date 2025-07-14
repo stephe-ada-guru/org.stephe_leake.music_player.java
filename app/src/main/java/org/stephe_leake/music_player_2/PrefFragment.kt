@@ -19,22 +19,12 @@
 package org.stephe_leake.music_player_2
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.commit
+import androidx.preference.PreferenceFragmentCompat
 
-class PrefActivity : AppCompatActivity()
+class PrefFragment : PreferenceFragmentCompat()
 {
-   override fun onCreate(savedInstanceState: Bundle?)
+   override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?)
    {
-       super.onCreate(savedInstanceState)
-
-       setContentView(R.layout.prefactivity)
-
-       if (savedInstanceState == null)
-          {
-            supportFragmentManager.commit{
-                replace(R.id.pref_container, PrefFragment())
-            }
-        }
+       setPreferencesFromResource(R.xml.preferences, rootKey)
    }
 }

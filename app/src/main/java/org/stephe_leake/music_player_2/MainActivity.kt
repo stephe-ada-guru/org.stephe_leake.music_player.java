@@ -237,7 +237,7 @@ class MainActivity : AppCompatActivity()
                val file = File(utils.globalDirectory + "/" + Filename)
                val extra = Bundle()
 
-               extra.putString("Liner_Notes", file.getParent() + "/" + "liner_notes.pdf")
+               extra.putString("Liner_Notes", file.getParent()!! + "/" + "liner_notes.pdf")
                
                val metaData = androidx.media3.common.MediaMetadata.Builder()
                   .setAlbumArtist(Album_Artist)
