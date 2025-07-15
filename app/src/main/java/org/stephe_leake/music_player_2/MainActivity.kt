@@ -84,9 +84,6 @@ import kotlinx.coroutines.launch
 
 import org.apache.commons.io.FilenameUtils
 
-import org.json.JSONObject
-import org.json.JSONTokener
-
 import android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION
 import android.view.View.GONE
 import android.view.View.VISIBLE
@@ -237,6 +234,7 @@ class MainActivity : AppCompatActivity()
                val songFile = File(utils.globalDirectory + "/" + Filename)
                val extra = Bundle()
 
+               extra.putString("Song_File", Filename)
                extra.putString("Liner_Notes", songFile.getParent()!! + "/" + "liner_notes.pdf")
                
                val metaData = androidx.media3.common.MediaMetadata.Builder()
@@ -445,14 +443,9 @@ class MainActivity : AppCompatActivity()
          {
             val noteFileName = utils.appDirectory + "/" + viewModel.playlistState.value.baseName + ".note"
             val metaData = controller.currentMediaItem!!.mediaMetadata
-            val data = JSONObject()
-               .put("Album_Artist", metaData.albumArtist)
-               .put("Album", metaData.albumTitle)
-               .put("Title", metaData.title)
-            
             val writer = BufferedWriter(FileWriter(noteFileName, true)); // append
             
-            writer.write(data.toString() + ' ' + buttonText);
+            writer.write(metaData.extras!!.getString("Song_File")!! + ' ' + buttonText);
             writer.newLine();
             writer.close();
          }

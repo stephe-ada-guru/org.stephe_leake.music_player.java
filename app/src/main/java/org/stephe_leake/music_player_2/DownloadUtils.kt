@@ -47,9 +47,6 @@ import org.apache.commons.io.filefilter.OrFileFilter
 import org.apache.commons.io.filefilter.SuffixFileFilter
 import org.apache.commons.io.filefilter.TrueFileFilter
 
-import org.json.JSONObject
-import org.json.JSONTokener
-
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request

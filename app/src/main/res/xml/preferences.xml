@@ -18,73 +18,75 @@ write to the Free Software Foundation, 51 Franklin Street, Suite
 500, Boston, MA 02110-1335, USA.
 -->
 <androidx.preference.PreferenceScreen
-    xmlns:android="http://schemas.android.com/apk/res/android">
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
   <androidx.preference.PreferenceCategory
-      android:title="all">
+      app:title="all">
 
     <androidx.preference.EditTextPreference
-        android:key="@string/song_count_max_key"
-        android:defaultValue="@string/song_count_max_default"
+        app:key="@string/song_count_max_key"
+        app:defaultValue="@string/song_count_max_default"
         android:numeric="integer"
-        android:title="@string/song_count_max_title"
-        android:summary="@string/song_count_max_summary"
-        android:dialogTitle="@string/song_count_max_dialog_title" />
+        app:title="@string/song_count_max_title"
+        app:summary="@string/song_count_max_summary"
+        app:dialogTitle="@string/song_count_max_dialog_title" />
 
     <androidx.preference.EditTextPreference
-        android:key="@string/new_song_fraction_key"
-        android:defaultValue="@string/new_song_fraction_default"
+        app:key="@string/new_song_fraction_key"
+        app:defaultValue="@string/new_song_fraction_default"
         android:numeric="decimal"
-        android:title="@string/new_song_fraction_title"
-        android:summary="@string/new_song_fraction_summary"
-        android:dialogTitle="@string/new_song_fraction_dialog_title" />
+        app:title="@string/new_song_fraction_title"
+        app:summary="@string/new_song_fraction_summary"
+        app:dialogTitle="@string/new_song_fraction_dialog_title" />
 
     <androidx.preference.EditTextPreference
-        android:key="@string/over_select_ratio_key"
-        android:defaultValue="@string/over_select_ratio_default"
+        app:key="@string/over_select_ratio_key"
+        app:defaultValue="@string/over_select_ratio_default"
         android:numeric="decimal"
-        android:title="@string/over_select_ratio_title"
-        android:summary="@string/over_select_ratio_summary"
-        android:dialogTitle="@string/over_select_ratio_dialog_title" />
+        app:title="@string/over_select_ratio_title"
+        app:summary="@string/over_select_ratio_summary"
+        app:dialogTitle="@string/over_select_ratio_dialog_title" />
 
     <androidx.preference.EditTextPreference
-        android:key="@string/song_count_threshold_key"
-        android:defaultValue="@string/song_count_threshold_default"
+        app:key="@string/song_count_threshold_key"
+        app:defaultValue="@string/song_count_threshold_default"
         android:numeric="integer"
-        android:title="@string/song_count_threshold_title"
-        android:summary="@string/song_count_threshold_summary"
-        android:dialogTitle="@string/song_count_threshold_dialog_title" />
+        app:title="@string/song_count_threshold_title"
+        app:summary="@string/song_count_threshold_summary"
+        app:dialogTitle="@string/song_count_threshold_dialog_title" />
 
     <androidx.preference.ListPreference
-        android:key="@string/log_level_key"
-        android:defaultValue="Info"
-        android:title="@string/log_level_title"
-        android:summary="@string/log_level_summary"
-        android:dialogTitle="@string/log_level_dialog_title" />
-    <!-- list entries filled at runtime -->
+        app:key="@string/log_level_key"
+        app:defaultValue="normal"
+        app:title="@string/log_level_title"
+        app:summary="@string/log_level_summary"
+        app:dialogTitle="@string/log_level_dialog_title"
+        app:entries="@array/log_level_entries"
+        app:entryValues="@array/log_level_values"/>
 
     <androidx.preference.EditTextPreference
-        android:key="@string/server_IP_key"
-        android:defaultValue="@string/server_IP_default"
-        android:title="@string/server_IP_title"
-        android:summary="@string/server_IP_summary"
-        android:dialogTitle="@string/server_IP_dialog_title" />
+        app:key="@string/server_IP_key"
+        app:defaultValue="@string/server_IP_default"
+        app:title="@string/server_IP_title"
+        app:summary="@string/server_IP_summary"
+        app:dialogTitle="@string/server_IP_dialog_title" />
 
     <androidx.preference.EditTextPreference
-        android:key="@string/prev_threshold_key"
-        android:defaultValue="@string/prev_threshold_default"
+        app:key="@string/prev_threshold_key"
+        app:defaultValue="@string/prev_threshold_default"
         android:numeric="integer"
-        android:title="@string/prev_threshold_title"
-        android:summary="@string/prev_threshold_summary"
-        android:dialogTitle="@string/prev_threshold_dialog_title" />
+        app:title="@string/prev_threshold_title"
+        app:summary="@string/prev_threshold_summary"
+        app:dialogTitle="@string/prev_threshold_dialog_title" />
 
     <androidx.preference.EditTextPreference
-        android:key="@string/text_scale_key"
-        android:defaultValue="@string/text_scale_default"
+        app:key="@string/text_scale_key"
+        app:defaultValue="@string/text_scale_default"
         android:numeric="decimal"
-        android:title="@string/text_scale_title"
-        android:summary="@string/text_scale_summary"
-        android:dialogTitle="@string/text_scale_dialog_title" />
+        app:title="@string/text_scale_title"
+        app:summary="@string/text_scale_summary"
+        app:dialogTitle="@string/text_scale_dialog_title" />
 
   </androidx.preference.PreferenceCategory>
 
