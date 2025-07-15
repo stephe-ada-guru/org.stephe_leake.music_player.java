@@ -251,8 +251,7 @@ class DownloadUtils
                {
                   // Searching MediaStore.Audio on metadata is not
                   // reliable, so we use direct file access.
-                  val data : JSONObject = JSONTokener(song).nextValue() as JSONObject
-                  val FileName = utils.globalDirectory + "/" + data.getString("File_Name")
+                  val FileName = utils.globalDirectory + "/" + song
                   val file = File (FileName)
                   
                   if (!file.exists())

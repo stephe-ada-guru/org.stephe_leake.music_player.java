@@ -28,6 +28,7 @@ import android.content.SharedPreferences
 import android.content.res.Resources
 import android.os.IBinder
 import androidx.annotation.RequiresPermission
+import androidx.preference.PreferenceManager
 
 import java.io.BufferedReader
 import java.io.File
@@ -237,13 +238,12 @@ class DownloadService : Service()
       else if (intent.getAction() == utils.DOWNLOAD_COMMAND)
          {
             try {
-               // FIXME: Use DataStore<Preferences>
-               // val res   : Resources = getResources()
-               // val prefs : SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+               val res   : Resources = getResources()
+               val prefs : SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
-               // DownloadUtils.prefLogLevel = LogLevel.valueOf(
-               //    prefs.getString(res.getString(R.string.log_level_key),
-               //                    LogLevel.Info.toString())!!)
+               DownloadUtils.prefLogLevel = LogLevel.valueOf(
+                  prefs.getString(res.getString(R.string.log_level_key),
+                                  LogLevel.Info.toString())!!)
 
                   val runner : DownloadRun = DownloadRun(notif, intent.getStringExtra(utils.EXTRA_PLAYLIST_CATEGORY)!!)
                   Thread(runner).start()

@@ -67,6 +67,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.session.SessionToken
 import androidx.media3.ui.PlayerView
+import androidx.preference.PreferenceManager
 
 import com.google.common.util.concurrent.MoreExecutors
 
@@ -196,53 +197,52 @@ class MainActivity : AppCompatActivity()
       viewModel.writeCategory(category)
       
       playlistFile.forEachLine{
-         line ->
-            val data : JSONObject = JSONTokener(line).nextValue() as JSONObject
-         val Album_Artist = data.getString("Album_Artist") // FIXME: Album_Artist may be empty- don't match?
-         val Album = data.getString("Album")
-         val Title = data.getString("Title")
-         val Filename = data.getString("File_Name")
-         
+         Filename ->
+         // We search for the file name, not the metadata (despite
+         // Android's recommendation); we sometimes edit the metadata
+         // to match Spotify (and sometimes the Android media scanner
+         // screws up), so this is more reliable. We use MediaStore to
+         // get all the metadata from the song file.
          var cursor : Cursor? = utils.mainActivity!!.contentResolver.query(
             MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL),
             /* projection */ arrayOf(MediaStore.Audio.Media._ID,
+                                     MediaStore.MediaColumns.ALBUM_ARTIST,
+                                     MediaStore.Audio.AlbumColumns.ALBUM,
+                                     MediaStore.Audio.AudioColumns.TITLE,
                                      MediaStore.MediaColumns.ARTIST,
                                      MediaStore.MediaColumns.COMPOSER,
                                      MediaStore.MediaColumns.YEAR),
-            /* selection  */ "${MediaStore.MediaColumns.ALBUM_ARTIST} = ? AND " +
-            "${MediaStore.Audio.AlbumColumns.ALBUM} = ? AND " +
-            "${MediaStore.Audio.AudioColumns.TITLE} = ?",
-            /* selectionArgs */ arrayOf(Album_Artist.removeSurrounding("\""),
-                                        Album.removeSurrounding("\""),
-                                        Title.removeSurrounding("\"")
-            ),
+            /* selection  */ "${MediaStore.MediaColumns.DATA} = ?",
+            /* selectionArgs */ arrayOf(utils.globalDirectory + "/" + Filename),
             /* sortOrder */ null)
          
          // The syntax that gemini gives for .use is _not_ correct!
          if (cursor == null || !cursor.moveToFirst())
             {
                // not found. Also checked in DownloadUtils.getSongs, but it might get deleted.
-               utils.alertLog(this, "not found '" + Filename + "'")
                utils.errorLog("not found '" + Filename + "'")
             }
          else
             {
                val songId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID))
+               val albumArtist = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.ALBUM_ARTIST))
+               val album = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.ALBUM))
+               val title = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.TITLE))
                val artist =
                   cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.ARTIST))
                val composer =
                   cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.COMPOSER))
                val year =
                   cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.YEAR))
-               val file = File(utils.globalDirectory + "/" + Filename)
+               val songFile = File(utils.globalDirectory + "/" + Filename)
                val extra = Bundle()
 
-               extra.putString("Liner_Notes", file.getParent()!! + "/" + "liner_notes.pdf")
+               extra.putString("Liner_Notes", songFile.getParent()!! + "/" + "liner_notes.pdf")
                
                val metaData = androidx.media3.common.MediaMetadata.Builder()
-                  .setAlbumArtist(Album_Artist)
-                  .setAlbumTitle(Album)
-                  .setTitle(Title)
+                  .setAlbumArtist(albumArtist)
+                  .setAlbumTitle(album)
+                  .setTitle(title)
                   .setArtist(artist)
                   .setComposer(composer)
                   .setReleaseYear(year.toInt())
@@ -464,6 +464,8 @@ class MainActivity : AppCompatActivity()
    {
       super.onCreate(savedInstanceState)
       enableEdgeToEdge()
+
+      PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
 
       utils.mainActivity = this
 

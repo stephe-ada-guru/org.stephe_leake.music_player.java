@@ -45,6 +45,9 @@ import java.util.Locale
 
 import kotlinx.coroutines.flow.firstOrNull
 
+// Playlist preferences are actually state data, so we use DataStore.
+// Other preferences (given in preferences.xml) are stored in
+// SharedPreferences (since that's what the UI edits).
 private const val PLAYLIST_PREFERENCES_NAME = "playlist_prefs"
 val Context.playlistPrefsState : DataStore<Preferences> by preferencesDataStore(name = PLAYLIST_PREFERENCES_NAME)
 
@@ -58,9 +61,9 @@ public object PlaylistPreferenceKeys
 }
       
 data class PlaylistCounts(
-   val count: Int = 0,             // Count of songs in playlist
-   val index: Int = 0,             // Current song in playlist (1-indexed, 0 if none)
-   val pos: Long = 0L              // Current position in song (milliseconds, 0 if none)
+   val count: Int = 0, // Count of songs in playlist
+   val index: Int = 0, // Current song in playlist (1-indexed, 0 if none)
+   val pos: Long = 0L  // Current position in song (milliseconds, 0 if none)
 )
 
 class utils
