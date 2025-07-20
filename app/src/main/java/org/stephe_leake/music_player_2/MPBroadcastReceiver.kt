@@ -18,30 +18,23 @@
 
 package org.stephe_leake.music_player_2
 
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-
-import org.stephe_leake.music_player_2.DownloadService
-import org.stephe_leake.music_player_2.utils
 
 class MPBroadcastReceiver : android.content.BroadcastReceiver()
 {
    // Intent filter set for utils.DOWNLOAD_COMMAND
    override fun onReceive(context : Context, intent : Intent)
    {
-      when (intent.getIntExtra(utils.EXTRA_COMMAND, -1))
-      {
-         utils.COMMAND_CANCEL_DOWNLOAD ->
-            {
-               // Stop download service; intent must match startService
-               // call in MainActivity new_playlist.
-               utils.mainActivity!!.stopService (
-                  Intent (/* packageContext = */ utils.mainActivity,
-                          /* cls            = */ DownloadService::class.java))
-            }
+      if (intent.action == utils.COMMAND_CANCEL_DOWNLOAD)
+         {
+            // Stop download service; intent must match startService
+            // call in MainActivity new_playlist.
+            utils.mainActivity!!.stopService (
+               Intent (/* packageContext = */ utils.mainActivity,
+                       /* cls            = */ DownloadService::class.java))
+         }
          
          // else just ignore.
-         }
    }
 }

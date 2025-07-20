@@ -34,9 +34,6 @@ class DownloadNotif
 {
    var notifMem : Notification = NotificationCompat.Builder(context, utils.notificationChannelId).build()
    
-   init {
-   }
-
    var showLogPendingIntent : PendingIntent = showLogPendingIntentInit
 
    var cancelAction : NotificationCompat.Action = NotificationCompat.Action.Builder(
@@ -49,10 +46,7 @@ class DownloadNotif
 
    fun formatCounts() : String
    {
-      if (maxSongs == 0)
-         return ""
-      else
-         return "$maxSongs"
+      return if (maxSongs == 0) "" else "$maxSongs"
    }
 
    fun getNotif() : Notification
@@ -60,6 +54,7 @@ class DownloadNotif
       return notifMem
    }
 
+   @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    fun initialize(playlistName : String)
    {
       this.playlistName = playlistName

@@ -48,20 +48,11 @@ import android.widget.EditText
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.media3.session.MediaController
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -76,15 +67,10 @@ import java.io.File
 import java.io.FilenameFilter
 import java.io.FileWriter
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 import org.apache.commons.io.FilenameUtils
 
-import android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION
 import android.view.View.GONE
 import android.view.View.VISIBLE
 
@@ -96,6 +82,7 @@ class MainActivity : AppCompatActivity()
    private val CHECK_PERM_PICK_PLAYLIST   = 104
 
    private var newPlaylistIntent = Intent()
+   private var updatePlaylistIntent = Intent()
    
    private val viewModel : MainViewModel by viewModels()
    
@@ -433,9 +420,9 @@ class MainActivity : AppCompatActivity()
 
    } // playerListener
 
-   public fun onClickNote(v : View)
+   fun onClickNote(v : View)
    {
-      val buttonText = (((v as Button).getText() as String).replace('\n', ' '));
+      val buttonText = (((v as Button).getText() as String).replace('\n', ' '))
       val controller = mediaController!!
       val index = controller.currentMediaItemIndex
 
@@ -443,11 +430,11 @@ class MainActivity : AppCompatActivity()
          {
             val noteFileName = utils.appDirectory + "/" + viewModel.playlistState.value.baseName + ".note"
             val metaData = controller.currentMediaItem!!.mediaMetadata
-            val writer = BufferedWriter(FileWriter(noteFileName, true)); // append
+            val writer = BufferedWriter(FileWriter(noteFileName, true)) // append
             
-            writer.write(metaData.extras!!.getString("Song_File")!! + ' ' + buttonText);
-            writer.newLine();
-            writer.close();
+            writer.write(metaData.extras!!.getString("Song_File")!! + ' ' + buttonText)
+            writer.newLine()
+            writer.close()
          }
    }
    
@@ -484,6 +471,8 @@ class MainActivity : AppCompatActivity()
                File(utils.errorLogFileName())),
             "text/plain")
 
+      utils.cancelDownloadIntent = Intent(utils.COMMAND_CANCEL_DOWNLOAD)
+
       CreateNotificationChannel()
       
       setContentView(R.layout.mainactivity)
@@ -496,7 +485,7 @@ class MainActivity : AppCompatActivity()
       {
          if (checkPermission(CHECK_PERM_PICK_PLAYLIST))
             {
-               showPlaylistPickerDialog() {
+               showPlaylistPickerDialog {
                   filename ->
                      lifecycleScope.launch{playlistToPlayer(FilenameUtils.getBaseName(filename), play = true)}}
             }
@@ -564,7 +553,7 @@ class MainActivity : AppCompatActivity()
 
                CHECK_PERM_PICK_PLAYLIST ->
                   {
-                     showPlaylistPickerDialog() {
+                     showPlaylistPickerDialog {
                         filename -> lifecycleScope.launch {
                            playlistToPlayer(FilenameUtils.getBaseName(filename), play = true)}
                      }
@@ -574,7 +563,10 @@ class MainActivity : AppCompatActivity()
                   {
                      // FIXME: copy from R.id.menu_reset_playlist below
                   }
-               
+
+               CHECK_PERM_UPDATE_PLAYLIST ->
+                     this.startService(updatePlaylistIntent)
+   
                else -> 
                   {
                      utils.errorLog("programmer error.")
@@ -687,15 +679,10 @@ class MainActivity : AppCompatActivity()
             {
                var res     : Resources         = getResources()
                var prefs   : SharedPreferences = this.getPreferences(MODE_PRIVATE)
-               var serverIP: String            =
-                  // Default in preferences.xml doesn't seem to be used.
-               prefs.getString (res.getString(R.string.server_IP_key), res.getString(R.string.server_IP_default))!!
+               var serverIP: String?           = prefs.getString (res.getString(R.string.server_IP_key), null)
                
                if (null == serverIP)
                   {
-                     // can't get here with current default for
-                     // serverIP, but keep it in case we get
-                     // preferences working properly.
                      utils.alertLog(this, "set Server IP in preferences")
                   }
                else
@@ -756,9 +743,12 @@ class MainActivity : AppCompatActivity()
             {
                if (checkPermission(CHECK_PERM_RESET_PLAYLIST))
                   {
-                     //FIXME: don't have play service yet
-                     // sendBroadcast(Intent(utils.ACTION_PLAY_COMMAND)
-                     //                 .putExtra(utils.EXTRA_COMMAND, utils.COMMAND_RESET_PLAYLIST))
+                     // FIXME: resolve race condition
+                     // lifecycleScope.launch {viewModel.writeState(0, 0, 0)}
+                     // lifecycleScope.launch {
+                     //    playlistToPlayer(viewModel.playlistState.value.baseName),
+                     //    play = mediaController!!.isPlaying()
+                     // }
                   }
             }
 
@@ -792,25 +782,25 @@ class MainActivity : AppCompatActivity()
 
          R.id.menu_update_playlist ->
             {
-               if (checkPermission(CHECK_PERM_UPDATE_PLAYLIST))
-                  {
-                     //FIXME: don't have this fragment yet
-                     // var res: Resources           = getResources()
-                     // var prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-                     // var serverIP: String         = prefs.getString (res.getString(R.string.server_IP_key),
-                     //                                                 res.getString(R.string.server_IP_default))
+               var res: Resources           = getResources()
+               var prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+               var serverIP: String?        = prefs.getString (res.getString(R.string.server_IP_key), null)
 
-                     // if (null == serverIP)
-                     //    //FIXME: don't have utils yet
-                     //    // utils.alertLog(this, "set Server IP in preferences")
-                     // else
-                     // {
-                        //    //  var diag: PickPlaylistDialogFragment = PickPlaylistDialogFragment()
-                        //    //  var args: Bundle = Bundle()
-                        //    // args.putInt("command", utils.COMMAND_DOWNLOAD)
-                        //    // diag.setArguments(args)
-                        //    // diag.show(getFragmentManager(), "pick update playlist")
-                        // }
+               if (null == serverIP)
+                  utils.alertLog(this, "set Server IP in preferences")
+               else
+                  {
+                     showPlaylistPickerDialog {
+                        filename ->
+                           updatePlaylistIntent = Intent (
+                              utils.DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
+                           .putExtra(utils.EXTRA_PLAYLIST_CATEGORY, FilenameUtils.getBaseName(filename))
+                        
+                        if (checkPermission(CHECK_PERM_UPDATE_PLAYLIST))
+                           {
+                              this.startService(updatePlaylistIntent)
+                           }
+                     }
                   }
             }
 

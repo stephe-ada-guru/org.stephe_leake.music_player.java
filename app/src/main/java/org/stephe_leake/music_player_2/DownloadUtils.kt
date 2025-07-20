@@ -18,19 +18,12 @@
 
 package org.stephe_leake.music_player_2
 
-import android.database.Cursor
-import android.provider.MediaStore
-
-import java.io.BufferedInputStream
 import java.io.File
-import java.io.FileFilter
 import java.io.FileNotFoundException
-import java.io.FileOutputStream
 import java.io.FileReader
 import java.io.FileWriter
 import java.io.IOException
 import java.io.LineNumberReader
-import java.util.LinkedList
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -38,22 +31,10 @@ import kotlin.collections.MutableList
 
 import org.apache.commons.io.FilenameUtils
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.LineIterator
 
-// filefilter is a package, not a class
-import org.apache.commons.io.filefilter.FalseFileFilter
-import org.apache.commons.io.filefilter.FileFileFilter
-import org.apache.commons.io.filefilter.OrFileFilter
-import org.apache.commons.io.filefilter.SuffixFileFilter
-import org.apache.commons.io.filefilter.TrueFileFilter
-
-import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.ResponseBody
-
-import org.stephe_leake.music_player_2.utils
 
 class DownloadUtils
 {
@@ -61,10 +42,7 @@ class DownloadUtils
    {
       var prefLogLevel : LogLevel = LogLevel.Info
 
-      // used in processDirEntry
-      var playlistDir     : String = ""
-      var mentionedFiles  : MutableList<String> = mutableListOf<String>()
-      val downloadLogFileBaseName : String = "download_log"
+      const val downloadLogFileBaseName = "download_log"
 
       var httpClient : OkHttpClient? = null
 
@@ -95,7 +73,7 @@ class DownloadUtils
       fun readPlaylist(playlistFilename : String, lowercase : Boolean) : MutableList<String> 
       {
          // Read playlist file, return list of files (lowercase) in it.
-         val playlistFile : File = File(playlistFilename)
+         val playlistFile = File(playlistFilename)
 
          var result : MutableList<String> = mutableListOf<String>()
 
@@ -108,7 +86,7 @@ class DownloadUtils
                else
                   result.add(line)
             }
-         return result;
+         return result
       }
 
       fun prunePlaylist(playlistFilename : String,
@@ -122,9 +100,9 @@ class DownloadUtils
       {
          try {
             val lines  : MutableList<String> = readPlaylist(playlistFilename, false)
-            val output : FileWriter = FileWriter(playlistFilename) // Erases file
+            val output = FileWriter(playlistFilename) // Erases file
 
-            for (i in 1 .. lastIndex - 1)
+            repeat (lastIndex - 1)
                {
                   lines.removeAt(0)
                }
@@ -135,7 +113,7 @@ class DownloadUtils
                }
             output.close()
          }
-         catch (e: FileNotFoundException)
+         catch (_: FileNotFoundException)
          { // from 'FileReader(lastFilename)'; file not found; same as empty; do nothing
          }
       }
@@ -157,7 +135,7 @@ class DownloadUtils
                   log(LogLevel.Info, category + " playlist cleaned: " + (counts.index - 1) + " songs deleted")
                }
          }
-         catch (e : IOException)
+         catch (_ : IOException)
          {
             // from prunePlaylist (which calls readPlaylist)
             log(LogLevel.Error, "cannot read/write playlist '" + playlistFileName + "'")
@@ -186,7 +164,7 @@ class DownloadUtils
          (if (-1 == randomSeed) "" else "&seed=$randomSeed")
 
          val request : Request = Request.Builder().url(url).build()
-         val result  : StatusStrings = StatusStrings()
+         val result  = StatusStrings()
 
          ensureHttpClient()
 
@@ -224,20 +202,18 @@ class DownloadUtils
                    category : String)
          : StatusCount
       {
-         val playlistFile   : File = File(utils.playlistFileName(category))
+         val playlistFile   = File(utils.playlistFileName(category))
          val playlistWriter : FileWriter
-         val result         : StatusCount = StatusCount()
-         // var metaStatus     : ProcessStatus
-         // var fileStatus     : StatusCount
-         var newSongs = 0
+         val result         = StatusCount()
+         var newSongs       = 0
 
          try
          {
             playlistWriter = FileWriter(playlistFile, true) // append
          }
-         catch (e: IOException)
+         catch (_: IOException)
          {
-            log(LogLevel.Error, "cannot open '" + playlistFile.getAbsolutePath() + "' for append.")
+            log(LogLevel.Error, "cannot open '" + playlistFile.absolutePath + "' for append.")
             result.status = ProcessStatus.Fatal
             return result
          }
@@ -253,6 +229,7 @@ class DownloadUtils
                   
                   if (!file.exists())
                      {
+                        newSongs++
                         // not found; we can't download it to a specific directory, so tell the user to download it
                         // FIXME: with MANAGE_EXTERNAL_STORAGE, can write song file to correct directory
                         result.status = ProcessStatus.Retry
@@ -263,10 +240,10 @@ class DownloadUtils
                   playlistWriter.write("$song\n")    
                }
          }
-         catch (e: IOException)
+         catch (_: IOException)
          {
             // From playlistWriter.write
-            log(LogLevel.Error, "cannot append to '" + playlistFile.getAbsolutePath() + "'; disk full?")
+            log(LogLevel.Error, "cannot append to '" + playlistFile.absolutePath + "'; disk full?")
             result.status = ProcessStatus.Fatal // non-recoverable
          }
          finally
@@ -274,9 +251,11 @@ class DownloadUtils
             try
             {
                playlistWriter.close()
-            } catch (e: IOException) {
+            }
+            catch (_: IOException)
+            {
                // probably from flush cache
-               log(LogLevel.Error, "cannot close '" + playlistFile.getAbsolutePath() + "'; disk full?")
+               log(LogLevel.Error, "cannot close '" + playlistFile.absolutePath + "'; disk full?")
                result.status = ProcessStatus.Fatal // non-recoverable
             }
          }
@@ -293,13 +272,13 @@ class DownloadUtils
       fun readNotes(noteFile : File)
          : String
       {
-         var data : String = ""
+         var data = ""
          
          if (noteFile.exists())
             {
                try
                {
-                  val noteReader : LineNumberReader = LineNumberReader(FileReader(noteFile))
+                  val noteReader = LineNumberReader(FileReader(noteFile))
                   var line : String? = noteReader.readLine()
                   
                   while (line != null) {
@@ -308,8 +287,8 @@ class DownloadUtils
                      line = noteReader.readLine()
                   }
                }
-               catch (e: FileNotFoundException) {} // from noteReader constructor; can't get here
-               catch (e: IOException) {} // from noteReader.readLine; can't get here
+               catch (_: FileNotFoundException) {} // from noteReader constructor; can't get here
+               catch (_: IOException) {} // from noteReader.readLine; can't get here
             }
          return data
       }
@@ -319,14 +298,14 @@ class DownloadUtils
          : ProcessStatus
       {
          var status   : ProcessStatus = ProcessStatus.Success
-         val url      : String = "http://$serverIP:8080/remote_cache/$category.note"
-         val noteFile : File   = File(utils.notesFileName(category))
-         var data     : String = readNotes(noteFile)
+         val url      = "http://$serverIP:8080/remote_cache/$category.note"
+         val noteFile = File(utils.notesFileName(category))
+         var data     = readNotes(noteFile)
 
-         if (data.length > 0)
+         if (data.isNotEmpty())
             {
-               val body    : TextBody = TextBody(data)
-               val request : Request  = Request.Builder()
+               val body    = TextBody(data)
+               val request = Request.Builder()
                   .url(url)
                   .put(body)
                   .build()

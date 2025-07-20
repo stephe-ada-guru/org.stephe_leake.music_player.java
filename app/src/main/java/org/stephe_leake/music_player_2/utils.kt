@@ -18,19 +18,15 @@
 
 package org.stephe_leake.music_player_2
 
-import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.Manifest.permission
 import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -51,7 +47,7 @@ import kotlinx.coroutines.flow.firstOrNull
 private const val PLAYLIST_PREFERENCES_NAME = "playlist_prefs"
 val Context.playlistPrefsState : DataStore<Preferences> by preferencesDataStore(name = PLAYLIST_PREFERENCES_NAME)
 
-public object PlaylistPreferenceKeys
+object PlaylistPreferenceKeys
 {
    val NAME  = stringPreferencesKey("name")
    
@@ -70,52 +66,37 @@ class utils
 {
    companion object
    {
-      val millisPerMinute : Long = 60 * 1000
-      val millisPerHour   : Long = 60 * millisPerMinute
-      val millisPerDay    : Long = 24 * millisPerHour
+      const val millisPerMinute : Long = 60 * 1000
+      const val millisPerHour   : Long = 60 * millisPerMinute
 
-      val notificationChannelId : String = "Stephe's Music notifications"
+      const val notificationChannelId : String = "Stephe's Music notifications"
       
       //  Notification ids; all with null tag
-      val notif_play_id     : Int = 1
-      val notif_download_id : Int = 2
+      const val notif_download_id : Int = 1
 
-      val EXTRA_COMMAND            : String = "org.stephe_leake.stephes_music.extra.command"
-      val EXTRA_PLAYLIST_CATEGORY  : String = "PLAYLIST_CATEGORY"
-      val DOWNLOAD_COMMAND         : String = "download_command"
-      val RESTART_PLAYLIST_COMMAND : String = "restart_playlist_command"
+      const val EXTRA_PLAYLIST_CATEGORY  : String = "PLAYLIST_CATEGORY"
+      const val DOWNLOAD_COMMAND         : String = "download_command" // Update existing or create new playlist
+      const val RESTART_PLAYLIST_COMMAND : String = "restart_playlist_command"
+      const val COMMAND_CANCEL_DOWNLOAD  : String = "org.stephe_leake.stephes_music.cancel_download"
 
-      // download service commands
-      val COMMAND_CANCEL_DOWNLOAD : Int = 2
-      val COMMAND_DOWNLOAD        : Int = 3 // Update existing or create new playlist
+      // FIXME: not implemented
+      // val RESULT_TEXT_SCALE : Int         = Activity.RESULT_FIRST_USER + 1
 
-      // sub-activity result codes
-      val RESULT_TEXT_SCALE : Int         = Activity.RESULT_FIRST_USER + 1
+      const val showDownloadLogIntentId : Int = 6
+      const val cancelDownloadIntentId  : Int = 8
 
-      val pauseIntentId           : Int = 1
-      val playIntentId            : Int = 2
-      val prevIntentId            : Int = 3
-      val nextIntentId            : Int = 4
-      val activityIntentId        : Int = 5
-      val showDownloadLogIntentId : Int = 6
-      val showErrorLogIntentId    : Int = 7
-      val cancelDownloadIntentId  : Int = 8
-
-      val logTag : String =
+      const val logTag : String =
          // Must be shorter than 23 chars
       //  1        10        20 |
       "stephes_music"
 
-      // objects
-
       var showDownloadLogIntent : Intent = Intent(Intent.ACTION_VIEW)
       var showErrorLogIntent    : Intent = Intent(Intent.ACTION_VIEW)
       var cancelDownloadIntent  : Intent = Intent(Intent.ACTION_VIEW)
-      
+
+      // We need this because there is not always a way to get it
+      // programatically.
       var mainActivity: AppCompatActivity? = null
-
-
-      ////////// Shared objects
 
       var appDirectory : String = ""
       // Absolute path to application-specific directory, containing
@@ -123,15 +104,13 @@ class utils
       //
       // Set by Activity to getExternalStorageDir().
 
-      val globalDirectory : String = "/storage/emulated/0/Music/Music"
+      const val globalDirectory : String = "/storage/emulated/0/Music/Music"
       // Globally accessible directory where music, playlist, log files
       // are stored.
-      // 
-      // FIXME: Preferences don't work, so this needs a valid default
 
-      val logFileExt : String = ".txt"
+      const val logFileExt : String = ".txt"
 
-      val errorLogFileBaseName : String = "error_log"
+      const val errorLogFileBaseName : String = "error_log"
 
       fun playlistFileName(category : String) : String 
       // return 'category' playlist file absolute path
@@ -153,7 +132,7 @@ class utils
             }
          else
             {
-               var temp : Int? = preferences.get(PlaylistPreferenceKeys.index(playlist))
+               var temp : Int? = preferences[PlaylistPreferenceKeys.index(playlist)]
                if (temp == null)
                   {
                      // Never set
@@ -165,9 +144,9 @@ class utils
                else
                   {
                      return PlaylistCounts(
-                        count = preferences.get(PlaylistPreferenceKeys.count(playlist))!!,
+                        count = preferences[PlaylistPreferenceKeys.count(playlist)]!!,
                         index = temp,
-                        pos = preferences.get(PlaylistPreferenceKeys.pos(playlist))!!)
+                        pos = preferences[PlaylistPreferenceKeys.pos(playlist)]!!)
                   }
             }
       }
@@ -179,7 +158,7 @@ class utils
             return ""
          else
             {
-               var temp : String? = preferences.get(PlaylistPreferenceKeys.NAME)
+               var temp : String? = preferences[PlaylistPreferenceKeys.NAME]
                if (temp == null)
                   {
                      // Never set
@@ -194,16 +173,16 @@ class utils
    
       fun notesFileName(category : String) : String
       {
-         return utils.appDirectory + "/" + category + ".note"
+         return appDirectory + "/" + category + ".note"
       }
 
       fun findTextViewById (a: AppCompatActivity, id: Int) : TextView
       {
          val v : View? = a.findViewById(id)
          
-         if (v == null) throw RuntimeException("no such id " + id)
+         if (v == null) {throw RuntimeException("no such id " + id)}
             
-            if (v is TextView)
+         if (v is TextView)
             {
                return v
             }
@@ -239,17 +218,17 @@ class utils
       // errors go in utils.errorLogFileBaseName, download messages in
       // DownloadUtils.downloadLogFileBaseName
       {
-         val fmt       : SimpleDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss : ", Locale.US)
+         val fmt       = SimpleDateFormat("yyyy-MM-dd HH:mm:ss : ", Locale.US)
          val time      : Long     = System.currentTimeMillis() // local time zone
          val timeStamp : String   = fmt.format(time)
          val levelImg  : String   = logImage (level)
-         val logFile   : File     = File(logFileName(logFileBaseName))
-         val writer : PrintWriter = PrintWriter(FileWriter(logFileName(logFileBaseName), true)) // append
+         val logFile   = File(logFileName(logFileBaseName))
+         val writer    = PrintWriter(FileWriter(logFileName(logFileBaseName), true)) // append
          
-         if (logFile.exists() && time - logFile.lastModified() > 4 * utils.millisPerHour)
+         if (logFile.exists() && time - logFile.lastModified() > 4 * millisPerHour)
             {
                val oldLogFileName : String = globalDirectory + "/" + logFileBaseName + "_1" + logFileExt
-               val oldLogFile     : File   = File(oldLogFileName)
+               val oldLogFile     = File(oldLogFileName)
                
                if (oldLogFile.exists())
                   {oldLogFile.delete()}
@@ -263,7 +242,7 @@ class utils
       fun errorLog(context : Context?, msg : String, e : Throwable)
       {
          // programmer errors (possibly due to Android bugs :)
-         log(LogLevel.Error, msg + e.toString(), utils.errorLogFileBaseName)
+         log(LogLevel.Error, msg + e.toString(), errorLogFileBaseName)
          if (null != context)
             Toast.makeText(context, msg + e.toString(), Toast.LENGTH_LONG).show()
       }
@@ -286,13 +265,5 @@ class utils
          AlertDialog.Builder(context).setMessage(msg).setPositiveButton(R.string.Ok, null).show()
       }
 
-      fun alertLog(context : Context, msg : String, e : Throwable)
-      {
-         // Messages containing info user needs time to read; requires explicit dismissal.
-         //
-         // Cannot be called from a service
-         Log.e(logTag, msg)
-         AlertDialog.Builder(context).setMessage(msg + e.toString()).setPositiveButton(R.string.Ok, null).show()
-      }
    }
 }

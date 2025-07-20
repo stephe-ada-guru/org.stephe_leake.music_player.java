@@ -25,8 +25,4 @@ enum class ProcessStatus(val index : Int)
    Success(2),
    Retry(3),
    Fatal(4);
-
-   fun toInt() : Int {return index}
-
-   // String toString() implicit
 }

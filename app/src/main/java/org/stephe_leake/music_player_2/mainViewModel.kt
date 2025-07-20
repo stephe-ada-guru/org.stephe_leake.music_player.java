@@ -31,8 +31,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-import org.stephe_leake.music_player_2.PlaylistPreferenceKeys
-
 data class PlaylistState(
    val baseName: String = "",      // Current playlist file name (empty if no playlist)
    val count: Int = 0,             // Count of songs in playlist
@@ -118,7 +116,7 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
          }
       else
          {
-            var temp : String? = preferences.get(PlaylistPreferenceKeys.NAME)
+            var temp : String? = preferences[PlaylistPreferenceKeys.NAME]
             if (temp == null)
                {
                   // Never set
@@ -132,19 +130,18 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
                {
                   _playlistState.value = PlaylistState(
                      baseName = temp,
-                     count = preferences.get(PlaylistPreferenceKeys.count(temp))!!,
-                     index = preferences.get(PlaylistPreferenceKeys.index(temp))!!,
-                     pos = preferences.get(PlaylistPreferenceKeys.pos(temp))!!)
+                     count = preferences[PlaylistPreferenceKeys.count(temp)]!!,
+                     index = preferences[PlaylistPreferenceKeys.index(temp)]!!,
+                     pos = preferences[PlaylistPreferenceKeys.pos(temp)]!!)
                }
          }
    }
    
    private val _isMediaControllerReady = MutableStateFlow(false)
-   val isMediaControllerReady: StateFlow<Boolean> = _isMediaControllerReady.asStateFlow()
 
    val isPlayerReadyToInitialize: StateFlow<Boolean> =
       combine(_playlistState, _isMediaControllerReady)
-   {currentPlaylistState, mediaControllerReady ->
+   {_, mediaControllerReady ->
         mediaControllerReady
    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), false)
 

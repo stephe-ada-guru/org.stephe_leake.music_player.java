@@ -22,7 +22,6 @@ import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody
 import okio.BufferedSink
-import java.io.IOException
 
 internal
 class TextBody (private val data: String) : RequestBody()

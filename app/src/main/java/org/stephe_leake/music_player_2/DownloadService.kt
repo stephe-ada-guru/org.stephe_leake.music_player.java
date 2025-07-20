@@ -21,7 +21,6 @@ package org.stephe_leake.music_player_2
 import android.Manifest
 import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
@@ -30,17 +29,12 @@ import android.os.IBinder
 import androidx.annotation.RequiresPermission
 import androidx.preference.PreferenceManager
 
-import java.io.BufferedReader
 import java.io.File
-import java.io.FileReader
 import java.io.IOException
 
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 import org.apache.commons.io.FilenameUtils
@@ -62,7 +56,6 @@ class DownloadService : Service()
    object DownloadEvents
    {
       private val _events = MutableSharedFlow<String>()
-      val events: SharedFlow<String> = _events.asSharedFlow()
 
       suspend fun sendRestartPlaylist()
       {
@@ -73,8 +66,8 @@ class DownloadService : Service()
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    private suspend fun updatePlaylist (category : String)
    {
-      var res                : Resources           = getResources()
-      var prefs              : SharedPreferences   = utils.mainActivity!!.getPreferences(Context.MODE_PRIVATE)
+      var res                = resources
+      var prefs              : SharedPreferences   = utils.mainActivity!!.getPreferences(MODE_PRIVATE)
       var songCountMaxStr    : String?             =
          prefs.getString(res.getString(R.string.song_count_max_key),
                          res.getString(R.string.song_count_max_default))
@@ -88,11 +81,11 @@ class DownloadService : Service()
          prefs.getString (res.getString(R.string.song_count_threshold_key),
                           res.getString(R.string.song_count_threshold_default))
 
-      var serverIP        : String      = prefs.getString (res.getString(R.string.server_IP_key),
+      var serverIP        = prefs.getString (res.getString(R.string.server_IP_key),
                                                            res.getString(R.string.server_IP_default))!!
-      var playlistFile    : File        = File(utils.playlistFileName(category))
-      var playlistDirFile : File        = File(FilenameUtils.getPath(playlistFile.path))
-      var status          : StatusCount = StatusCount()
+      var playlistFile    = File(utils.playlistFileName(category))
+      var playlistDirFile = File(FilenameUtils.getPath(playlistFile.path))
+      var status          = StatusCount()
 
       if (serverIP == "")
          {
@@ -198,20 +191,20 @@ class DownloadService : Service()
    {
       super.onCreate()
 
-      val filter : IntentFilter = IntentFilter()
+      val filter = IntentFilter()
       filter.addAction(utils.DOWNLOAD_COMMAND)
       registerReceiver(broadcastReceiverCommand, filter, RECEIVER_NOT_EXPORTED)
 
       notif = DownloadNotif(
          context = this,
          showLogPendingIntentInit = PendingIntent.getActivity
-         (this.getApplicationContext(),
+         (this.applicationContext,
           utils.showDownloadLogIntentId,
           utils.showDownloadLogIntent,
           PendingIntent.FLAG_IMMUTABLE),
 
          cancelIntent = PendingIntent.getBroadcast
-         (this.getApplicationContext(),
+         (this.applicationContext,
           utils.cancelDownloadIntentId,
           utils.cancelDownloadIntent,
           PendingIntent.FLAG_IMMUTABLE))
@@ -235,17 +228,17 @@ class DownloadService : Service()
             // after a crash.
             return START_NOT_STICKY
          }
-      else if (intent.getAction() == utils.DOWNLOAD_COMMAND)
+      else if (intent.action == utils.DOWNLOAD_COMMAND)
          {
             try {
-               val res   : Resources = getResources()
+               val res   : Resources = resources
                val prefs : SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
                DownloadUtils.prefLogLevel = LogLevel.valueOf(
                   prefs.getString(res.getString(R.string.log_level_key),
                                   LogLevel.Info.toString())!!)
 
-                  val runner : DownloadRun = DownloadRun(notif, intent.getStringExtra(utils.EXTRA_PLAYLIST_CATEGORY)!!)
+                  val runner = DownloadRun(notif, intent.getStringExtra(utils.EXTRA_PLAYLIST_CATEGORY)!!)
                   Thread(runner).start()
 
                   return START_NOT_STICKY
