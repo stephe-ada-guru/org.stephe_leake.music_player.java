@@ -205,7 +205,7 @@ class DownloadService : Service()
          cancelIntent = PendingIntent.getBroadcast
          (this.applicationContext,
           utils.cancelDownloadIntentId,
-          utils.cancelDownloadIntent,
+          Intent(this, MPBroadcastReceiver::class.java).apply{action = utils.COMMAND_CANCEL_DOWNLOAD},
           PendingIntent.FLAG_IMMUTABLE))
 
       startForeground (utils.notif_download_id, notif.getNotif(),

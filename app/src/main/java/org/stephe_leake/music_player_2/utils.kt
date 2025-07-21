@@ -92,7 +92,6 @@ class utils
 
       var showDownloadLogIntent : Intent = Intent(Intent.ACTION_VIEW)
       var showErrorLogIntent    : Intent = Intent(Intent.ACTION_VIEW)
-      var cancelDownloadIntent  : Intent = Intent(Intent.ACTION_VIEW)
 
       // We need this because there is not always a way to get it
       // programatically.

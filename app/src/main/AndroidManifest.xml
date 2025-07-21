@@ -48,11 +48,16 @@
           android:name=".PlayService"
           android:foregroundServiceType="mediaPlayback"
           android:exported="true">
-          <intent-filter>
-            <action android:name="androidx.media3.session.MediaSessionService"/>
-            <action android:name="android.media.browse.MediaBrowserService"/>
-          </intent-filter>
+        <intent-filter>
+          <action android:name="androidx.media3.session.MediaSessionService"/>
+          <action android:name="android.media.browse.MediaBrowserService"/>
+        </intent-filter>
       </service>
+
+      <receiver
+          android:name=".MPBroadcastReceiver"
+          android:exported="true">
+      </receiver>
 
       <provider
           android:name="androidx.core.content.FileProvider"

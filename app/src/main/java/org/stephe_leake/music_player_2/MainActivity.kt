@@ -504,8 +504,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                File(utils.errorLogFileName())),
             "text/plain")
 
-      utils.cancelDownloadIntent = Intent(utils.COMMAND_CANCEL_DOWNLOAD)
-
       CreateNotificationChannel()
       
       setContentView(R.layout.mainactivity)
@@ -622,6 +620,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
               scaleTextViews();
            }
     }
+   
    // @OptIn(UnstableApi::class)
    override fun onStart()
    {

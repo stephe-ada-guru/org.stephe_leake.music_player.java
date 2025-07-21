@@ -30,9 +30,7 @@ class MPBroadcastReceiver : android.content.BroadcastReceiver()
          {
             // Stop download service; intent must match startService
             // call in MainActivity new_playlist.
-            utils.mainActivity!!.stopService (
-               Intent (/* packageContext = */ utils.mainActivity,
-                       /* cls            = */ DownloadService::class.java))
+            context.stopService (Intent (context, DownloadService::class.java))
          }
          
          // else just ignore.
