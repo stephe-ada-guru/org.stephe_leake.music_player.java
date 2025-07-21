@@ -74,13 +74,15 @@ import org.apache.commons.io.FilenameUtils
 import android.view.View.GONE
 import android.view.View.VISIBLE
 
-class MainActivity : AppCompatActivity()
+class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener
 {
    private val CHECK_PERM_NEW_PLAYLIST    = 101
    private val CHECK_PERM_RESET_PLAYLIST  = 102
    private val CHECK_PERM_UPDATE_PLAYLIST = 103
    private val CHECK_PERM_PICK_PLAYLIST   = 104
 
+   private var defaultTextViewTextSize : Float = 1.0F // set in onCreate
+   
    private var newPlaylistIntent = Intent()
    private var updatePlaylistIntent = Intent()
    
@@ -438,6 +440,36 @@ class MainActivity : AppCompatActivity()
          }
    }
    
+   private fun getTextViewTextScale() : Float
+   {
+      val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+      val scale : String = prefs.getString (
+         this.getString(R.string.text_scale_key), this.getString(R.string.text_scale_default))!!
+
+      try
+      {
+         return scale.toFloat()
+      }
+      catch (_ : NumberFormatException)
+      {
+         utils.errorLog("invalid text_scale preference: " + scale)
+         return 1.0f
+      }
+   }
+
+   private fun scaleTextViews()
+   {
+      val scale = getTextViewTextScale()
+
+      utils.findTextViewById(this, R.id.album).setTextSize(scale * defaultTextViewTextSize)
+      utils.findTextViewById(this, R.id.albumArtist).setTextSize(scale * defaultTextViewTextSize)
+      utils.findTextViewById(this, R.id.artist).setTextSize(0.5f * scale * defaultTextViewTextSize)
+      utils.findTextViewById(this, R.id.composer).setTextSize(0.5f * scale * defaultTextViewTextSize)
+      utils.findTextViewById(this, R.id.title).setTextSize(scale * defaultTextViewTextSize)
+      utils.findTextViewById(this, R.id.title).setTextSize(scale * defaultTextViewTextSize)
+      utils.findTextViewById(this, R.id.year).setTextSize(0.5f * scale * defaultTextViewTextSize)
+   }
+
    ////////// Activity lifetime methods (in lifecycle order)
 
    override fun onCreate(savedInstanceState: Bundle?)
@@ -446,6 +478,7 @@ class MainActivity : AppCompatActivity()
       enableEdgeToEdge()
 
       PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
+      PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this)
 
       utils.mainActivity = this
 
@@ -478,7 +511,9 @@ class MainActivity : AppCompatActivity()
       setContentView(R.layout.mainactivity)
       setSupportActionBar(findViewById(R.id.main_toolbar))
 
-      // Set up displays, top to bottom left to right
+      defaultTextViewTextSize = utils.findTextViewById(this, R.id.artist).textSize
+
+      scaleTextViews();
       
       val playlistView = utils.findTextViewById(this, R.id.playlist)
       playlistView.setOnClickListener()
@@ -580,6 +615,13 @@ class MainActivity : AppCompatActivity()
          }
    } // onRequestPermissionsResult
 
+   override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?)
+   {
+      if (key == getString(R.string.text_scale_key))
+           {
+              scaleTextViews();
+           }
+    }
    // @OptIn(UnstableApi::class)
    override fun onStart()
    {
@@ -625,6 +667,7 @@ class MainActivity : AppCompatActivity()
       mediaController?.removeListener(playerListener)
       
       super.onDestroy()
+      PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(this)
    }
 
    ////////// Menu
@@ -735,7 +778,7 @@ class MainActivity : AppCompatActivity()
          R.id.menu_preferences ->
             {
                // We don't need a result
-               this. startActivity(Intent(utils.mainActivity, PrefActivity::class.java))
+               this.startActivity(Intent(utils.mainActivity, PrefActivity::class.java))
             }
          
          R.id.menu_reset_playlist ->
