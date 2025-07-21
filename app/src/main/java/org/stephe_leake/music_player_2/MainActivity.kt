@@ -475,7 +475,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    override fun onCreate(savedInstanceState: Bundle?)
    {
       super.onCreate(savedInstanceState)
-      enableEdgeToEdge()
 
       PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
       PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this)

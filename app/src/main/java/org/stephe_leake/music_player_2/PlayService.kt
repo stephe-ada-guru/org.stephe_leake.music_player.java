@@ -18,6 +18,8 @@
 
 package org.stephe_leake.music_player_2
 
+import android.app.PendingIntent
+import android.content.Intent
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.MediaSession
@@ -36,7 +38,14 @@ class PlayService : MediaSessionService()
    {
       super.onCreate()
       player = ExoPlayer.Builder(this).build()
-      mediaSession = MediaSession.Builder(this, player).build()
+      mediaSession = MediaSession.Builder(this, player)
+         .setSessionActivity(
+            PendingIntent.getActivity(
+               this,
+               0, // Request code
+               Intent(this, MainActivity::class.java),
+               PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)!!)
+         .build()
    }
 
    override fun onDestroy()

@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 data class PlaylistState(
    val baseName: String = "",      // Current playlist file name (empty if no playlist)
    val count: Int = 0,             // Count of songs in playlist
-   val index: Int = -1,             // Current song in playlist (0 indexed, -1 if none)
+   val index: Int = 0,             // Current song in playlist (0 indexed)
    val pos: Long = 0L              // Current position in song (milliseconds, 0 if none)
 )
 
@@ -54,13 +54,13 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
          if (current.baseName != "")
             {
                preferences[PlaylistPreferenceKeys.count(current.baseName)] = 0
-               preferences[PlaylistPreferenceKeys.index(current.baseName)] = -1
+               preferences[PlaylistPreferenceKeys.index(current.baseName)] = 0
                preferences[PlaylistPreferenceKeys.pos(current.baseName)] = 0
 
                _playlistState.value = PlaylistState(
                   baseName = "",
                   count = 0,
-                  index = -1,
+                  index = 0,
                   pos = 0)
             }
       }
@@ -76,7 +76,7 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
       _playlistState.value = PlaylistState(
          baseName = category,
          count = 0,
-         index = -1,
+         index = 0,
          pos = 0)
    } // writeCategory
       
@@ -111,7 +111,7 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
             _playlistState.value = PlaylistState(
                baseName = "",
                count = 0,
-               index = -1,
+               index = 0,
                pos = 0)
          }
       else
@@ -123,7 +123,7 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
                   _playlistState.value = PlaylistState(
                      baseName = "",
                      count = 0,
-                     index = -1,
+                     index = 0,
                      pos = 0)
                }
             else
@@ -142,7 +142,7 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
    val isPlayerReadyToInitialize: StateFlow<Boolean> =
       combine(_playlistState, _isMediaControllerReady)
    {_, mediaControllerReady ->
-        mediaControllerReady
+       mediaControllerReady
    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), false)
 
    init {
