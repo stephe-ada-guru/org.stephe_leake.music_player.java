@@ -181,7 +181,6 @@
             android:layout_height="match_parent"
             android:layout_width="wrap_content"
             android:text="@string/note_category"
-            android:textColor="#ffefefef"
             android:onClick="onClickNote"/>
         <View
             android:layout_width="1dp"
@@ -193,7 +192,6 @@
             android:layout_height="match_parent"
             android:layout_width="wrap_content"
             android:text="@string/note_dont_play"
-            android:textColor="#ffefefef"
             android:onClick="onClickNote"/>
         <View
             android:layout_width="1dp"
@@ -205,7 +203,6 @@
             android:layout_height="match_parent"
             android:layout_width="wrap_content"
             android:text="@string/note_play_before"
-            android:textColor="#ffefefef"
             android:onClick="onClickNote"/>
       </LinearLayout>
       <LinearLayout
@@ -228,7 +225,6 @@
             android:layout_height="match_parent"
             android:layout_width="wrap_content"
             android:text="@string/note_want_more"
-            android:textColor="#ffefefef"
             android:onClick="onClickNote"/>
         <View
             android:layout_width="1dp"
@@ -240,7 +236,6 @@
             android:layout_height="match_parent"
             android:layout_width="wrap_content"
             android:text="@string/note_best_list"
-            android:textColor="#ffefefef"
             android:onClick="onClickNote"/>
         <View
             android:layout_width="1dp"
@@ -252,7 +247,6 @@
             android:layout_height="match_parent"
             android:layout_width="wrap_content"
             android:text="@string/note_other"
-            android:textColor="#ffefefef"
             android:onClick="onClickNote"/>
       </LinearLayout>
 

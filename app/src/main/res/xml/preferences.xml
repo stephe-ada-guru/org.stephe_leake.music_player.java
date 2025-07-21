@@ -58,12 +58,12 @@ write to the Free Software Foundation, 51 Franklin Street, Suite
 
     <androidx.preference.ListPreference
         app:key="@string/log_level_key"
-        app:defaultValue="normal"
+        app:defaultValue="Info"
         app:title="@string/log_level_title"
         app:summary="@string/log_level_summary"
         app:dialogTitle="@string/log_level_dialog_title"
         app:entries="@array/log_level_entries"
-        app:entryValues="@array/log_level_values"/>
+        app:entryValues="@array/log_level_entries"/>
 
     <androidx.preference.EditTextPreference
         app:key="@string/server_IP_key"

@@ -6,8 +6,4 @@
         <item>Info</item>
     </string-array>
 
-    <string-array name="log_level_values">
-        <item>verbose</item>
-        <item>info</item>
-    </string-array>
 </resources>

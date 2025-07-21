@@ -67,7 +67,7 @@ class DownloadService : Service()
    private suspend fun updatePlaylist (category : String)
    {
       var res                = resources
-      var prefs              : SharedPreferences   = utils.mainActivity!!.getPreferences(MODE_PRIVATE)
+      var prefs              : SharedPreferences   = PreferenceManager.getDefaultSharedPreferences(utils.mainActivity!!)
       var songCountMaxStr    : String?             =
          prefs.getString(res.getString(R.string.song_count_max_key),
                          res.getString(R.string.song_count_max_default))
@@ -81,13 +81,12 @@ class DownloadService : Service()
          prefs.getString (res.getString(R.string.song_count_threshold_key),
                           res.getString(R.string.song_count_threshold_default))
 
-      var serverIP        = prefs.getString (res.getString(R.string.server_IP_key),
-                                                           res.getString(R.string.server_IP_default))!!
+      var serverIP        = prefs.getString (res.getString(R.string.server_IP_key), null)
       var playlistFile    = File(utils.playlistFileName(category))
       var playlistDirFile = File(FilenameUtils.getPath(playlistFile.path))
       var status          = StatusCount()
 
-      if (serverIP == "")
+      if (serverIP == null || serverIP == "")
          {
             notif.Error("Server IP preference not set")
             return

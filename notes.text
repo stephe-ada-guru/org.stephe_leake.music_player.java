@@ -1,7 +1,11 @@
 c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 c:/Projects/smm.main/notes.text
 
-install on phone?
+install on phone for more thorough testing
+    why is background of text fields white?
+    in download notif, 'cancel' doesn't
+
+review FIXME
 
 implement search activity
 
@@ -14,11 +18,6 @@ showed albumart for alice's restaurant
 implement menu | share
 
 Need "clear playlist" and "delete playlist"; instrumental got screwed up.
-
-review FIXME
-
-text in buttons is too light!
-    test on phone
 
  decisions
 use same design as old app
@@ -56,7 +55,7 @@ versions
     https://developer.android.com/jetpack/androidx/releases/media3
     https://github.com/protocolbuffers/protobuf/releases
     https://developer.android.com/jetpack/androidx/versions - appcompat
-
+    https://github.com/material-components/material-components-android/releases
 
 https://github.com/androidx/media/issues/651
     use PlayerView!

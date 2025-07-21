@@ -677,9 +677,8 @@ class MainActivity : AppCompatActivity()
 
          R.id.menu_new_playlist ->
             {
-               var res     : Resources         = getResources()
-               var prefs   : SharedPreferences = this.getPreferences(MODE_PRIVATE)
-               var serverIP: String?           = prefs.getString (res.getString(R.string.server_IP_key), null)
+               var prefs   : SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+               var serverIP: String?           = prefs.getString (this.getString(R.string.server_IP_key), null)
                
                if (null == serverIP)
                   {
@@ -736,7 +735,7 @@ class MainActivity : AppCompatActivity()
          R.id.menu_preferences ->
             {
                // We don't need a result
-               this.startActivity(Intent(utils.mainActivity, PrefActivity::class.java))
+               this. startActivity(Intent(utils.mainActivity, PrefActivity::class.java))
             }
          
          R.id.menu_reset_playlist ->
@@ -782,9 +781,8 @@ class MainActivity : AppCompatActivity()
 
          R.id.menu_update_playlist ->
             {
-               var res: Resources           = getResources()
                var prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-               var serverIP: String?        = prefs.getString (res.getString(R.string.server_IP_key), null)
+               var serverIP: String?        = prefs.getString (this.getString(R.string.server_IP_key), null)
 
                if (null == serverIP)
                   utils.alertLog(this, "set Server IP in preferences")

@@ -71,7 +71,7 @@
   <string name="prev_threshold_dialog_title">previous threshold (milliseconds)</string>
 
   <string name="server_IP_key">server_IP</string>
-  <string name="server_IP_default">192.168.7.52</string>
+  <string name="server_IP_default"></string>
   <string name="server_IP_title">Server IP</string>
   <string name="server_IP_summary">Server for download</string>
   <string name="server_IP_dialog_title">Server IP</string>

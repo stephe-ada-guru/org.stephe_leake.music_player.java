@@ -43,7 +43,7 @@ import kotlinx.coroutines.flow.firstOrNull
 
 // Playlist preferences are actually state data, so we use DataStore.
 // Other preferences (given in preferences.xml) are stored in
-// SharedPreferences (since that's what the UI edits).
+// DefaultSharedPreferences (since that's what the UI edits).
 private const val PLAYLIST_PREFERENCES_NAME = "playlist_prefs"
 val Context.playlistPrefsState : DataStore<Preferences> by preferencesDataStore(name = PLAYLIST_PREFERENCES_NAME)
 
