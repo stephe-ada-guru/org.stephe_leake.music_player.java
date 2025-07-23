@@ -116,8 +116,8 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
          }
       else
          {
-            var temp : String? = preferences[PlaylistPreferenceKeys.NAME]
-            if (temp == null)
+            var name : String? = preferences[PlaylistPreferenceKeys.NAME]
+            if (name == null)
                {
                   // Never set
                   _playlistState.value = PlaylistState(
@@ -128,11 +128,24 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
                }
             else
                {
-                  _playlistState.value = PlaylistState(
-                     baseName = temp,
-                     count = preferences[PlaylistPreferenceKeys.count(temp)]!!,
-                     index = preferences[PlaylistPreferenceKeys.index(temp)]!!,
-                     pos = preferences[PlaylistPreferenceKeys.pos(temp)]!!)
+                  var tempCount : Int? = preferences[PlaylistPreferenceKeys.count(name)]
+                  if (tempCount == null)
+                     {
+                        // Name set, but not counts
+                        _playlistState.value = PlaylistState(
+                           baseName = name,
+                           count = 0,
+                           index = 0,
+                           pos = 0)
+                     }
+               else
+                  {
+                     _playlistState.value = PlaylistState(
+                        baseName = name,
+                        count = tempCount,
+                        index = preferences[PlaylistPreferenceKeys.index(name)]!!,
+                        pos = preferences[PlaylistPreferenceKeys.pos(name)]!!)
+                  }
                }
          }
    }

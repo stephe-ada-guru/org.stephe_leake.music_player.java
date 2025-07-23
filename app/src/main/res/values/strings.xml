@@ -76,6 +76,12 @@
   <string name="server_IP_summary">Server for download</string>
   <string name="server_IP_dialog_title">Server IP</string>
 
+  <string name="min_image_size_key">min_image_size</string>
+  <string name="min_image_size_default">40000</string>
+  <string name="min_image_size_title">Minimum image size</string>
+  <string name="min_image_size_summary">Exclude icons etc</string>
+  <string name="min_image_size_dialog_title">>Minimum image size</string>
+
   <string name="song_count_max_key">song_count_max</string>
   <string name="song_count_max_default">300</string>
   <string name="song_count_max_title">Song count max</string>

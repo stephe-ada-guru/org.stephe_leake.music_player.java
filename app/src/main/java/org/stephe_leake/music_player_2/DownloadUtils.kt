@@ -231,7 +231,7 @@ class DownloadUtils
                      {
                         newSongs++
                         // not found; we can't download it to a specific directory, so tell the user to download it
-                        // FIXME: with MANAGE_EXTERNAL_STORAGE, can write song file to correct directory
+                        // IMPROVME: with MANAGE_EXTERNAL_STORAGE, can write song file to correct directory
                         result.status = ProcessStatus.Retry
                         log(LogLevel.Info, "not found '" + FileName + "'")
                      }

@@ -1,17 +1,15 @@
 c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 c:/Projects/smm.main/notes.text
 
-install on phone for more thorough testing
+tap 'next' in notification => crash
 
-review FIXME
+show albumart
+    https://github.com/jmartinesp/android-slideshow-widget
+
+
+(grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
 implement search activity
-
-showed albumart for alice's restaurant
-    in .mp3 file?
-    add all others?
-
-    or restore albumart scroll?
 
 implement menu | share
 

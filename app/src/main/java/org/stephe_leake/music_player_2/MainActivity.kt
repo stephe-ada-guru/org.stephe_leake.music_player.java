@@ -46,16 +46,18 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.lifecycle.lifecycleScope
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.media3.session.MediaController
+import androidx.core.view.WindowCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import androidx.media3.ui.PlayerView
 import androidx.preference.PreferenceManager
@@ -163,6 +165,35 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       return result
    }
 
+   private fun getFirstImage(directoryPath: String): Uri?
+   {
+      val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+      val minSize : Long = prefs.getString (
+         this.getString(R.string.min_image_size_key), this.getString(R.string.min_image_size_default))!!
+         .toLong()
+   
+      val directory = File(directoryPath)
+      if (!directory.exists() || !directory.isDirectory)
+         {
+            return null 
+         }
+
+      val imageExtensions = arrayOf("jpg", "jpeg", "png", "webp", "bmp")
+
+      val imageFile = directory.listFiles{
+         file ->
+            !file.isDirectory && imageExtensions.any {
+               ext -> file.name.endsWith(".$ext", ignoreCase = true)}}?.firstOrNull()
+
+      return if (imageFile != null && imageFile.exists() && imageFile.length() > minSize)
+      {
+         Uri.fromFile(imageFile)
+      } else
+      {
+         null
+      }
+   }
+   
    private suspend fun playlistToPlayer(category : String, play : Boolean)
    {
       // Start playing playlist utils.globalDirectory/<category>.m3u
@@ -227,6 +258,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                extra.putString("Liner_Notes", songFile.getParent()!! + "/" + "liner_notes.pdf")
                
                val metaData = androidx.media3.common.MediaMetadata.Builder()
+               // Adding the artwork here makes switching playlists
+               // too slow, so we do it in media item transition.
                   .setAlbumArtist(albumArtist)
                   .setAlbumTitle(album)
                   .setTitle(title)
@@ -328,11 +361,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             }
       }
 
+      @OptIn(UnstableApi::class)
       fun updateDisplay()
       {
-         // FIXME: display album art.
-
-         // FIXME: add year, composer to metadata
+         // FIXME: display all album art.
          
          val count = mediaController!!.mediaItemCount
          val index = mediaController!!.currentMediaItemIndex
@@ -359,7 +391,23 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
          // 'index' is 0 indexed
          playlistView.setText(viewModel.playlistState.value.baseName + " " + (index + 1).toString() + "/" + count)
-         
+
+         // metadata is _not_ a reference, so we need to build a
+         // replacement mediaItem.
+         //
+         // This artwork shows on the lock screen, not in the main UI.
+         // Artwork embedded in the mp3 file is shown in the main UI;
+         // we use a slideshow widget for all the others.
+         val file = File(metadata.extras!!.getString("Liner_Notes")!!)
+         val newMetadata = androidx.media3.common.MediaMetadata.Builder()
+            .populate(metadata)
+            .setArtworkUri(getFirstImage(file.parent!!))
+            .build()
+         val newItem = mediaController!!.currentMediaItem!!.buildUpon()
+            .setMediaMetadata(newMetadata)
+            .build()
+         mediaController!!.replaceMediaItem(index, newItem)
+       
          updateText(composerView, composerText, artistText, albumArtistText)
          updateText(artistView, artistText, albumArtistText, null)
          updateText(albumArtistView, albumArtistText, null, null)
@@ -385,9 +433,25 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       } // onIsPlayingChanged
       
       override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int)
+      // This is called when media items are _added_ to the playlist,
+      // in _addition_ to when it starts playing.
       {
          super.onMediaItemTransition(mediaItem, reason)
 
+         if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED)
+            {
+               // Called when a new item is added to the list, or an
+               // item is replaced (ie, below); no display to update.
+               // Apparently we avoid an infinite loop here.
+               return
+            }
+
+         // Other reasons are:
+         // Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT 
+         // Player.MEDIA_ITEM_TRANSITION_REASON_AUTO>
+         // Player.MEDIA_ITEM_TRANSITION_REASON_SEEK>
+         // We don't support Repeat, so we need to update the display.
+         
          if (mediaItem == null)
             {
                // Playlist ended.
@@ -410,12 +474,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             }
          else
             {
-               // Apparently 'reason' is not reliable, so we always update
-               // Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT 
-               // Player.MEDIA_ITEM_TRANSITION_REASON_AUTO>
-               // Player.MEDIA_ITEM_TRANSITION_REASON_SEEK>
-               // Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED
-
                updateDisplay ()                       
             }
       } // onMediaItemTransition
@@ -504,9 +562,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             "text/plain")
 
       CreateNotificationChannel()
+
+      WindowCompat.setDecorFitsSystemWindows(window, true) // Don't let status and nav bars overlay app
       
       setContentView(R.layout.mainactivity)
-      setSupportActionBar(findViewById(R.id.main_toolbar))
+      setSupportActionBar(findViewById(R.id.main_toolbar)) // for menu
 
       defaultTextViewTextSize = utils.findTextViewById(this, R.id.artist).textSize
 
