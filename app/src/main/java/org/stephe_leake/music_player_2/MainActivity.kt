@@ -36,6 +36,8 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.provider.Settings
 import android.util.Log
@@ -61,6 +63,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import androidx.media3.ui.PlayerView
 import androidx.preference.PreferenceManager
+import androidx.viewpager2.widget.ViewPager2
 
 import com.google.common.util.concurrent.MoreExecutors
 
@@ -92,6 +95,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    
    private var mediaController : Player? = null
 
+   private lateinit var slideshow: ViewPager2
+   private lateinit var imageSlideshowAdapter: ImageSlideshowAdapter
+   private val slideshowHandler = Handler(Looper.getMainLooper()) // Handler for slideshow transitions
+   private var slideshowRunnable: Runnable? = null
+   private val SLIDESHOW_INTERVAL_MS = 10000L // 10 seconds
+     
    private fun CreateNotificationChannel()
    {
       val channel = NotificationChannel(
@@ -165,35 +174,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       return result
    }
 
-   private fun getFirstImage(directoryPath: String): Uri?
-   {
-      val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-      val minSize : Long = prefs.getString (
-         this.getString(R.string.min_image_size_key), this.getString(R.string.min_image_size_default))!!
-         .toLong()
-   
-      val directory = File(directoryPath)
-      if (!directory.exists() || !directory.isDirectory)
-         {
-            return null 
-         }
-
-      val imageExtensions = arrayOf("jpg", "jpeg", "png", "webp", "bmp")
-
-      val imageFile = directory.listFiles{
-         file ->
-            !file.isDirectory && imageExtensions.any {
-               ext -> file.name.endsWith(".$ext", ignoreCase = true)}}?.firstOrNull()
-
-      return if (imageFile != null && imageFile.exists() && imageFile.length() > minSize)
-      {
-         Uri.fromFile(imageFile)
-      } else
-      {
-         null
-      }
-   }
-   
    private suspend fun playlistToPlayer(category : String, play : Boolean)
    {
       // Start playing playlist utils.globalDirectory/<category>.m3u
@@ -251,10 +231,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                   cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.COMPOSER))
                val year =
                   cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.YEAR))
-               val songFile = File(utils.globalDirectory + "/" + Filename)
+               val songFileName = utils.globalDirectory + "/" + Filename
+               val songFile = File(songFileName)
                val extra = Bundle()
 
-               extra.putString("Song_File", Filename)
+               extra.putString("Song_File", songFileName)
                extra.putString("Liner_Notes", songFile.getParent()!! + "/" + "liner_notes.pdf")
                
                val metaData = androidx.media3.common.MediaMetadata.Builder()
@@ -285,11 +266,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          {
             mediaController?.play()
          }
-      else
-         {
-            // onMediaItemTransition is not triggered.
-            playerListener.updateDisplay ()                       
-         }
+
+      // onMediaItemTransition is triggered with reason ==
+      // MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED, which we
+      // ignore.
+      playerListener.updateDisplay ()                       
    } // playlistToPlayer
 
    val commandReceiver = object : BroadcastReceiver()
@@ -333,6 +314,58 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       dialog.show()
    }
 
+   val imageExtensions = arrayOf("jpg", "jpeg", "png", "webp", "bmp")
+
+   private fun getImages(absPath: String): List<Uri>
+   {
+      val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+      val minSize : Long = prefs.getString (
+         this.getString(R.string.min_image_size_key), this.getString(R.string.min_image_size_default))!!
+         .toLong()
+   
+      val directory = File(absPath)
+      if (!directory.exists() || !directory.isDirectory)
+         {
+            return emptyList() 
+         }
+
+      val files = directory.listFiles{
+         file ->
+            !file.isDirectory &&
+         imageExtensions.any {ext -> file.name.endsWith(".$ext", ignoreCase = true)} &&
+         file.length() > minSize}
+
+      if (files == null) // How can this happen!? Should just be an empty array
+         return emptyList()
+      else
+         return files.mapNotNull{
+            file ->
+               try {Uri.fromFile(file)}
+            catch (_ : Exception) {null}}
+   }
+
+   private fun startSlideshowTimer()
+   {
+      slideshowRunnable = Runnable {
+         var currentItem = slideshow.currentItem
+         currentItem++
+         if (currentItem >= imageSlideshowAdapter.itemCount) {
+            currentItem = 0 // Loop back to the first slide
+         }
+         slideshow.setCurrentItem(currentItem, true) // Use true for smooth scroll
+         slideshowHandler.postDelayed(slideshowRunnable!!, SLIDESHOW_INTERVAL_MS)
+      }
+      slideshowHandler.postDelayed(slideshowRunnable!!, SLIDESHOW_INTERVAL_MS)
+   }
+
+   private fun stopSlideshowTimer()
+   {
+      slideshowRunnable?.let {
+         slideshowHandler.removeCallbacks(it)
+         slideshowRunnable = null
+      }
+   }
+     
    private val playerListener = object : Player.Listener
    {
       private fun updateText(view: TextView, content: CharSequence?)
@@ -392,22 +425,37 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          // 'index' is 0 indexed
          playlistView.setText(viewModel.playlistState.value.baseName + " " + (index + 1).toString() + "/" + count)
 
-         // metadata is _not_ a reference, so we need to build a
-         // replacement mediaItem.
-         //
-         // This artwork shows on the lock screen, not in the main UI.
-         // Artwork embedded in the mp3 file is shown in the main UI;
-         // we use a slideshow widget for all the others.
-         val file = File(metadata.extras!!.getString("Liner_Notes")!!)
-         val newMetadata = androidx.media3.common.MediaMetadata.Builder()
-            .populate(metadata)
-            .setArtworkUri(getFirstImage(file.parent!!))
-            .build()
-         val newItem = mediaController!!.currentMediaItem!!.buildUpon()
-            .setMediaMetadata(newMetadata)
-            .build()
-         mediaController!!.replaceMediaItem(index, newItem)
-       
+         val songFile = File(metadata.extras!!.getString("Song_File")!!)
+         val images = getImages(songFile.parent!!)
+
+         imageSlideshowAdapter.updateImages(images)
+
+         if (images.isEmpty())
+            slideshow.visibility = GONE
+         else
+            {
+               slideshow.visibility = VISIBLE
+               stopSlideshowTimer()
+
+               if (images.size > 1)
+                  startSlideshowTimer()
+
+               // metadata is _not_ a reference, so we need to build a
+               // replacement mediaItem.
+               //
+               // This artwork shows on the lock screen, not in the main UI.
+               // Artwork embedded in the mp3 file is shown in the main UI;
+               // All the others are displayed in the slideshow below.
+               val newMetadata = androidx.media3.common.MediaMetadata.Builder()
+                  .populate(metadata)
+                  .setArtworkUri(images.first())
+                  .build()
+               val newItem = mediaController!!.currentMediaItem!!.buildUpon()
+                  .setMediaMetadata(newMetadata)
+                  .build()
+               mediaController!!.replaceMediaItem(index, newItem)
+            }
+                    
          updateText(composerView, composerText, artistText, albumArtistText)
          updateText(artistView, artistText, albumArtistText, null)
          updateText(albumArtistView, albumArtistText, null, null)
@@ -583,6 +631,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             }
       }
 
+      slideshow = findViewById(R.id.image_slideshow)
+      imageSlideshowAdapter = ImageSlideshowAdapter(emptyList())
+      slideshow.adapter = imageSlideshowAdapter
+      
       lifecycleScope.launch {
          viewModel.isPlayerReadyToInitialize.collect{
             // called when it changes state
@@ -705,6 +757,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
       val playerView = findViewById<PlayerView>(R.id.player_view)
       playerView.onResume()
+      if (imageSlideshowAdapter.itemCount > 1)
+         startSlideshowTimer()
    }
    
    override fun onPause()
@@ -713,6 +767,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
       val playerView = findViewById<PlayerView>(R.id.player_view)
       playerView.onPause()
+      stopSlideshowTimer()
    }
    
    override fun onStop()
@@ -722,6 +777,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    
    override fun onDestroy()
    {
+      stopSlideshowTimer()
       mediaController?.removeListener(playerListener)
       
       super.onDestroy()

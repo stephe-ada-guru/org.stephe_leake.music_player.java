@@ -1,47 +1,22 @@
 c:/Projects/org.stephe_leake.music_player_2/app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 c:/Projects/smm.main/notes.text
 
-tap 'next' in notification => crash
-
-show albumart
-    https://github.com/jmartinesp/android-slideshow-widget
-
-
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
 implement search activity
 
 implement menu | share
 
-Need "clear playlist" and "delete playlist"; instrumental got screwed up.
-
  decisions
 use same design as old app
     start search activity from menu
 
-give up on preferences
-    set useful defaults in code
-    try DataStore later; ask Gemini to add it to small project
-    JetPack DataStore requires code generated from a .proto file; just broken
-
-use abs filename via MediaStore.Files  interface?
-    nope; only "displayname" = basename (no directory info)
-        can get directory info from "parent" field, use that to disambiguate
-        might as well use Album_Artist, Album, Title.
+tap 'next' in notification => crash
+    internal bug in player; 'next' in main UI works. sigh.
 
 standard notification doesn't display album
     can override?
     not with API > 33. sigh.
-
-find liner_notes.pdf
-    using MediaStore Files collection
-    rename to album_artist-album-*
-    gemini says the code is right, but it fails. sigh.
-
-    use MANAGE_EXTERNAL_STORAGE, file operations.
-        can't get provider to work for files in app local storage. give up.
-        file provider works if log files are in global storage. sigh.
-
 
  Resources
 tablet: Android 14 = api 34

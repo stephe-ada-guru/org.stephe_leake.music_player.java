@@ -72,6 +72,11 @@
           app:hide_on_touch="true"
           app:auto_show="false"/>
 
+      <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/image_slideshow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
       <!-- year
            composer
            album artist
