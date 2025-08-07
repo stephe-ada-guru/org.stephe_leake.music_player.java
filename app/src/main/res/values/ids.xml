@@ -19,44 +19,19 @@
   500, Boston, MA 02110-1335, USA.
 -->
 <resources>
-  <item
-      type="id"
-      name="main_toolbar"/>
-  <item
-      type="id"
-      name="main_pref_frag"/>
+  <item type="id" name="main_toolbar"/>
+  <item type="id" name="main_pref_frag"/>
 
-  <item
-      type="id"
-      name="menu_quit" />
-  <item
-      type="id"
-      name="menu_search" />
-  <item
-      type="id"
-      name="menu_share" />
-  <item
-      type="id"
-      name="menu_liner_notes" />
-  <item
-      type="id"
-      name="menu_copy" />
-  <item
-      type="id"
-      name="menu_update_playlist" />
-  <item
-      type="id"
-      name="menu_reset_playlist" />
-  <item
-      type="id"
-      name="menu_show_download_log" />
-  <item
-      type="id"
-      name="menu_show_error_log" />
-  <item
-      type="id"
-      name="menu_preferences" />
-  <item
-      type="id"
-      name="menu_new_playlist" />
+  <item type="id" name="menu_clean_playlist" />
+  <item type="id" name="menu_copy" />
+  <item type="id" name="menu_liner_notes" />
+  <item type="id" name="menu_new_playlist" />
+  <item type="id" name="menu_preferences" />
+  <item type="id" name="menu_quit" />
+  <item type="id" name="menu_reset_playlist" />
+  <item type="id" name="menu_search" />
+  <item type="id" name="menu_share" />
+  <item type="id" name="menu_show_download_log" />
+  <item type="id" name="menu_show_error_log" />
+  <item type="id" name="menu_update_playlist" />
 </resources>

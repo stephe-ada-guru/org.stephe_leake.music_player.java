@@ -33,6 +33,9 @@
       android:id="@id/menu_copy"
       android:title="@string/menu_copy"/>
   <item
+      android:id="@id/menu_clean_playlist"
+      android:title="@string/menu_clean_playlist"/>
+  <item
       android:id="@id/menu_update_playlist"
       android:title="@string/menu_update_playlist"/>
   <item

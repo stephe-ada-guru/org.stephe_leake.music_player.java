@@ -93,23 +93,19 @@ class DownloadUtils
                         lastIndex        : Int)
       // Delete lines from start of playlist file up to but not including
       // line lastIndex; that song is currently being played.
-      //
-      // Return delete count.
-      //
-      // throws IOException if can't read or write playlistFilename
       {
          try {
             val lines  : MutableList<String> = readPlaylist(playlistFilename, false)
             val output = FileWriter(playlistFilename) // Erases file
 
-            repeat (lastIndex - 1)
+            repeat (lastIndex)
                {
                   lines.removeAt(0)
                }
             
             for (line in lines)
                {
-                     output.write(line + "\n")
+                  output.write(line + "\n")
                }
             output.close()
          }
@@ -132,7 +128,7 @@ class DownloadUtils
                if (counts.index > 0)
                {
                   prunePlaylist(playlistFileName, counts.index)
-                  log(LogLevel.Info, category + " playlist cleaned: " + (counts.index - 1) + " songs deleted")
+                  log(LogLevel.Info, category + " playlist cleaned: " + counts.index + " songs deleted")
                }
          }
          catch (_ : IOException)

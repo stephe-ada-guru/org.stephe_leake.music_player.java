@@ -33,7 +33,7 @@ write to the Free Software Foundation, 51 Franklin Street, Suite
 
     <androidx.preference.EditTextPreference
         app:key="@string/min_image_size_key"
-        app:defaultValue="@min_image_size_default"
+        app:defaultValue="@string/min_image_size_default"
         android:numeric="integer"
         app:title="@string/min_image_size_title"
         app:summary="@string/min_image_size_summary"

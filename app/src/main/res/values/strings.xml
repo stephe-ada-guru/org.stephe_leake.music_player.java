@@ -43,9 +43,11 @@
   <string name="note_want_more">Want More</string>
 
   <!-- menu -->
+  <string name="menu_clean_playlist">Clean playlist</string>
   <string name="menu_copy">Copy</string>
   <string name="menu_jump_to_song">Jump to song</string>
   <string name="menu_liner_notes">Liner notes</string>
+  <string name="menu_new_playlist">Create new playlist</string>
   <string name="menu_preferences">Preferences</string>
   <string name="menu_quit">Quit</string>
   <string name="menu_reset_playlist">Reset playlist</string>
@@ -54,7 +56,7 @@
   <string name="menu_show_download_log">Show download log</string>
   <string name="menu_show_error_log">Show error log</string>
   <string name="menu_update_playlist">Update playlist</string>
-  <string name="menu_new_playlist">Create new playlist</string>
+
 
   <!-- preference ; alphabetical after activity name-->
   <string name="preferences_activity_name">&quot;Stephe's Music Player Preferences&quot;</string>

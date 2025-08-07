@@ -319,10 +319,23 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    private fun getImages(absPath: String): List<Uri>
    {
       val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-      val minSize : Long = prefs.getString (
+
+      // User (or an Android bug) might have put an invalid string into preferences
+      val minSizeString : String = prefs.getString (
          this.getString(R.string.min_image_size_key), this.getString(R.string.min_image_size_default))!!
-         .toLong()
-   
+      var minSize = this.getString(R.string.min_image_size_default).toLong()
+
+      try
+      {
+         minSize = minSizeString.toLong()
+      }
+      catch (_ : java.lang.NumberFormatException)
+      {
+         utils.alertLog(
+            this,
+            "invalid value '${minSizeString}' for preference ${this.getString(R.string.min_image_size_title)}; must be an integer.")
+      }
+
       val directory = File(absPath)
       if (!directory.exists() || !directory.isDirectory)
          {
@@ -536,7 +549,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
       if (index > 0 && viewModel.playlistState.value.baseName != "")
          {
-            val noteFileName = utils.appDirectory + "/" + viewModel.playlistState.value.baseName + ".note"
+            val noteFileName = utils.globalDirectory + "/" + viewModel.playlistState.value.baseName + ".note"
             val metaData = controller.currentMediaItem!!.mediaMetadata
             val writer = BufferedWriter(FileWriter(noteFileName, true)) // append
             
@@ -797,8 +810,13 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    {
       super.onPrepareOptionsMenu(menu)
 
-      if (mediaController == null) {return false}
-      if (mediaController!!.currentMediaItem == null) {return false}
+      if (mediaController == null || mediaController!!.currentMediaItem == null)
+         {
+            menu.findItem(R.id.menu_clean_playlist).setEnabled(false)
+            return false
+         }
+
+      menu.findItem(R.id.menu_clean_playlist).setEnabled(true)
 
       val metaData = mediaController!!.currentMediaItem!!.mediaMetadata
       val file = File(metaData.extras!!.getString("Liner_Notes")!!)
@@ -813,6 +831,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       {
          // Alphabetical order
 
+         R.id.menu_clean_playlist ->
+            { 
+              lifecycleScope.launch {DownloadUtils.cleanPlaylist(viewModel.playlistState.value.baseName)}
+            }
+         
          R.id.menu_copy ->
             {
                var clipManage: ClipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
@@ -830,6 +853,22 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                " " + composer.getText().toString()
 
                clipManage.setPrimaryClip (ClipData.newPlainText ("song", Msg))
+            }
+
+         R.id.menu_liner_notes ->
+            {
+               val metaData = mediaController!!.currentMediaItem!!.mediaMetadata
+               val file = File(metaData.extras!!.getString("Liner_Notes")!!)
+               val contentUri: Uri? =  FileProvider.getUriForFile(
+                  this,
+                  "${this.applicationContext.packageName}.provider",
+                  file)
+
+               var intent: Intent = Intent(Intent.ACTION_VIEW)
+                  .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                  .setDataAndType(contentUri, "application/pdf")
+               
+               startActivity(intent)
             }
 
          R.id.menu_new_playlist ->
@@ -871,22 +910,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                      
                      builder.show()
                   }
-            }
-
-         R.id.menu_liner_notes ->
-            {
-               val metaData = mediaController!!.currentMediaItem!!.mediaMetadata
-               val file = File(metaData.extras!!.getString("Liner_Notes")!!)
-               val contentUri: Uri? =  FileProvider.getUriForFile(
-                  this,
-                  "${this.applicationContext.packageName}.provider",
-                  file)
-
-               var intent: Intent = Intent(Intent.ACTION_VIEW)
-                  .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                  .setDataAndType(contentUri, "application/pdf")
-               
-               startActivity(intent)
             }
 
          R.id.menu_preferences ->
