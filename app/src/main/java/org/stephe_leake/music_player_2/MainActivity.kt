@@ -82,9 +82,8 @@ import android.view.View.VISIBLE
 class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener
 {
    private val CHECK_PERM_NEW_PLAYLIST    = 101
-   private val CHECK_PERM_RESET_PLAYLIST  = 102
-   private val CHECK_PERM_UPDATE_PLAYLIST = 103
-   private val CHECK_PERM_PICK_PLAYLIST   = 104
+   private val CHECK_PERM_UPDATE_PLAYLIST = 102
+   private val CHECK_PERM_PICK_PLAYLIST   = 103
 
    private var defaultTextViewTextSize : Float = 1.0F // set in onCreate
    
@@ -283,7 +282,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                   {
                      lifecycleScope.launch {
                         playlistToPlayer(viewModel.playlistState.value.baseName,
-                                         play = mediaController!!.isPlaying())}
+                                         play = mediaController!!.isPlaying)}
                   }
             }
       }
@@ -654,7 +653,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             isReady ->
                if (isReady)
                {
-                  if (mediaController!!.isPlaying())
+                  if (mediaController!!.isPlaying)
                      {
                         // UI was killed, but service still active; update UI
                         if (mediaController!!.currentMediaItem != null)
@@ -716,11 +715,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                      }
                   }
                
-               CHECK_PERM_RESET_PLAYLIST ->
-                  {
-                     // FIXME: copy from R.id.menu_reset_playlist below
-                  }
-
                CHECK_PERM_UPDATE_PLAYLIST ->
                      this.startService(updatePlaylistIntent)
    
@@ -812,6 +806,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
       if (mediaController == null || mediaController!!.currentMediaItem == null)
          {
+            menu.findItem(R.id.menu_liner_notes).setEnabled(false)
             menu.findItem(R.id.menu_clean_playlist).setEnabled(false)
             return false
          }
@@ -832,8 +827,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          // Alphabetical order
 
          R.id.menu_clean_playlist ->
-            { 
-              lifecycleScope.launch {DownloadUtils.cleanPlaylist(viewModel.playlistState.value.baseName)}
+            {
+               val current = viewModel.playlistState.value
+              lifecycleScope.launch {
+                 var newCount = DownloadUtils.cleanPlaylist(current.baseName)
+                 viewModel.writeState(count = newCount, index = 0, pos = current.pos)
+                 playlistToPlayer(viewModel.playlistState.value.baseName, play = mediaController!!.isPlaying)}
             }
          
          R.id.menu_copy ->
@@ -920,33 +919,15 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          
          R.id.menu_reset_playlist ->
             {
-               if (checkPermission(CHECK_PERM_RESET_PLAYLIST))
-                  {
-                     // FIXME: resolve race condition
-                     // lifecycleScope.launch {viewModel.writeState(0, 0, 0)}
-                     // lifecycleScope.launch {
-                     //    playlistToPlayer(viewModel.playlistState.value.baseName),
-                     //    play = mediaController!!.isPlaying()
-                     // }
-                  }
+               lifecycleScope.launch {
+                  viewModel.writeState(0, 0, 0)
+                  playlistToPlayer(viewModel.playlistState.value.baseName,
+                                   play = mediaController!!.isPlaying)}
             }
 
          R.id.menu_search ->
             {
                //FIXME: start search activity, search local database
-            }
-
-         R.id.menu_share ->
-            {
-               //FIXME: 
-                  // utils.verboseLog("sharing " + utils.retriever.musicUri.toString())
-
-               //  intent: Intent = Intent()
-               // .setAction(Intent.ACTION_SEND)
-               // .putExtra(Intent.EXTRA_STREAM, utils.retriever.musicUri)
-               // .setType("audio/mp3")
-
-               // startActivity(Intent.createChooser(intent, "Share song via ..."))
             }
 
          R.id.menu_show_download_log ->

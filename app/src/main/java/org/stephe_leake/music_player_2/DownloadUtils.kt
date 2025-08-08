@@ -90,9 +90,10 @@ class DownloadUtils
       }
 
       fun prunePlaylist(playlistFilename : String,
-                        lastIndex        : Int)
+                        lastIndex        : Int) : Int
       // Delete lines from start of playlist file up to but not including
       // line lastIndex; that song is currently being played.
+      // Return count of lines remaining.
       {
          try {
             val lines  : MutableList<String> = readPlaylist(playlistFilename, false)
@@ -108,18 +109,21 @@ class DownloadUtils
                   output.write(line + "\n")
                }
             output.close()
+            return lines.size
          }
          catch (_: FileNotFoundException)
          { // from 'FileReader(lastFilename)'; file not found; same as empty; do nothing
+           return 0
          }
       }
 
-      suspend fun cleanPlaylist(category : String)
+      suspend fun cleanPlaylist(category : String) : Int
       {
          // Delete lines in category.m3u that are before preferences(category).index
+         // Return count of lines remaining.
 
          val playlistFileName : String = utils.playlistFileName(category)
-         val counts = utils.readPlaylistCounts(category)
+         var counts = utils.readPlaylistCounts(category)
 
          try
          {
@@ -127,15 +131,19 @@ class DownloadUtils
             if ("" != FilenameUtils.getPath(playlistFileName))
                if (counts.index > 0)
                {
-                  prunePlaylist(playlistFileName, counts.index)
-                  log(LogLevel.Info, category + " playlist cleaned: " + counts.index + " songs deleted")
+                  return prunePlaylist(playlistFileName, counts.index)
+               }
+            else
+               {
+                  return 0
                }
          }
          catch (_ : IOException)
          {
-            // from prunePlaylist (which calls readPlaylist)
-            log(LogLevel.Error, "cannot read/write playlist '" + playlistFileName + "'")
+            // from prunePlaylist
+            return 0            
          }
+         return 0 // keep the compiler happy
       }
       
       fun getNewSongsList(serverIP : String,

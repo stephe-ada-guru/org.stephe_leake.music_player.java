@@ -24,9 +24,6 @@
       android:id="@id/menu_search"
       android:title="@string/menu_search"/>
   <item
-      android:id="@id/menu_share"
-      android:title="@string/menu_share"/>
-  <item
       android:id="@id/menu_liner_notes"
       android:title="@string/menu_liner_notes"/>
   <item
