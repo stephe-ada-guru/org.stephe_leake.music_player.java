@@ -28,6 +28,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -148,6 +149,16 @@ class utils
                         pos = preferences[PlaylistPreferenceKeys.pos(playlist)]!!)
                   }
             }
+      }
+      
+      suspend fun savePlaylistCounts(category : String, count : Int, index : Int, pos : Long)
+      {
+         mainActivity!!.playlistPrefsState.edit {
+            preferences ->
+               preferences[PlaylistPreferenceKeys.NAME] = category
+               preferences[PlaylistPreferenceKeys.count(category)] = count
+               preferences[PlaylistPreferenceKeys.index(category)] = index
+               preferences[PlaylistPreferenceKeys.pos(category)] = pos}
       }
       
       suspend fun readPlaylistName() : String

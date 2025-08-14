@@ -807,11 +807,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       if (mediaController == null || mediaController!!.currentMediaItem == null)
          {
             menu.findItem(R.id.menu_liner_notes).setEnabled(false)
-            menu.findItem(R.id.menu_clean_playlist).setEnabled(false)
             return false
          }
-
-      menu.findItem(R.id.menu_clean_playlist).setEnabled(true)
 
       val metaData = mediaController!!.currentMediaItem!!.mediaMetadata
       val file = File(metaData.extras!!.getString("Liner_Notes")!!)
@@ -828,11 +825,16 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
          R.id.menu_clean_playlist ->
             {
-               val current = viewModel.playlistState.value
-              lifecycleScope.launch {
-                 var newCount = DownloadUtils.cleanPlaylist(current.baseName)
-                 viewModel.writeState(count = newCount, index = 0, pos = current.pos)
-                 playlistToPlayer(viewModel.playlistState.value.baseName, play = mediaController!!.isPlaying)}
+               showPlaylistPickerDialog {
+                  filename ->
+                     val category = FilenameUtils.getBaseName(filename)
+                  lifecycleScope.launch {
+                     val oldCounts = utils.readPlaylistCounts(category)
+                     var newCount = DownloadUtils.cleanPlaylist(category)
+                     utils.savePlaylistCounts(category, count = newCount, index = 0, pos = oldCounts.pos)
+                     if (viewModel.playlistState.value.baseName == category)
+                        playlistToPlayer(viewModel.playlistState.value.baseName, play = mediaController!!.isPlaying)}
+               }
             }
          
          R.id.menu_copy ->
