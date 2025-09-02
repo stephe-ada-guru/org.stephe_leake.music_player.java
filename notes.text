@@ -3,11 +3,11 @@ c:/Projects/smm.main/notes.text
 
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
+match debian web server
+
 implement search activity
 
  decisions
-use same design as old app
-    start search activity from menu
 
 tap 'next' in notification => crash
     internal bug in player; 'next' in main UI works. sigh.

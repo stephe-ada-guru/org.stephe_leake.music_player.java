@@ -57,6 +57,7 @@ import androidx.core.content.FileProvider
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
@@ -177,7 +178,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    {
       // Start playing playlist utils.globalDirectory/<category>.m3u
 
-      mediaController?.clearMediaItems()
+      mediaController!!.clearMediaItems()
       
       val absFilename  = utils.playlistFileName(category)
       val playlistFile = File (absFilename)
@@ -189,6 +190,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             utils.alertLog(this, "can't read " + absFilename)
             return
          }
+
+      // counts.count can be 0 here if this is a new playlist, or
+      // preferences memory cleared
 
       viewModel.writeCategory(category)
       
@@ -258,6 +262,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          cursor?.close()
       } // forEachLine
 
+      if (mediaController!!.mediaItemCount == 0)
+         {
+            // bad playlist file
+            return
+         }
+      
       mediaController?.prepare()
       mediaController?.seekTo(counts.index, counts.pos)
 
@@ -268,7 +278,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
       // onMediaItemTransition is triggered with reason ==
       // MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED, which we
-      // ignore.
+      // ignore, because that is also triggered each time an item is
+      // added to the playlist.
       playerListener.updateDisplay ()                       
    } // playlistToPlayer
 
@@ -537,6 +548,14 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                updateDisplay ()                       
             }
       } // onMediaItemTransition
+
+      override fun onPlayerError(error: PlaybackException)
+      {
+         val metadata = mediaController!!.currentMediaItem!!.mediaMetadata
+         val songFile = File(metadata.extras!!.getString("Song_File")!!)
+
+         utils.alertLog(utils.mainActivity!!, "cannot play '" + songFile + "'")
+      }
 
    } // playerListener
 
