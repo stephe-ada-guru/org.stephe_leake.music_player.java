@@ -59,6 +59,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -554,9 +555,15 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          val metadata = mediaController!!.currentMediaItem!!.mediaMetadata
          val songFile = File(metadata.extras!!.getString("Song_File")!!)
 
-         utils.alertLog(utils.mainActivity!!, "cannot play '" + songFile + "'")
+         utils.errorLog("cannot play '" + songFile + "'")
       }
-
+      
+      override fun onTracksChanged(tracks: Tracks)
+      {
+         // WORKAROUND: the standard function for this does something wrong, which crashes the app.
+         // Doing nothing here fixes it.
+      }
+      
    } // playerListener
 
    fun onClickNote(v : View)
