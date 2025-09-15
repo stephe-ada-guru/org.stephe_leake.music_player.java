@@ -157,7 +157,7 @@ class DownloadUtils
       {
          // The web server is only visible from my local network, and
          // does not have an ssl certificate, so we use plaintext.
-         val url = "http://" + serverIP + ":8080/get_new_songs_list?" +
+         val url = "http://" + serverIP + ":/app/smm/get_new_songs_list?" +
          "API=2" + 
          "&category=" + category +
          "&count=" + count.toString() +
@@ -178,7 +178,7 @@ class DownloadUtils
 
             if (response.code < 200 || response.code > 299)
                {
-                  log(LogLevel.Error, "getNewSongsList server error: " + response.message)
+                  log(LogLevel.Error, "getNewSongsList server error: ${response.code}:${response.message}")
                   result.status = ProcessStatus.Fatal
                }
             else if (response.body == null)
@@ -302,7 +302,7 @@ class DownloadUtils
          : ProcessStatus
       {
          var status   : ProcessStatus = ProcessStatus.Success
-         val url      = "http://$serverIP:8080/remote_cache/$category.note"
+         val url      = "http://${serverIP}/app/smm/category.note"
          val noteFile = File(utils.notesFileName(category))
          var data     = readNotes(noteFile)
 

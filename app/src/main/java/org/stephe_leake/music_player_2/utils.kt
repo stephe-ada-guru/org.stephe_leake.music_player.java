@@ -58,7 +58,7 @@ object PlaylistPreferenceKeys
 }
       
 data class PlaylistCounts(
-   val count: Int = 0, // Count of songs in playlist
+   val count: Int = 0, // Count of songs in playlist; 0 if unknown
    val index: Int = 0, // Current song in playlist (1-indexed, 0 if none)
    val pos: Long = 0L  // Current position in song (milliseconds, 0 if none)
 )

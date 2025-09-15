@@ -139,12 +139,14 @@ class DownloadService : Service()
                // new music).
                status = DownloadUtils.getSongs(newSongs.strings, category)
 
+               utils.savePlaylistCounts(category, count = 0, index = 1, pos = 0L)
+               
                if (utils.readPlaylistName() == category)
                   {
                      // Restart playlist to show song position, count
                      DownloadEvents.sendRestartPlaylist()
                   }
-
+               
                if (status.status != ProcessStatus.Success)
                   {
                      notif.Error("check local/get songs from server failed")

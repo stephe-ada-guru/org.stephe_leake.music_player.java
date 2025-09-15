@@ -3,15 +3,19 @@ c:/Projects/smm.main/notes.text
 
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
-match debian web server
+testing update playlist
+    download list works
+    song count reset to 1; updated after manual switch playlists
+
+    notes not sent
+        server log does not show a PUT
+        note file not deleted
+
+reached end of playlist, did not transition to none.
 
 implement search activity
 
  decisions
-
-tap 'next' in notification => crash
-    internal bug in player; 'next' in main UI works. sigh.
-
 standard notification doesn't display album
     can override?
     not with API > 33. sigh.
