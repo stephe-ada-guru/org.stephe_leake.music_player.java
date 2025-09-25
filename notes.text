@@ -13,7 +13,10 @@ testing update playlist
 
 reached end of playlist, did not transition to none.
 
+display category
+
 implement search activity
+    on .work_1; crashes Andriod Studio
 
  decisions
 standard notification doesn't display album

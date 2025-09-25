@@ -377,7 +377,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             currentItem = 0 // Loop back to the first slide
          }
          slideshow.setCurrentItem(currentItem, true) // Use true for smooth scroll
-         slideshowHandler.postDelayed(slideshowRunnable!!, SLIDESHOW_INTERVAL_MS)
+         if (slideshowRunnable != null)
+            slideshowHandler.postDelayed(slideshowRunnable!!, SLIDESHOW_INTERVAL_MS)
       }
       slideshowHandler.postDelayed(slideshowRunnable!!, SLIDESHOW_INTERVAL_MS)
    }

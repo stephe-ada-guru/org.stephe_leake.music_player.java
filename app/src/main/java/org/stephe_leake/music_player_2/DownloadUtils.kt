@@ -98,18 +98,22 @@ class DownloadUtils
          try {
             val lines  : MutableList<String> = readPlaylist(playlistFilename, false)
             val output = FileWriter(playlistFilename) // Erases file
-
-            repeat (lastIndex)
+            if (lines.count() > 0)
                {
-                  lines.removeAt(0)
+                  repeat (lastIndex)
+                  {
+                     lines.removeAt(0)
+                  }
+                  
+                  for (line in lines)
+                     {
+                        output.write(line + "\n")
+                     }
+                  output.close()
+                  return lines.size
                }
-            
-            for (line in lines)
-               {
-                  output.write(line + "\n")
-               }
-            output.close()
-            return lines.size
+            else
+               return 0
          }
          catch (_: FileNotFoundException)
          { // from 'FileReader(lastFilename)'; file not found; same as empty; do nothing
