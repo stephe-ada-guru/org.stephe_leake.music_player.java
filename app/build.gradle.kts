@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -88,8 +89,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // https://commons.apache.org/io/download_io.cgi
-    implementation(files("d:/Archive/Android/libs/commons-io-2.18.0/commons-io-2.18.0.jar"))
+    // https://commons.apache.org/io/
+    implementation("commons-io:commons-io:2.20.0")
 
     //https://square.github.io/okhttp/#releases
     implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))

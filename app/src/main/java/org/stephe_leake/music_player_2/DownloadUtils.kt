@@ -98,22 +98,17 @@ class DownloadUtils
          try {
             val lines  : MutableList<String> = readPlaylist(playlistFilename, false)
             val output = FileWriter(playlistFilename) // Erases file
-            if (lines.count() > 0)
+            repeat (minOf (lastIndex, lines.count()))
+            {
+               lines.removeAt(0)
+            }
+            
+            for (line in lines)
                {
-                  repeat (lastIndex)
-                  {
-                     lines.removeAt(0)
-                  }
-                  
-                  for (line in lines)
-                     {
-                        output.write(line + "\n")
-                     }
-                  output.close()
-                  return lines.size
+                  output.write(line + "\n")
                }
-            else
-               return 0
+            output.close()
+            return lines.size
          }
          catch (_: FileNotFoundException)
          { // from 'FileReader(lastFilename)'; file not found; same as empty; do nothing
@@ -306,7 +301,7 @@ class DownloadUtils
          : ProcessStatus
       {
          var status   : ProcessStatus = ProcessStatus.Success
-         val url      = "http://${serverIP}/app/smm/category.note"
+         val url      = "http://${serverIP}/app/smm/${category}.note"
          val noteFile = File(utils.notesFileName(category))
          var data     = readNotes(noteFile)
 
@@ -329,7 +324,7 @@ class DownloadUtils
                         log(LogLevel.Error, "put notes failed " + response.message)
                      }
                   else
-                     log(LogLevel.Info, "$category sendNotes")
+                     log(LogLevel.Info, "${category} sendNotes")
                }
                catch (e: IOException) {
                   // From httpClient.newCall; connection failed after retry

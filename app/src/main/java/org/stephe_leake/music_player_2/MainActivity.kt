@@ -265,7 +265,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
       if (mediaController!!.mediaItemCount == 0)
          {
-            // bad playlist file
+            utils.alertLog(this, "Empty playlist file.")
             return
          }
       
