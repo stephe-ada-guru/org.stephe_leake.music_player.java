@@ -80,9 +80,6 @@ class utils
       const val RESTART_PLAYLIST_COMMAND : String = "restart_playlist_command"
       const val COMMAND_CANCEL_DOWNLOAD  : String = "org.stephe_leake.stephes_music.cancel_download"
 
-      // FIXME: not implemented
-      // val RESULT_TEXT_SCALE : Int         = Activity.RESULT_FIRST_USER + 1
-
       const val showDownloadLogIntentId : Int = 6
       const val cancelDownloadIntentId  : Int = 8
 

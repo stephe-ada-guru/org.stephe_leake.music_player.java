@@ -955,7 +955,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
          R.id.menu_search ->
             {
-               //FIXME: start search activity, search local database
+               startActivity(Intent(this, SearchActivity::class.java))
             }
 
          R.id.menu_show_download_log ->
