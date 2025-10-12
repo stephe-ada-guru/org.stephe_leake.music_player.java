@@ -19,9 +19,12 @@
 package org.stephe_leake.music_player_2
 
 import android.app.Application
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.datastore.preferences.core.edit
+import androidx.media3.session.MediaController
+
+import com.google.common.util.concurrent.ListenableFuture
 
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,7 +45,12 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
 {
    private val _playlistState = MutableStateFlow<PlaylistState>(PlaylistState())
    val playlistState: StateFlow<PlaylistState> = _playlistState.asStateFlow()
-   
+
+   // The actual MediaController survives when MainActivity is torn
+   // down (MainViewModel also survives); preserve the connection to
+   // it.
+   var controllerFuture: ListenableFuture<MediaController>? = null
+
    suspend fun clearSavedState()
    // Called when a playlist reaches the end.
    {

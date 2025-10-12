@@ -55,7 +55,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -67,7 +69,7 @@ import androidx.media3.ui.PlayerView
 import androidx.preference.PreferenceManager
 import androidx.viewpager2.widget.ViewPager2
 
-import com.google.common.util.concurrent.MoreExecutors
+import kotlinx.coroutines.guava.await
 
 import java.io.BufferedWriter
 import java.io.File
@@ -83,10 +85,6 @@ import android.view.View.VISIBLE
 
 class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener
 {
-   private val CHECK_PERM_NEW_PLAYLIST    = 101
-   private val CHECK_PERM_UPDATE_PLAYLIST = 102
-   private val CHECK_PERM_PICK_PLAYLIST   = 103
-
    private var defaultTextViewTextSize : Float = 1.0F // set in onCreate
    
    private var newPlaylistIntent = Intent()
@@ -113,13 +111,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          .createNotificationChannel(channel)
    }
 
-   private fun checkPermission(code : Int) : Boolean
-   // Returns true if permissions are already granted, false if
-   // they are now requested.
-   //
-   // If false, caller must return and wait for
-   // MainActivity.onRequestPermissionsResult to restart the
-   // activity indicated by 'code'.
+   private fun checkPermission()
    {
       val REQUIRED_PERMISSIONS = arrayOf(
          android.Manifest.permission.POST_NOTIFICATIONS,
@@ -128,16 +120,15 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
       val permissionsToRequest = mutableListOf<String>()
       
-      var result = true
-
-      // Request MANAGE_EXTERNAL_STORAGE to read/write playlist, logs, songs.
+      // Request MANAGE_EXTERNAL_STORAGE to read/write playlist, logs,
+      // songs, database.
       if (!Environment.isExternalStorageManager())
          {
             val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
             intent.addCategory("android.intent.category.DEFAULT")
             intent.data = Uri.parse("package:${applicationContext.packageName}")
             startActivity(intent)
-            result = false
+            // This does _not_ trigger MainActivity.onRequestPermissionsResult
          }
 
       for (permission in REQUIRED_PERMISSIONS)
@@ -168,11 +159,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                     " We show download status and player controls in notifications.")
                }
             
-            ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), code)
-
-            result = false
+            ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), 0)
          }
-      return result
    }
 
    private suspend fun playlistToPlayer(category : String, play : Boolean)
@@ -626,6 +614,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
       utils.mainActivity = this
 
+      // viewModel is not destroyed when MainActivity is, for rotate,
+      // memory recover, etc. So tell it mediaController is now null.
+      viewModel.setMediaControllerReady(false)
+
       utils.appDirectory = this.getExternalFilesDir(null)!!.getAbsolutePath()
 
       utils.showDownloadLogIntent = Intent(Intent.ACTION_VIEW)
@@ -662,12 +654,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       val playlistView = utils.findTextViewById(this, R.id.playlist)
       playlistView.setOnClickListener()
       {
-         if (checkPermission(CHECK_PERM_PICK_PLAYLIST))
-            {
-               showPlaylistPickerDialog {
-                  filename ->
-                     lifecycleScope.launch{playlistToPlayer(FilenameUtils.getBaseName(filename), play = true)}}
-            }
+         showPlaylistPickerDialog {
+            filename ->
+               lifecycleScope.launch{playlistToPlayer(FilenameUtils.getBaseName(filename), play = true)}}
       }
 
       slideshow = findViewById(R.id.image_slideshow)
@@ -675,88 +664,47 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       slideshow.adapter = imageSlideshowAdapter
       
       lifecycleScope.launch {
-         viewModel.isPlayerReadyToInitialize.collect{
-            // called when it changes state
-            isReady ->
-               if (isReady)
-               {
-                  if (mediaController!!.isPlaying)
-                     {
-                        // UI was killed, but service still active; update UI
-                        if (mediaController!!.currentMediaItem != null)
-                           {
-                              playerListener.updateDisplay ()
-                           }
-                     }
-                  else
-                     {
-                        val category : String = viewModel.playlistState.value.baseName
-                        
-                        if (category.isNotEmpty())
-                           {
-                              playlistToPlayer(category, play = false)
-                           }
-                     }
-               } 
-         }
-      }
-   } // onCreate
-
-   override fun onRequestPermissionsResult(requestCode : Int,
-                                           permissions : Array<String>,
-                                           grantResults: IntArray)
-   {
-      var someRefused = false
-      var refusedMessage = ""
-      
-      super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-      if (grantResults.isEmpty())
-         return
-
-      for (i in 0 .. permissions.size - 1)
-         {
-            if (grantResults[i] != PackageManager.PERMISSION_GRANTED)
-               {
-                  someRefused = true
-                  refusedMessage += permissions[i] 
-               }
-         }
-
-      if (!someRefused)
-         {
-            // All permissions were granted.
-
-            when (requestCode)
-            {
-               CHECK_PERM_NEW_PLAYLIST ->
+         // repeatOnLifecycle was restored to fix a null exception on
+         // rotation, but it didn't (adding the check for
+         // mediaController did). It's supposed to handle restarting
+         // the activity when the screen is rotated, or when the
+         // activity was halted due to memory recovery, etc. It caused
+         // some problem that made me delete it once; ask Gemini this
+         // time.
+         repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.isPlayerReadyToInitialize.collect{
+               // called when it changes state
+               isReady ->
+                  if (isReady)
                   {
-                     this.startService(newPlaylistIntent)
-                  }
-
-               CHECK_PERM_PICK_PLAYLIST ->
-                  {
-                     showPlaylistPickerDialog {
-                        filename -> lifecycleScope.launch {
-                           playlistToPlayer(FilenameUtils.getBaseName(filename), play = true)}
-                     }
-                  }
-               
-               CHECK_PERM_UPDATE_PLAYLIST ->
-                     this.startService(updatePlaylistIntent)
-   
-               else -> 
-                  {
-                     utils.errorLog("programmer error.")
-                  }
+                     if (mediaController == null)
+                        utils.errorLog ("MainActivity.onCreate launch player: mediaController == null");
+                     else
+                        {
+                           if (mediaController!!.isPlaying)
+                              {
+                                 // UI was killed, but service still active; update UI
+                                 if (mediaController!!.currentMediaItem != null)
+                                    {
+                                       playerListener.updateDisplay ()
+                                    }
+                              }
+                           else
+                              {
+                                 val category : String = viewModel.playlistState.value.baseName
+                                 
+                                 if (category.isNotEmpty())
+                                    {
+                                       playlistToPlayer(category, play = false)
+                                    }
+                              }
+                        }
+                  } 
             }
          }
-      else
-         {
-            // Some permission denied`
-            utils.alertLog(this, "You denied a required permission; " + refusedMessage)
-         }
-   } // onRequestPermissionsResult
+      }
+      checkPermission()
+   } // onCreate
 
    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?)
    {
@@ -770,19 +718,25 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    override fun onStart()
    {
       super.onStart()
-      val sessionToken = SessionToken(this, ComponentName(this, PlayService::class.java))
 
-      val controllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
-      controllerFuture.addListener(
-         {
-            mediaController = controllerFuture.get()
-            mediaController!!.addListener(playerListener)
+      lifecycleScope.launch {
+         if (viewModel.controllerFuture == null)
+            {
+               val sessionToken = SessionToken(
+                  this@MainActivity, ComponentName(this@MainActivity, PlayService::class.java))
+               viewModel.controllerFuture = MediaController.Builder(this@MainActivity, sessionToken).buildAsync()
+            }
 
-            val playerView = findViewById<PlayerView>(R.id.player_view)
-            playerView.setPlayer(mediaController)
+         mediaController = viewModel.controllerFuture!!.await() // waits until the above async completes.
 
-            viewModel.setMediaControllerReady(true)
-         }, MoreExecutors.directExecutor())
+         mediaController!!.removeListener(playerListener)
+         mediaController!!.addListener(playerListener)
+         
+         val playerView = findViewById<PlayerView>(R.id.player_view)
+         playerView.setPlayer(mediaController)
+         
+         viewModel.setMediaControllerReady(true)
+      }   
    } // onStart
 
    override fun onResume()
@@ -924,11 +878,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
                          newPlaylistIntent = Intent (utils.DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
                          .putExtra(utils.EXTRA_PLAYLIST_CATEGORY, input.getText().toString())
-                      
-                      if (checkPermission(CHECK_PERM_NEW_PLAYLIST))
-                         {
-                            this.startService(newPlaylistIntent)
-                         }
+                      this.startService(newPlaylistIntent)
                      } 
 
                      builder.setNegativeButton ("Cancel")
@@ -956,7 +906,21 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
          R.id.menu_search ->
             {
-               startActivity(Intent(this, SearchActivity::class.java))
+               val dbFileName : String = utils.globalDirectory + "/smm.db"
+               val dbFile = File(dbFileName)
+               var errorMessage: String? = null
+               
+               if (!dbFile.exists())
+                  errorMessage = "Database file '${dbFileName}' does not exist; install it."
+               else if (!dbFile.isFile)
+                   errorMessage = "Database file '${dbFileName}' is a directory, not a file."
+               else if (!dbFile.canRead())
+                   errorMessage = "Database file '${dbFileName}' is not readable (not clear why)."
+
+                if (errorMessage == null)
+                   startActivity(Intent(this, SearchActivity::class.java))
+               else
+                  utils.alertLog(this, "Database file '${dbFileName}' does not exist; check preference setting.")
             }
 
          R.id.menu_show_download_log ->
@@ -984,10 +948,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                               utils.DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
                            .putExtra(utils.EXTRA_PLAYLIST_CATEGORY, FilenameUtils.getBaseName(filename))
                         
-                        if (checkPermission(CHECK_PERM_UPDATE_PLAYLIST))
-                           {
-                              this.startService(updatePlaylistIntent)
-                           }
+                        this.startService(updatePlaylistIntent)
                      }
                   }
             }

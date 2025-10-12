@@ -26,7 +26,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,12 +42,16 @@ class SearchActivity : ComponentActivity()
    private val db by lazy { SongDatabase.getDatabase(this) }
    private val viewModel: SearchViewModel by viewModels {
       object : androidx.lifecycle.ViewModelProvider.Factory {
+         @Suppress("UNCHECKED_CAST")
+         // This is always safe here because this is a locally
+         // declared anonymous factory. But the compiler doesn't know it.
          override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
             return SearchViewModel(db.songDao()) as T
          }
       }
    }
 
+   @kotlinx.coroutines.ExperimentalCoroutinesApi
    override fun onCreate(savedInstanceState: Bundle?)
    {
       super.onCreate(savedInstanceState)
@@ -50,22 +59,23 @@ class SearchActivity : ComponentActivity()
     }
 }
 
+@kotlinx.coroutines.ExperimentalCoroutinesApi
 @Composable
 fun SearchScreen(viewModel: SearchViewModel)
 {
    var selectedTabIndex by remember { mutableStateOf(0) }
    val tabs = listOf("General Search", "Detailed Search")
 
-   val generalQuery by viewModel.generalQuery.collectAsState()
-   val generalResults by viewModel.generalSearchResults.collectAsState()
+   val generalQuery by viewModel.generalQuery.collectAsState<String>()
+   val generalResults by viewModel.generalSearchResults.collectAsState<List<Song>>()
 
-   val detailedTitle by viewModel.detailedTitle.collectAsState()
-   val detailedArtist by viewModel.detailedArtist.collectAsState()
-   val detailedAlbum by viewModel.detailedAlbum.collectAsState()
-   val detailedAlbumArtist by viewModel.detailedAlbumArtist.collectAsState()
-   val detailedComposer by viewModel.detailedComposer.collectAsState()
-   val detailedCategory by viewModel.detailedCategory.collectAsState()
-   val detailedResults by viewModel.detailedSearchResults.collectAsState()
+   val detailedTitle by viewModel.detailedTitle.collectAsState<String>()
+   val detailedArtist by viewModel.detailedArtist.collectAsState<String>()
+   val detailedAlbum by viewModel.detailedAlbum.collectAsState<String>()
+   val detailedAlbumArtist by viewModel.detailedAlbumArtist.collectAsState<String>()
+   val detailedComposer by viewModel.detailedComposer.collectAsState<String>()
+   val detailedCategory by viewModel.detailedCategory.collectAsState<String>()
+   val detailedResults by viewModel.detailedSearchResults.collectAsState<List<Song>>()
    
    Scaffold { padding ->
                  Column(modifier = Modifier.padding(padding)) {
@@ -86,7 +96,7 @@ fun SearchScreen(viewModel: SearchViewModel)
                              onValueChange = viewModel::onGeneralQueryChange,
                              label = "Search..."
                           )
-                          Divider()
+                          HorizontalDivider()
                           SearchResults(results = generalResults)
                        }
                        1 -> Column {
@@ -99,7 +109,7 @@ fun SearchScreen(viewModel: SearchViewModel)
                              composer = detailedComposer, onComposerChange = { viewModel.detailedComposer.value = it },
                              category = detailedCategory, onCategoryChange = { viewModel.detailedCategory.value = it }
                           )
-                          Divider()
+                          HorizontalDivider()
                           SearchResults(results = detailedResults)
                        }
                     }
@@ -170,10 +180,17 @@ fun SongItem(song: Song)
 {
    Card(modifier = Modifier.fillMaxWidth()) {
       Column(modifier = Modifier.padding(12.dp)) {
-         Text(song.title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-         Text("by ${song.artist}", style = MaterialTheme.typography.bodyMedium)
-         Text("from ${song.album}", style = MaterialTheme.typography.bodySmall)
-         Text("Category: ${song.category}", style = MaterialTheme.typography.bodySmall)
+         if (song.Title != null)
+            Text(song.Title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+         
+         if (song.Album_Artist != null)
+            Text("by ${song.Album_Artist}", style = MaterialTheme.typography.bodyMedium)
+
+         if (song.Album != null)
+            Text("from ${song.Album}", style = MaterialTheme.typography.bodySmall)
+
+         if (song.Category != null)
+            Text("Category: ${song.Category}", style = MaterialTheme.typography.bodySmall)
       }
    }
 }

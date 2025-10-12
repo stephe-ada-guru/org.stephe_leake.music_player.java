@@ -22,25 +22,38 @@
 
 package org.stephe_leake.music_player_2
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "Song")
+@Entity(tableName = "Song",
+    indices = [
+        Index(value = ["Title"]),
+        Index(value = ["Album"]),
+        Index(value = ["Artist"]),
+        Index(value = ["File_Name"])
+        ])
+
 data class Song(
    // Names match [1] _exactly_
-    @PrimaryKey(autoGenerate = true)
-    val ID               : Int = 0,
-    val File_Name        : String,
-    val Category         : String,
-    val Artist           : String,
-    val Album_Artist     : String,
-    val Composer         : String,
-    val Album            : String,
-    val Year             : String,
-    val Title            : String,
-    var Track            : Int,
-    var Last_Downloaded  : String, // [1] has CHAR[19], which SQLite maps to TEXT = String anyway
-    var Prev_Downloaded  : String, // ""
-    var Play_Before      : Int,
-    var Play_After       : Int
+   @PrimaryKey
+   val ID               : Int,
+   val File_Name        : String?,
+   val Category         : String?,
+   val Artist           : String?,
+   val Album_Artist     : String?,
+   val Composer         : String?,
+   val Album            : String?,
+   val Year             : Int?,
+   val Title            : String?,
+   var Track            : Int?,
+   
+   // [1] has CHAR[19] which has no equivalent in Kotlin. However,
+   // SQLite maps to TEXT = String.
+   var Last_Downloaded  : String?, 
+   var Prev_Downloaded  : String?,
+   
+   var Play_Before      : Int?,
+   var Play_After       : Int?
 )

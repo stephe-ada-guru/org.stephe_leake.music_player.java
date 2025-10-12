@@ -225,6 +225,8 @@ class utils
       // errors go in utils.errorLogFileBaseName, download messages in
       // DownloadUtils.downloadLogFileBaseName
       {
+         Log.d(logTag, msg)
+
          val fmt       = SimpleDateFormat("yyyy-MM-dd HH:mm:ss : ", Locale.US)
          val time      : Long     = System.currentTimeMillis() // local time zone
          val timeStamp : String   = fmt.format(time)

@@ -19,6 +19,9 @@
 package org.stephe_leake.music_player_2
 
 import android.content.Context
+import android.content.SharedPreferences
+import android.content.res.Resources
+import androidx.preference.PreferenceManager
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -40,13 +43,11 @@ abstract class SongDatabase : RoomDatabase()
             // Return the existing instance if it exists, otherwise create the database.
             return INSTANCE ?: synchronized(this)
             {
+               val dbFileName : String = utils.globalDirectory + "/smm.db"
                val instance = Room.databaseBuilder(
-                  context.applicationContext,
-                  SongDatabase::class.java,
-                  "/storage/emulated/0/Music/smm.db" // Name of your database file. FIXME: move to preference.
-                ).build()
-                INSTANCE = instance
-                instance
+                  context.applicationContext, SongDatabase::class.java, dbFileName).build()
+               INSTANCE = instance
+               instance
             }
         }
     }

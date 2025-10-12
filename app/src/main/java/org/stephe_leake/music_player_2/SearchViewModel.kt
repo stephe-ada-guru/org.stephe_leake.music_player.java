@@ -51,6 +51,7 @@ class SearchViewModel(private val songDao: SongDao) : ViewModel()
     }
 
     // Results from general search (updates when generalQuery changes)
+    @kotlinx.coroutines.ExperimentalCoroutinesApi
     val generalSearchResults = _generalQuery.transformLatest { query ->
         if (query.isBlank()) {
             emit(emptyList())
@@ -60,6 +61,7 @@ class SearchViewModel(private val songDao: SongDao) : ViewModel()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Results from detailed search (updates when any detailed field changes)
+    @kotlinx.coroutines.ExperimentalCoroutinesApi
     val detailedSearchResults = detailedSearchParams.transformLatest { params ->
         if (params.allBlank()) {
             emit(emptyList())

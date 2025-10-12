@@ -80,12 +80,6 @@
   <string name="server_IP_summary">Server for download</string>
   <string name="server_IP_dialog_title">Server IP</string>
 
-  <string name="db_file_key">db_file</string>
-  <string name="db_file_default">/storage/emulated/0/Music/smm.db</string>
-  <string name="db_file_title">Database file</string>
-  <string name="db_file_summary"></string>
-  <string name="db_file_dialog_title">Database File</string>
-
   <string name="min_image_size_key">min_image_size</string>
   <string name="min_image_size_default">40000</string>
   <string name="min_image_size_title">Minimum image size</string>

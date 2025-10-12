@@ -92,9 +92,11 @@ dependencies {
     implementation(libs.jetbrains.kotlinx.coroutines.android)
     implementation(libs.jetbrains.kotlinx.coroutines.core)
 
-    //FIXME: apparently not using this
-    //implementation("com.google.guava:guava:32.1.3-android")
-
+    // For listenableFutures.await
+    implementation(libs.guava)
+    implementation(libs.androidx.concurrent.futures.ktx)
+    implementation(libs.jetbrains.kotlinx.coroutines.guava)
+     
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
