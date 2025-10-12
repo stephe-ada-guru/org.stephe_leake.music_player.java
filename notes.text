@@ -1,4 +1,4 @@
-~/Projects/org.stephe_leake.music_player/app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
+app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 ~/Projects/smm.main/notes.text
 
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")

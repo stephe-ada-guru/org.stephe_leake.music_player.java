@@ -39,6 +39,13 @@
           android:theme="@style/Theme.AppCompat.Light.NoActionBar">
       </activity>
 
+      <activity
+          android:name=".SearchActivity"
+          android:exported="true"
+          android:label="@string/search_name"
+          android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+      </activity>
+
       <service
           android:name=".DownloadService"
           android:foregroundServiceType="dataSync"

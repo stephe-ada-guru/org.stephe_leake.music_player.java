@@ -2,6 +2,10 @@
 //
 //  Interface to the sqlite database
 //
+//  References:
+//
+//  [1] ~/Projects/smm.main/source/create_schema.sql
+//
 //  Copyright (C) 2025 Stephen Leake. All Rights Reserved.
 //
 //  This program is free software; you can redistribute it and/or
@@ -23,19 +27,20 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "Song")
 data class Song(
+   // Names match [1] _exactly_
     @PrimaryKey(autoGenerate = true)
-    val ID: Int = 0,
-    val file_Name: String,
-    val category: String,
-    val artist: String,
-    val albumArtist: String,
-    val composer: String,
-    val album: String,
-    val year: String,
-    val title: String,
-    var track: Int,
-    var lastDownloaded : String, // FIXME: CHAR[19]
-    var prevDownloaded : String, // FIXME: CHAR[19]
-    var playBefore : Int,
-    var playAfter : Int
+    val ID               : Int = 0,
+    val File_Name        : String,
+    val Category         : String,
+    val Artist           : String,
+    val Album_Artist     : String,
+    val Composer         : String,
+    val Album            : String,
+    val Year             : String,
+    val Title            : String,
+    var Track            : Int,
+    var Last_Downloaded  : String, // [1] has CHAR[19], which SQLite maps to TEXT = String anyway
+    var Prev_Downloaded  : String, // ""
+    var Play_Before      : Int,
+    var Play_After       : Int
 )

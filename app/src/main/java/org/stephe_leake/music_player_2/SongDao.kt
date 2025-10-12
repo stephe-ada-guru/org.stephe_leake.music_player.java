@@ -33,25 +33,28 @@ interface SongDao
 
     @Query("""
         SELECT * FROM Song WHERE
-        artist LIKE '%' || :query || '%' OR
-        album LIKE '%' || :query || '%' OR
-        album_artist LIKE '%' || :query || '%' OR
-        composer LIKE '%' || :query || '%' OR
-        title LIKE '%' || :query || '%' OR
-        category LIKE '%' || :query || '%'
+        Artist LIKE '%' || :query || '%' OR
+        Album LIKE '%' || :query || '%' OR
+        Album_Artist LIKE '%' || :query || '%' OR
+        Composer LIKE '%' || :query || '%' OR
+        Title LIKE '%' || :query || '%' OR
+        Category LIKE '%' || :query || '%'
     """)
-    suspend fun generalSearch(query: String): Flow<List<Song>>
+    // No 'suspend' here because it returns a Flow, which means Room
+    // is already running it in a background task.
+    fun generalSearch(query: String): Flow<List<Song>>
 
-    // Detailed search with specific fields
+
     @Query("""
         SELECT * FROM Song WHERE
-        (:title = '' OR title LIKE '%' || :title || '%') AND
-        (:artist = '' OR artist LIKE '%' || :artist || '%') AND
-        (:album = '' OR album LIKE '%' || :album || '%') AND
-        (:albumArtist = '' OR albumArtist LIKE '%' || :albumArtist || '%') AND
-        (:composer = '' OR composer LIKE '%' || :composer || '%') AND
-        (:category = '' OR category LIKE '%' || :category || '%')
+        (:title = '' OR Title LIKE '%' || :title || '%') AND
+        (:artist = '' OR Artist LIKE '%' || :artist || '%') AND
+        (:album = '' OR Album LIKE '%' || :album || '%') AND
+        (:albumArtist = '' OR Album_Artist LIKE '%' || :albumArtist || '%') AND
+        (:composer = '' OR Composer LIKE '%' || :composer || '%') AND
+        (:category = '' OR Category LIKE '%' || :category || '%')
     """)
+    // Returns Flow, no 'suspend'
     fun detailedSearch(
         title: String,
         artist: String,

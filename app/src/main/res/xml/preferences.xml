@@ -32,6 +32,13 @@ write to the Free Software Foundation, 51 Franklin Street, Suite
         app:dialogTitle="@string/server_IP_dialog_title" />
 
     <androidx.preference.EditTextPreference
+        app:key="@string/db_file_key"
+        app:defaultValue="@string/db_file_default"
+        app:title="@string/db_file_title"
+        app:summary="@string/db_file_summary"
+        app:dialogTitle="@string/db_file_dialog_title" />
+
+    <androidx.preference.EditTextPreference
         app:key="@string/min_image_size_key"
         app:defaultValue="@string/min_image_size_default"
         android:numeric="integer"

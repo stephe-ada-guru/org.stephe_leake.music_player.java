@@ -20,12 +20,13 @@ package org.stephe_leake.music_player_2
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.transformLatest
+import kotlinx.coroutines.launch
 
 class SearchViewModel(private val songDao: SongDao) : ViewModel()
 {

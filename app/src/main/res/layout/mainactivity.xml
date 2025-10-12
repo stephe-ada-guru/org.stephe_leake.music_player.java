@@ -68,7 +68,6 @@
           app:show_buffering="always"
           app:show_vr_button="false"
           app:use_artwork="true"
-          app:image_display_mode="fit"
           app:hide_on_touch="true"
           app:auto_show="false"/>
 

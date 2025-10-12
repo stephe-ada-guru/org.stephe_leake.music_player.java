@@ -21,10 +21,12 @@
 <resources>
   <!-- translate -->
 
-  <!-- misc -->
+  <!-- activities -->
   <string name="app_name">Stephe\'s Music Player 2</string>
   <string name="pref_name">Music Player settings</string>
+  <string name="search_name">Music Player search</string>
 
+  <!-- misc -->
   <string name="dialog_download_new_playlist">Enter a playlist category</string>
   <string name="dialog_jump_song">Enter a song number to jump to</string>
   <string name="dialog_play_playlist">Select a playlist</string>
@@ -77,6 +79,12 @@
   <string name="server_IP_title">Server IP</string>
   <string name="server_IP_summary">Server for download</string>
   <string name="server_IP_dialog_title">Server IP</string>
+
+  <string name="db_file_key">db_file</string>
+  <string name="db_file_default">/storage/emulated/0/Music/smm.db</string>
+  <string name="db_file_title">Database file</string>
+  <string name="db_file_summary"></string>
+  <string name="db_file_dialog_title">Database File</string>
 
   <string name="min_image_size_key">min_image_size</string>
   <string name="min_image_size_default">40000</string>
