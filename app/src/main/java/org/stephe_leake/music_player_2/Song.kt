@@ -26,15 +26,17 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
 
 @Entity(tableName = "Song",
-    indices = [
-        Index(value = ["Title"]),
-        Index(value = ["Album"]),
-        Index(value = ["Artist"]),
-        Index(value = ["File_Name"])
+        indices = [
+           Index(value = ["File_Name"], name = "File_Name"),
+           Index(value = ["Artist"], name = "Artist"),
+           Index(value = ["Album"], name = "Album"),
+           Index(value = ["Title"], name = "Title"),
+           Index(value = ["Last_Downloaded"], name = "Last_Downloaded"),
+           Index(value = ["Album_Artist", "Album", "Title"], unique = true, name = "Song_Name")
         ])
-
 data class Song(
    // Names match [1] _exactly_
    @PrimaryKey
@@ -48,12 +50,8 @@ data class Song(
    val Year             : Int?,
    val Title            : String?,
    var Track            : Int?,
-   
-   // [1] has CHAR[19] which has no equivalent in Kotlin. However,
-   // SQLite maps to TEXT = String.
    var Last_Downloaded  : String?, 
    var Prev_Downloaded  : String?,
-   
    var Play_Before      : Int?,
    var Play_After       : Int?
 )
