@@ -19,70 +19,93 @@
 package org.stephe_leake.music_player_2
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.transformLatest
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+
+// FIXMME: add directory for album art
+data class AlbumInfo(val artist: String?, val name: String?, val year: Int?)
+
+data class DetailedInfo(
+   val title: String = "",
+   val artist: String = "",
+   val album: String = "",
+   val albumArtist: String = "",
+   val composer: String = "",
+   val category: String = "")
+{
+   fun isNotBlank() : Boolean
+   {
+      return title.isNotBlank() &&
+       artist.isNotBlank() &&
+       album.isNotBlank() &&
+       albumArtist.isNotBlank() &&
+       composer.isNotBlank() &&
+       category.isNotBlank()   
+   }
+}
+
+typealias SongAlbumMap = Map<AlbumInfo, List<Song>>
 
 class SearchViewModel(private val songDao: SongDao) : ViewModel()
 {
-   // State for the General Search query
-    private val _generalQuery = MutableStateFlow("")
-    val generalQuery = _generalQuery.asStateFlow()
+    private val _groupedResults = MutableStateFlow<SongAlbumMap>(emptyMap())
+    val groupedResults: StateFlow<SongAlbumMap> = _groupedResults
+    
+    private val songListFlow = MutableSharedFlow<Flow<List<Song>>>()
 
-    // State for the Detailed Search fields
-    val detailedTitle       = MutableStateFlow("")
-    val detailedArtist      = MutableStateFlow("")
-    val detailedAlbum       = MutableStateFlow("")
-    val detailedAlbumArtist = MutableStateFlow("")
-    val detailedComposer    = MutableStateFlow("")
-    val detailedCategory    = MutableStateFlow("")
+    init {groupAndDisplaySongs()}
 
-    // Combine detailed fields to trigger search
-    private val detailedSearchParams = combine(
-        detailedTitle, detailedArtist, detailedAlbum,
-        detailedAlbumArtist, detailedComposer, detailedCategory
-    ) { params ->
-        DetailedSearchParams(params[0], params[1], params[2], params[3], params[4], params[5])
-    }
-
-    // Results from general search (updates when generalQuery changes)
-    @kotlinx.coroutines.ExperimentalCoroutinesApi
-    val generalSearchResults = _generalQuery.transformLatest { query ->
-        if (query.isBlank()) {
-            emit(emptyList())
-        } else {
-            songDao.generalSearch(query).collect { emit(it) }
+    // Called by the General Search tab
+    fun performGeneralSearch(query: String) {
+        viewModelScope.launch {
+            if (query.isNotBlank()) {
+                songListFlow.emit(songDao.generalSearch(query))
+            } else {
+                _groupedResults.value = emptyMap() // Clear results if query is empty
+            }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
 
-    // Results from detailed search (updates when any detailed field changes)
-    @kotlinx.coroutines.ExperimentalCoroutinesApi
-    val detailedSearchResults = detailedSearchParams.transformLatest { params ->
-        if (params.allBlank()) {
-            emit(emptyList())
-        } else {
-            songDao.detailedSearch(
-                title = params.title, artist = params.artist, album = params.album,
-                albumArtist = params.albumArtist, composer = params.composer, category = params.category
-            ).collect { emit(it) }
+    // Called by the Detailed Search tab
+    fun performDetailedSearch(info: DetailedInfo) {
+        viewModelScope.launch {
+            if (info.isNotBlank()) {
+                songListFlow.emit(
+                   songDao.detailedSearch(
+                      title = info.title, artist = info.artist, album = info.album, albumArtist = info.albumArtist,
+                      composer = info.composer, category = info.category))
+            } else {
+                _groupedResults.value = emptyMap()
+            }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    fun onGeneralQueryChange(newQuery: String) {
-        _generalQuery.value = newQuery
     }
 
-    // Helper data class for detailed search parameters
-    data class DetailedSearchParams(
-        val title: String, val artist: String, val album: String,
-        val albumArtist: String, val composer: String, val category: String
-    ) {
-        fun allBlank() = title.isBlank() && artist.isBlank() && album.isBlank() &&
-                albumArtist.isBlank() && composer.isBlank() && category.isBlank()
-    }
-}
+    private fun groupAndDisplaySongs() {
+        viewModelScope.launch {
+            songListFlow
+                .flatMapLatest { it }
+                .map { songs -> 
+                    songs.groupBy { song ->
+                        AlbumInfo(name = song.Album, artist = song.Album_Artist, year = song.Year)
+                    }
+                }
+                .catch {
+                    // Handle any potential errors from the flow
+                    // FIXME: message to the user (but we are in a background task; add errorMessage state?)
+                    _groupedResults.value = emptyMap()
+                }
+                .collect { groupedMap ->
+                    // Update the final UI state
+                    _groupedResults.value = groupedMap
+                }
+        }
+    } // end groupAndDisplaySongs
+
+    fun updateSong(song: Song) {viewModelScope.launch {songDao.updateSong(song)}}    
+    // No need to manually refresh the list. Since the search functions
+    // return a Flow, Room will automatically push the updated data,
+    // and the UI will recompose to show the change.
+
+} // end SearchViewModel

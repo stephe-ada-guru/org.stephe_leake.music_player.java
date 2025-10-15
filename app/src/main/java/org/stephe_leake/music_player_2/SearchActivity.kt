@@ -22,9 +22,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -32,10 +39,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 class SearchActivity : ComponentActivity()
 {
@@ -51,7 +62,6 @@ class SearchActivity : ComponentActivity()
       }
    }
 
-   @kotlinx.coroutines.ExperimentalCoroutinesApi
    override fun onCreate(savedInstanceState: Bundle?)
    {
       super.onCreate(savedInstanceState)
@@ -59,138 +69,256 @@ class SearchActivity : ComponentActivity()
     }
 }
 
-@kotlinx.coroutines.ExperimentalCoroutinesApi
 @Composable
 fun SearchScreen(viewModel: SearchViewModel)
 {
-   var selectedTabIndex by remember { mutableStateOf(0) }
+   val groupedResults by viewModel.groupedResults.collectAsState()
+   var selectedTab by remember { mutableStateOf(0) }
    val tabs = listOf("General Search", "Detailed Search")
 
-   val generalQuery by viewModel.generalQuery.collectAsState<String>()
-   val generalResults by viewModel.generalSearchResults.collectAsState<List<Song>>()
+   Column() {
+      Row() {
+         tabs.forEachIndexed { index, title ->
+                                  Tab(
+                                     selected = selectedTab == index,
+                                     onClick = { selectedTab = index },
+                                     text = { Text(title) }
+                                  )
+         }
+      }
+      
+      when (selectedTab) {
+         0 -> GeneralSearchTab(onSearch = { query -> viewModel.performGeneralSearch(query) })
+         1 -> DetailedSearchTab(onSearch = { info -> viewModel.performDetailedSearch(info) })
+      }
 
-   val detailedTitle by viewModel.detailedTitle.collectAsState<String>()
-   val detailedArtist by viewModel.detailedArtist.collectAsState<String>()
-   val detailedAlbum by viewModel.detailedAlbum.collectAsState<String>()
-   val detailedAlbumArtist by viewModel.detailedAlbumArtist.collectAsState<String>()
-   val detailedComposer by viewModel.detailedComposer.collectAsState<String>()
-   val detailedCategory by viewModel.detailedCategory.collectAsState<String>()
-   val detailedResults by viewModel.detailedSearchResults.collectAsState<List<Song>>()
-   
-   Scaffold { padding ->
-                 Column(modifier = Modifier.padding(padding)) {
-                    TabRow(selectedTabIndex = selectedTabIndex) {
-                       tabs.forEachIndexed { index, title ->
-                                                Tab(
-                                                   selected = selectedTabIndex == index,
-                                                   onClick = { selectedTabIndex = index },
-                                                   text = { Text(title) }
-                                                )
-                       }
-                    }
-                    
-                    when (selectedTabIndex) {
-                       0 -> Column {
-                          SearchField(
-                             value = generalQuery,
-                             onValueChange = viewModel::onGeneralQueryChange,
-                             label = "Search..."
-                          )
-                          HorizontalDivider()
-                          SearchResults(results = generalResults)
-                       }
-                       1 -> Column {
-                          DetailedSearchFields(
-                             title = detailedTitle, onTitleChange = { viewModel.detailedTitle.value = it },
-                             artist = detailedArtist, onArtistChange = { viewModel.detailedArtist.value = it },
-                             album = detailedAlbum, onAlbumChange = { viewModel.detailedAlbum.value = it },
-                             albumArtist = detailedAlbumArtist, onAlbumArtistChange = {
-                                viewModel.detailedAlbumArtist.value = it },
-                             composer = detailedComposer, onComposerChange = { viewModel.detailedComposer.value = it },
-                             category = detailedCategory, onCategoryChange = { viewModel.detailedCategory.value = it }
-                          )
-                          HorizontalDivider()
-                          SearchResults(results = detailedResults)
-                       }
-                    }
-                 }
+      HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+      SearchResults(viewModel)
    }
 }
 
 @Composable
-fun SearchField(value: String, onValueChange: (String) -> Unit, label: String)
-{
-    OutlinedTextField(
-       value = value,
-       onValueChange = onValueChange,
-       label = { Text(label) },
-       modifier = Modifier
-          .fillMaxWidth()
-          .padding(horizontal = 16.dp, vertical = 8.dp),
-       singleLine = true
-    )
-}
-
-@Composable
-fun DetailedSearchFields(
-   title: String, onTitleChange: (String) -> Unit,
-   artist: String, onArtistChange: (String) -> Unit,
-   album: String, onAlbumChange: (String) -> Unit,
-   albumArtist: String, onAlbumArtistChange: (String) -> Unit,
-   composer: String, onComposerChange: (String) -> Unit,
-   category: String, onCategoryChange: (String) -> Unit
-)
-{
-   LazyColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
-      item { SearchField(value = title, onValueChange = onTitleChange, label = "Title") }
-      item { SearchField(value = artist, onValueChange = onArtistChange, label = "Artist") }
-      item { SearchField(value = album, onValueChange = onAlbumChange, label = "Album") }
-      item { SearchField(value = albumArtist, onValueChange = onAlbumArtistChange, label = "Album Artist") }
-      item { SearchField(value = composer, onValueChange = onComposerChange, label = "Composer") }
-      item { SearchField(value = category, onValueChange = onCategoryChange, label = "Category") }
-   }
-}
-
-@Composable
-fun SearchResults(results: List<Song>)
-{
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp)
-    )
-    {
-       if (results.isEmpty())
-          {
-          item {
-             Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                Text("No results found.")
-             }
-          }
-        } else {
-             items(results) { song ->
-                                 SongItem(song)
-                              Spacer(modifier = Modifier.height(8.dp))
-            }
+fun GeneralSearchTab(onSearch: (String) -> Unit) {
+    var query by remember { mutableStateOf("") }
+    Row(modifier = Modifier.padding(8.dp)) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            label = { Text("Search...") },
+            modifier = Modifier.weight(1f)
+        )
+        Button(onClick = { onSearch(query) }, modifier = Modifier.padding(start = 8.dp)) {
+            Text("Go")
         }
     }
 }
 
 @Composable
-fun SongItem(song: Song)
+fun DetailedSearchTab(onSearch: (DetailedInfo) -> Unit)
 {
-   Card(modifier = Modifier.fillMaxWidth()) {
-      Column(modifier = Modifier.padding(12.dp)) {
-         if (song.Title != null)
-            Text(song.Title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-         
-         if (song.Album_Artist != null)
-            Text("by ${song.Album_Artist}", style = MaterialTheme.typography.bodyMedium)
+   var query by remember { mutableStateOf(DetailedInfo()) }
+   Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+   ) {
+      SearchField(value = query.title, onValueChange = { query = query.copy(title = it) }, label = "Title")
+      SearchField(value = query.artist, onValueChange = { query = query.copy(artist = it) }, label = "Artist")
+      SearchField(value = query.album, onValueChange = { query = query.copy(album = it) }, label = "Album")
+      SearchField(value = query.albumArtist, onValueChange = { query = query.copy(albumArtist = it) }, label = "Album Artist")
+      SearchField(value = query.composer, onValueChange = { query = query.copy(composer = it) }, label = "Composer")
+      SearchField(value = query.category, onValueChange = { query = query.copy(category = it) }, label = "Category")
 
-         if (song.Album != null)
-            Text("from ${song.Album}", style = MaterialTheme.typography.bodySmall)
+      HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-         if (song.Category != null)
-            Text("Category: ${song.Category}", style = MaterialTheme.typography.bodySmall)
+      Button(onClick = { onSearch(query) }, modifier = Modifier.padding(start = 8.dp)) {
+         Text("Go")
       }
    }
 }
+
+@Composable
+private fun SearchField(label: String, value: String, onValueChange: (String) -> Unit)
+{
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true
+    )
+}
+
+@Composable
+fun SearchResults(viewModel: SearchViewModel) {
+    // Collect the grouped results from the ViewModel
+    val groupedResults by viewModel.groupedResults.collectAsState()
+
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        // Iterate through each album group in the map
+        items(groupedResults.entries.toList()) { (albumInfo, songs) ->
+            AlbumGroup(albumInfo, songs, viewModel)
+        }
+    }
+} // end SearchResults
+
+@Composable
+fun AlbumGroup(albumInfo: AlbumInfo, songs: List<Song>, viewModel: SearchViewModel) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            AlbumHeader(albumInfo)
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(8.dp))
+
+            songs.forEach { song ->
+                SongRow(song, viewModel)
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+        }
+    }
+} // end albumGroup
+
+@Composable
+fun AlbumHeader(albumInfo: AlbumInfo) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column {
+            Text(
+                text = albumInfo.name ?: "<unknown album>",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "${albumInfo.artist ?: ""} ${albumInfo.year ?: ""}".trim(),
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
+        }
+        // FIXME: add album art images
+        // For example:
+        // AsyncImage(model = "...", contentDescription = "Album Art")
+    }
+} // end AlbumHeader
+
+@Composable
+fun SongRow(song: Song, viewModel: SearchViewModel) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Play Button
+        IconButton(onClick = { /* FIXME: Implement play action */ }) {
+            Icon(Icons.Default.PlayArrow, contentDescription = "Play ${song.Title}")
+        }
+
+        // Using weights to create table-like columns
+        Text(
+            text = song.Artist ?: "",
+            modifier = Modifier.weight(1.5f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            text = song.Composer ?: "",
+            modifier = Modifier.weight(1.5f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            text = song.Title ?: "",
+            modifier = Modifier.weight(2f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+
+        EditableText(
+            initialValue = song.Category ?: "",
+            onSave = {
+               category ->
+                  viewModel.updateSong(
+                     Song (
+                        ID = song.ID,
+                        File_Name = song.File_Name,
+                        Category = category,
+                        Artist = song.Artist,
+                        Album_Artist = song.Album_Artist,
+                        Composer = song.Composer,
+                        Album = song.Album,
+                        Year = song.Year,
+                        Title = song.Title,
+                        Track = song.Track,
+                        Last_Downloaded = song.Last_Downloaded,
+                        Prev_Downloaded = song.Prev_Downloaded,
+                        Play_Before = song.Play_Before,
+                        Play_After = song.Play_After))
+        })
+        
+        // FIXME: add play before/after, with edit
+    }
+} // end SongRow
+
+@Composable
+fun EditableText(
+    initialValue: String,
+    onSave: (String) -> Unit, 
+    modifier: Modifier = Modifier
+) {
+    var isEditing by remember { mutableStateOf(false) }
+    var text by remember { mutableStateOf(initialValue) }
+
+    if (isEditing) {
+        // --- Edit Mode ---
+        Row(
+            modifier = modifier,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Text input field
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier.weight(1f),
+                singleLine = true
+            )
+            // Save button
+            IconButton(onClick = {
+                onSave(text)
+                isEditing = false
+            }) {
+                Icon(Icons.Default.Check, contentDescription = "Save")
+            }
+            // Cancel button
+            IconButton(onClick = {
+                // Reset text to its original value and exit edit mode
+                text = initialValue
+                isEditing = false
+            }) {
+                Icon(Icons.Default.Close, contentDescription = "Cancel")
+            }
+        }
+    } else {
+        // --- Display Mode ---
+        Text(
+            text = initialValue.ifEmpty { "[empty]" }, // Show placeholder for empty text
+            modifier = modifier
+                .fillMaxWidth()
+                .clickable { isEditing = true } // Click to enter edit mode
+                .padding(vertical = 16.dp) // Add padding to make it easier to click
+        )
+    }
+} // end EditableText
+
+// end of file

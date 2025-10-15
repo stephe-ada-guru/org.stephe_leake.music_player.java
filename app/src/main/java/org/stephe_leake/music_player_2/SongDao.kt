@@ -39,11 +39,11 @@ interface SongDao
         Composer LIKE '%' || :query || '%' OR
         Title LIKE '%' || :query || '%' OR
         Category LIKE '%' || :query || '%'
+        ORDER BY Album_Artist, Album, Title ASC
     """)
     // No 'suspend' here because it returns a Flow, which means Room
     // is already running it in a background task.
     fun generalSearch(query: String): Flow<List<Song>>
-
 
     @Query("""
         SELECT * FROM Song WHERE
@@ -53,6 +53,7 @@ interface SongDao
         (:albumArtist = '' OR Album_Artist LIKE '%' || :albumArtist || '%') AND
         (:composer = '' OR Composer LIKE '%' || :composer || '%') AND
         (:category = '' OR Category LIKE '%' || :category || '%')
+        ORDER BY Album_Artist, Album, Title ASC
     """)
     // Returns Flow, no 'suspend'
     fun detailedSearch(
