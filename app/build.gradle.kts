@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "org.stephe_leake.music_player_2"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "org.stephe_leake.music_player_2"
