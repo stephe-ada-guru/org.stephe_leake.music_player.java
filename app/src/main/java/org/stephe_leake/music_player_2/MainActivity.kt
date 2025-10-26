@@ -575,7 +575,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
       if (index > 0 && viewModel.playlistState.value.baseName != "")
          {
-            val noteFileName = utils.globalDirectory + "/" + viewModel.playlistState.value.baseName + ".note"
+            val noteFileName = utils.notesFileName(viewModel.playlistState.value.baseName)
             val metaData = controller.currentMediaItem!!.mediaMetadata
             val writer = BufferedWriter(FileWriter(noteFileName, true)) // append
             

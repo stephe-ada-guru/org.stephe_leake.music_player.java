@@ -183,7 +183,7 @@ class utils
    
       fun notesFileName(category : String) : String
       {
-         return appDirectory + "/" + category + ".note"
+         return globalDirectory + "/" + category + ".note"
       }
 
       fun findTextViewById (a: AppCompatActivity, id: Int) : TextView

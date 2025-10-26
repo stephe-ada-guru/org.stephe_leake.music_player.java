@@ -1,6 +1,8 @@
 ~/Projects/org.stephe_leake.music_player/app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 ~/Projects/smm.main/notes.text
 
+(dvc-propagate-one "." "../org.stephe_leake.music_player.work_1")
+
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
 testing update playlist
@@ -9,10 +11,6 @@ testing update playlist
         playlist is correct on disk
         skips to end of current song on reselect
         something glitched on switch to other playlist
-
-    notes not sent
-        server log does not show a PUT
-        note file not deleted
 
 reached end of playlist, did not transition to none.
 
