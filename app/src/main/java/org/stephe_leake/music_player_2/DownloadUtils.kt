@@ -177,7 +177,8 @@ class DownloadUtils
 
             if (response.code < 200 || response.code > 299)
                {
-                  log(LogLevel.Error, "getNewSongsList server error: ${response.code}:${response.message}")
+                  log(LogLevel.Error,
+                      "getNewSongsList server error: ${response.code}:${response.message}:${response.body?.string()}")
                   result.status = ProcessStatus.Fatal
                }
             else if (response.body == null)
