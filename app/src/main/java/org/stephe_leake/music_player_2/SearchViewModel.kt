@@ -37,11 +37,11 @@ data class DetailedInfo(
 {
    fun isNotBlank() : Boolean
    {
-      return title.isNotBlank() &&
-       artist.isNotBlank() &&
-       album.isNotBlank() &&
-       albumArtist.isNotBlank() &&
-       composer.isNotBlank() &&
+      return title.isNotBlank() ||
+       artist.isNotBlank() ||
+       album.isNotBlank() ||
+       albumArtist.isNotBlank() ||
+       composer.isNotBlank() ||
        category.isNotBlank()   
    }
 }

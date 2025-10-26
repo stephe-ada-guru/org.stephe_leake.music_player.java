@@ -22,6 +22,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -77,7 +78,7 @@ fun SearchScreen(viewModel: SearchViewModel)
    val tabs = listOf("General Search", "Detailed Search")
 
    Column() {
-      Row() {
+      TabRow(selectedTabIndex = selectedTab) {
          tabs.forEachIndexed { index, title ->
                                   Tab(
                                      selected = selectedTab == index,
@@ -121,9 +122,9 @@ fun DetailedSearchTab(onSearch: (DetailedInfo) -> Unit)
    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(0.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(0.dp)
    ) {
       SearchField(value = query.title, onValueChange = { query = query.copy(title = it) }, label = "Title")
       SearchField(value = query.artist, onValueChange = { query = query.copy(artist = it) }, label = "Artist")
@@ -147,7 +148,13 @@ private fun SearchField(label: String, value: String, onValueChange: (String) ->
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+           .fillMaxWidth()
+        // There's a lot of wasted space because of Material Design 3.
+        // Setting height smaller than the default (56) hides the
+        // user's text. Apparently there is no way to say "use less
+        // padding". Sigh.
+           .height(56.dp),
         singleLine = true
     )
 }
@@ -214,8 +221,13 @@ fun AlbumHeader(albumInfo: AlbumInfo) {
 
 @Composable
 fun SongRow(song: Song, viewModel: SearchViewModel) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        // Play Button
+   // These names are actually reversed. Sigh.
+   val darkBackground = MaterialTheme.colorScheme.surface 
+   val lightBackground = MaterialTheme.colorScheme.surfaceVariant // A different color
+
+ 
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // Play Button; light background
         IconButton(onClick = { /* FIXME: Implement play action */ }) {
             Icon(Icons.Default.PlayArrow, contentDescription = "Play ${song.Title}")
         }
@@ -223,7 +235,7 @@ fun SongRow(song: Song, viewModel: SearchViewModel) {
         // Using weights to create table-like columns
         Text(
             text = song.Artist ?: "",
-            modifier = Modifier.weight(1.5f),
+            modifier = Modifier.weight(1.5f).background(darkBackground),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -231,7 +243,7 @@ fun SongRow(song: Song, viewModel: SearchViewModel) {
 
         Text(
             text = song.Composer ?: "",
-            modifier = Modifier.weight(1.5f),
+            modifier = Modifier.weight(1.5f).background(lightBackground),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -239,7 +251,7 @@ fun SongRow(song: Song, viewModel: SearchViewModel) {
 
         Text(
             text = song.Title ?: "",
-            modifier = Modifier.weight(2f),
+            modifier = Modifier.weight(2f).background(darkBackground),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -247,25 +259,8 @@ fun SongRow(song: Song, viewModel: SearchViewModel) {
 
         EditableText(
             initialValue = song.Category ?: "",
-            onSave = {
-               category ->
-                  viewModel.updateSong(
-                     Song (
-                        ID = song.ID,
-                        File_Name = song.File_Name,
-                        Category = category,
-                        Artist = song.Artist,
-                        Album_Artist = song.Album_Artist,
-                        Composer = song.Composer,
-                        Album = song.Album,
-                        Year = song.Year,
-                        Title = song.Title,
-                        Track = song.Track,
-                        Last_Downloaded = song.Last_Downloaded,
-                        Prev_Downloaded = song.Prev_Downloaded,
-                        Play_Before = song.Play_Before,
-                        Play_After = song.Play_After))
-        })
+            onSave = {category -> viewModel.updateSong(song.copy(Category = category))},  
+            modifier = Modifier.weight(1.5f).background(lightBackground))
         
         // FIXME: add play before/after, with edit
     }

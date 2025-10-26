@@ -1,7 +1,7 @@
 app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 ~/Projects/smm.main/notes.text
 
-(dvc-propagate-one "." "../org.stephe_leake.music_player.work_1")
+(dvc-propagate-one "../org.stephe_leake.music_player" "../org.stephe_leake.music_player.work_1")
 
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
@@ -15,9 +15,6 @@ testing update playlist
 reached end of playlist, did not transition to none.
 
 display category
-
-implement search activity
-    on branch .work_1
 
  decisions
 standard notification doesn't display album
