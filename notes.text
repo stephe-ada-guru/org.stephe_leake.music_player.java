@@ -14,7 +14,10 @@ testing update playlist
 
 reached end of playlist, did not transition to none.
 
-display category
+display category in main screen
+
+implement db sync
+    just opening the db assumes you will write, which creates log files for that, which changes mod date on smm.db
 
  decisions
 standard notification doesn't display album

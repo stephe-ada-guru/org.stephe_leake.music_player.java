@@ -174,24 +174,34 @@ fun SearchResults(viewModel: SearchViewModel) {
 
 @Composable
 fun AlbumGroup(albumInfo: AlbumInfo, songs: List<Song>, viewModel: SearchViewModel) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            AlbumHeader(albumInfo)
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(8.dp))
+   var expandedSong by remember {mutableStateOf<Int?>(null)}
+   
+   Card(
+      modifier = Modifier
+         .fillMaxWidth()
+         .padding(horizontal = 8.dp, vertical = 4.dp),
+      elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+   ) {
+      Column(modifier = Modifier.padding(8.dp)) {
+         AlbumHeader(albumInfo)
+         Spacer(modifier = Modifier.height(8.dp))
+         HorizontalDivider()
+         Spacer(modifier = Modifier.height(8.dp))
 
-            songs.forEach { song ->
-                SongRow(song, viewModel)
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-        }
-    }
+         songs.forEach {
+            song ->
+               SongRow(
+                  song,
+                  viewModel,
+                  isExpanded = song.ID == expandedSong,
+                  onRowClick = {
+                     // Toggle expansion: if it's already expanded, collapse it. Otherwise, expand it.
+                     expandedSong = if (song.ID == expandedSong) null else song.ID
+               })
+            Spacer(modifier = Modifier.height(4.dp))
+         }
+      }
+   }
 } // end albumGroup
 
 @Composable
@@ -220,50 +230,61 @@ fun AlbumHeader(albumInfo: AlbumInfo) {
 } // end AlbumHeader
 
 @Composable
-fun SongRow(song: Song, viewModel: SearchViewModel) {
+fun SongRow(
+   song: Song,
+   viewModel: SearchViewModel,
+   isExpanded: Boolean,
+   onRowClick: () -> Unit) {
+
    // These names are actually reversed. Sigh.
    val darkBackground = MaterialTheme.colorScheme.surface 
    val lightBackground = MaterialTheme.colorScheme.surfaceVariant // A different color
 
- 
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        // Play Button; light background
-        IconButton(onClick = { /* FIXME: Implement play action */ }) {
-            Icon(Icons.Default.PlayArrow, contentDescription = "Play ${song.Title}")
-        }
+   val maxLines = if (isExpanded) Int.MAX_VALUE else 1
+   
+   Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier.fillMaxWidth()
+         .clickable {onRowClick()} ) {
+      
+      Icon(
+         imageVector = Icons.Default.PlayArrow,
+         contentDescription = "Play ${song.Title}",
+         modifier = Modifier
+            .padding(horizontal = 8.dp).background(lightBackground)
+            .clickable { /* FIXME: Implement play action */ }
+            ) 
 
-        // Using weights to create table-like columns
-        Text(
-            text = song.Artist ?: "",
-            modifier = Modifier.weight(1.5f).background(darkBackground),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.width(8.dp))
+      // Using weights to create table-like columns. Include padding
+      // in text fields so it can be squashed on the phone.
+      Text(
+         text = song.Artist ?: "",
+         modifier = Modifier.weight(1.5f).background(darkBackground).padding(horizontal = 4.dp),
+         maxLines = maxLines,
+         overflow = TextOverflow.Ellipsis
+      )
+      
+      Text(
+         text = song.Composer ?: "",
+         modifier = Modifier.weight(1.5f).background(lightBackground).padding(horizontal = 4.dp),
+         maxLines = maxLines,
+         overflow = TextOverflow.Ellipsis
+      )
+      
+      Text(
+         text = song.Title ?: "",
+         modifier = Modifier.weight(2f).background(darkBackground).padding(horizontal = 4.dp),
+         maxLines = maxLines,
+         overflow = TextOverflow.Ellipsis
+      )
 
-        Text(
-            text = song.Composer ?: "",
-            modifier = Modifier.weight(1.5f).background(lightBackground),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Text(
-            text = song.Title ?: "",
-            modifier = Modifier.weight(2f).background(darkBackground),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-
-        EditableText(
-            initialValue = song.Category ?: "",
-            onSave = {category -> viewModel.updateSong(song.copy(Category = category))},  
-            modifier = Modifier.weight(1.5f).background(lightBackground))
-        
-        // FIXME: add play before/after, with edit
-    }
+      EditableText(
+         initialValue = song.Category ?: "",
+         onSave = {category -> viewModel.updateSong(song.copy(Category = category))},  
+         modifier = Modifier.weight(1.5f).background(lightBackground))
+      
+      // FIXME: add play before/after, with edit
+   } // end Row
 } // end SongRow
 
 @Composable
