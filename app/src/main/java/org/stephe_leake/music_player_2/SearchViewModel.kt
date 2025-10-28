@@ -24,7 +24,6 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-// FIXMME: add directory for album art
 data class AlbumInfo(val artist: String?, val name: String?, val year: Int?)
 
 data class DetailedInfo(
@@ -50,62 +49,62 @@ typealias SongAlbumMap = Map<AlbumInfo, List<Song>>
 
 class SearchViewModel(private val songDao: SongDao) : ViewModel()
 {
-    private val _groupedResults = MutableStateFlow<SongAlbumMap>(emptyMap())
-    val groupedResults: StateFlow<SongAlbumMap> = _groupedResults
-    
-    private val songListFlow = MutableSharedFlow<Flow<List<Song>>>()
+   private val _groupedResults = MutableStateFlow<SongAlbumMap>(emptyMap())
+   val groupedResults: StateFlow<SongAlbumMap> = _groupedResults
+   
+   private val songListFlow = MutableSharedFlow<Flow<List<Song>>>()
 
-    init {groupAndDisplaySongs()}
+   init {groupAndDisplaySongs()}
 
-    // Called by the General Search tab
-    fun performGeneralSearch(query: String) {
-        viewModelScope.launch {
-            if (query.isNotBlank()) {
-                songListFlow.emit(songDao.generalSearch(query))
-            } else {
-                _groupedResults.value = emptyMap() // Clear results if query is empty
+   // Called by the General Search tab
+   fun performGeneralSearch(query: String) {
+      viewModelScope.launch {
+         if (query.isNotBlank()) {
+            songListFlow.emit(songDao.generalSearch(query))
+         } else {
+            _groupedResults.value = emptyMap() // Clear results if query is empty
+         }
+      }
+   }
+
+   // Called by the Detailed Search tab
+   fun performDetailedSearch(info: DetailedInfo) {
+      viewModelScope.launch {
+         if (info.isNotBlank()) {
+            songListFlow.emit(
+               songDao.detailedSearch(
+                  title = info.title, artist = info.artist, album = info.album, albumArtist = info.albumArtist,
+                  composer = info.composer, category = info.category))
+         } else {
+            _groupedResults.value = emptyMap()
+         }
+      }
+   }
+
+   private fun groupAndDisplaySongs() {
+      viewModelScope.launch {
+         songListFlow
+            .flatMapLatest { it }
+            .map { songs -> 
+                      songs.groupBy { song ->
+                                         AlbumInfo(name = song.Album, artist = song.Album_Artist, year = song.Year)
+                      }
             }
-        }
-    }
-
-    // Called by the Detailed Search tab
-    fun performDetailedSearch(info: DetailedInfo) {
-        viewModelScope.launch {
-            if (info.isNotBlank()) {
-                songListFlow.emit(
-                   songDao.detailedSearch(
-                      title = info.title, artist = info.artist, album = info.album, albumArtist = info.albumArtist,
-                      composer = info.composer, category = info.category))
-            } else {
-                _groupedResults.value = emptyMap()
+            .catch {
+               // Handle any potential errors from the flow
+               // FIXME: message to the user (but we are in a background task; add errorMessage state?)
+               _groupedResults.value = emptyMap()
             }
-        }
-    }
+            .collect { groupedMap ->
+                          // Update the final UI state
+                       _groupedResults.value = groupedMap
+            }
+      }
+   } // end groupAndDisplaySongs
 
-    private fun groupAndDisplaySongs() {
-        viewModelScope.launch {
-            songListFlow
-                .flatMapLatest { it }
-                .map { songs -> 
-                    songs.groupBy { song ->
-                        AlbumInfo(name = song.Album, artist = song.Album_Artist, year = song.Year)
-                    }
-                }
-                .catch {
-                    // Handle any potential errors from the flow
-                    // FIXME: message to the user (but we are in a background task; add errorMessage state?)
-                    _groupedResults.value = emptyMap()
-                }
-                .collect { groupedMap ->
-                    // Update the final UI state
-                    _groupedResults.value = groupedMap
-                }
-        }
-    } // end groupAndDisplaySongs
-
-    fun updateSong(song: Song) {viewModelScope.launch {songDao.updateSong(song)}}    
-    // No need to manually refresh the list. Since the search functions
-    // return a Flow, Room will automatically push the updated data,
-    // and the UI will recompose to show the change.
+   fun updateSong(song: Song) {viewModelScope.launch {songDao.updateSong(song)}}    
+   // No need to manually refresh the list. Since the search functions
+   // return a Flow, Room will automatically push the updated data,
+   // and the UI will recompose to show the change.
 
 } // end SearchViewModel

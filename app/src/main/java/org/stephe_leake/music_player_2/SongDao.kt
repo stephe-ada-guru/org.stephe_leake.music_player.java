@@ -31,6 +31,18 @@ interface SongDao
     @Update
     suspend fun updateSong(song: Song)
 
+    // @Query("SELECT * FROM Song WHERE ID = :id LIMIT 1")
+    // suspend fun getSong(id: Long): Song?
+
+    @Query("""
+           SELECT * FROM Song WHERE
+           (:albumArtist = '' OR Album_Artist = :albumArtist) AND
+           (:album = '' OR Album = :album) AND
+           (:title = '' OR Title = :title)
+           LIMIT 1
+           """)
+    suspend fun getSong(albumArtist : String, album: String, title : String) : Song?
+
     @Query("""
         SELECT * FROM Song WHERE
         Artist LIKE '%' || :query || '%' OR
@@ -40,7 +52,7 @@ interface SongDao
         Title LIKE '%' || :query || '%' OR
         Category LIKE '%' || :query || '%'
         ORDER BY Album_Artist, Album, Title ASC
-    """)
+        """)
     // No 'suspend' here because it returns a Flow, which means Room
     // is already running it in a background task.
     fun generalSearch(query: String): Flow<List<Song>>

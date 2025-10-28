@@ -18,6 +18,7 @@
 
 package org.stephe_leake.music_player_2
 
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -51,14 +52,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 class SearchActivity : ComponentActivity()
 {
-   private val db by lazy { SongDatabase.getDatabase(this) }
    private val viewModel: SearchViewModel by viewModels {
       object : androidx.lifecycle.ViewModelProvider.Factory {
          @Suppress("UNCHECKED_CAST")
          // This is always safe here because this is a locally
          // declared anonymous factory. But the compiler doesn't know it.
          override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-            return SearchViewModel(db.songDao()) as T
+            return SearchViewModel((application as MusicPlayerApplication).db.songDao()) as T
          }
       }
    }
@@ -223,9 +223,7 @@ fun AlbumHeader(albumInfo: AlbumInfo) {
                 color = Color.Gray
             )
         }
-        // FIXME: add album art images
-        // For example:
-        // AsyncImage(model = "...", contentDescription = "Album Art")
+        // Not displayling album art images here; no room on phone screen.
     }
 } // end AlbumHeader
 

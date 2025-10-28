@@ -19,6 +19,8 @@
 package org.stephe_leake.music_player_2
 
 import android.app.Application
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.State
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -41,7 +43,7 @@ data class PlaylistState(
    val pos: Long = 0L              // Current position in song (milliseconds, 0 if none)
 )
 
-class MainViewModel(application : Application) : AndroidViewModel(application)
+class MainViewModel(application : Application, private val songDao: SongDao) : AndroidViewModel(application)
 {
    private val _playlistState = MutableStateFlow<PlaylistState>(PlaylistState())
    val playlistState: StateFlow<PlaylistState> = _playlistState.asStateFlow()
@@ -184,4 +186,15 @@ class MainViewModel(application : Application) : AndroidViewModel(application)
       _isMediaControllerReady.value = isReady
    }
    
-} //MainViewModel
+   // Category is updated by an async db fetch
+   private val _currentCategory = mutableStateOf<String?>(null)
+   val currentCategory: State<String?> = _currentCategory
+   
+   fun getCategory(albumArtist : String, album : String, title: String) {
+      viewModelScope.launch {
+         val song = songDao.getSong(albumArtist, album, title)
+         _currentCategory.value = song?.Category
+      }
+   }
+
+ } //MainViewModel

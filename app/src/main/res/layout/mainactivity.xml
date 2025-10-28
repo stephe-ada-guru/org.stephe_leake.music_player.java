@@ -48,6 +48,16 @@
         android:layout_height="wrap_content"
         android:weightSum="1">
 
+      <TextView
+          android:id="@+id/playlist"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:gravity="center"
+          android:focusable="true"
+          android:text="@string/null_playlist"
+          android:textAppearance="?android:attr/textAppearanceLarge"
+          android:weightSum="1"/>
+
       <!-- WORKAROUND: the player controls keep disappearing because
            it thinks it's displaying video, so we set the height; good
            for my phone/tablet -->
@@ -82,22 +92,9 @@
            artists
            album
            title
+           category
            notes buttons
       -->
-      <!-- <HorizontalScrollView -->
-      <!--     android:layout_width="match_parent" -->
-      <!--     android:layout_height="wrap_content" > -->
-      <!--   <LinearLayout -->
-      <!--       android:id="@+id/albumArtLinear" -->
-      <!--       android:layout_width="wrap_content" -->
-      <!--       android:layout_height="wrap_content" -->
-      <!--       android:orientation="horizontal" > -->
-      <!--   </LinearLayout> -->
-      <!-- </HorizontalScrollView> -->
-      <!-- <View -->
-      <!--     android:layout_width="match_parent" -->
-      <!--     android:layout_height="1dp" -->
-      <!--     android:background="#ff7f7f7f" />  <!-\- separator -\-> -->
       <TextView
           android:layout_width="match_parent"
           android:layout_height="wrap_content"
@@ -169,6 +166,20 @@
           android:gravity="center"
           android:text=""
           android:id="@+id/title"
+          android:textAppearance="?android:attr/textAppearanceLarge"
+          android:background="@android:color/black"
+          android:textColor="@android:color/white"/>
+      <View
+          android:layout_width="match_parent"
+          android:layout_height="1dp"
+          android:background="#ffffffff"/> <!-- separator -->
+
+      <androidx.compose.ui.platform.ComposeView
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:gravity="center"
+          android:text=""
+          android:id="@+id/category"
           android:textAppearance="?android:attr/textAppearanceLarge"
           android:background="@android:color/black"
           android:textColor="@android:color/white"/>
@@ -265,17 +276,6 @@
             android:text="@string/note_other"
             android:onClick="onClickNote"/>
       </LinearLayout>
-
-      <TextView
-          android:id="@+id/playlist"
-          android:layout_width="match_parent"
-          android:layout_height="wrap_content"
-          android:gravity="center"
-          android:focusable="true"
-          android:text="@string/null_playlist"
-          android:textAppearance="?android:attr/textAppearanceLarge"
-          android:weightSum="1"/>
-
     </LinearLayout>
   </ScrollView>
 </LinearLayout>

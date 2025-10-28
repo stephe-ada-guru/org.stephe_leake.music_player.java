@@ -19,6 +19,7 @@
 package org.stephe_leake.music_player_2
 
 import android.app.AlertDialog
+import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -51,6 +52,21 @@ import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -90,7 +106,18 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    private var newPlaylistIntent = Intent()
    private var updatePlaylistIntent = Intent()
    
-   private val viewModel : MainViewModel by viewModels()
+   private val viewModel : MainViewModel by viewModels(){
+      object : androidx.lifecycle.ViewModelProvider.Factory {
+         @Suppress("UNCHECKED_CAST")
+         // This is always safe here because this is a locally
+         // declared anonymous factory. But the compiler doesn't know it.
+         override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+            return MainViewModel(
+               application,
+               (application as MusicPlayerApplication).db.songDao()) as T
+         }
+      }
+   }
    
    private var mediaController : Player? = null
 
@@ -205,7 +232,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             /* selectionArgs */ arrayOf(utils.globalDirectory + "/" + Filename),
             /* sortOrder */ null)
          
-         // The syntax that gemini gives for .use is _not_ correct!
          if (cursor == null || !cursor.moveToFirst())
             {
                // not found. Also checked in DownloadUtils.getSongs, but it might get deleted.
@@ -378,7 +404,25 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          slideshowRunnable = null
       }
    }
-     
+
+   @Composable
+   fun CategoryDisplay(viewModel: MainViewModel)
+   {
+      // "by" connects the viewModel state to the Composable update.
+      val category by viewModel.currentCategory
+
+      // Display the text.
+      Text(
+         text = category ?: "", 
+         modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.Black), 
+         textAlign = TextAlign.Center,
+         color = Color.White,
+         style = MaterialTheme.typography.titleLarge
+      )
+   }
+
    private val playerListener = object : Player.Listener
    {
       private fun updateText(view: TextView, content: CharSequence?)
@@ -410,8 +454,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       @OptIn(UnstableApi::class)
       fun updateDisplay()
       {
-         // FIXME: display all album art.
-         
          val count = mediaController!!.mediaItemCount
          val index = mediaController!!.currentMediaItemIndex
          val pos = mediaController!!.currentPosition
@@ -424,7 +466,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          val albumArtistView = utils.findTextViewById(utils.mainActivity!!, R.id.albumArtist)
          val albumView = utils.findTextViewById(utils.mainActivity!!, R.id.album)
          val titleView = utils.findTextViewById(utils.mainActivity!!, R.id.title)
-         // val totalTime = utils.findTextViewById(utils.mainActivity!!, R.id.totalTime)
          
          val metadata = mediaController!!.currentMediaItem!!.mediaMetadata
          val yearInt = metadata.releaseYear ?: 0
@@ -434,7 +475,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          val artistText = metadata.artist ?: ""
          val albumArtistText = metadata.albumArtist ?: ""
          val albumText = metadata.albumTitle ?: ""
-
+         
          // 'index' is 0 indexed
          playlistView.setText(viewModel.playlistState.value.baseName + " " + (index + 1).toString() + "/" + count)
 
@@ -475,6 +516,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          updateText(yearView, yearText)
          albumView.setText(albumText)
          titleView.setText(titleText)
+         
+         // categoryView is managed by CategoryDisplay above, triggered by this:
+         viewModel.getCategory (albumArtistText.toString(), albumText.toString(), titleText.toString())
+
       } // updateDisplay
 
       override fun onIsPlayingChanged(isPlaying: Boolean)
@@ -647,6 +692,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       setContentView(R.layout.mainactivity)
       setSupportActionBar(findViewById(R.id.main_toolbar)) // for menu
 
+      val categoryView = findViewById<androidx.compose.ui.platform.ComposeView>(R.id.category)
+      categoryView.setContent {CategoryDisplay(viewModel = viewModel)}
+      
       defaultTextViewTextSize = utils.findTextViewById(this, R.id.artist).textSize
 
       scaleTextViews();
