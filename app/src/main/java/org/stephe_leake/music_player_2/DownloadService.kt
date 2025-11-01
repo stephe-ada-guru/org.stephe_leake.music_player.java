@@ -32,6 +32,7 @@ import androidx.preference.PreferenceManager
 import java.io.File
 import java.io.IOException
 
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +40,8 @@ import kotlinx.coroutines.launch
 
 import org.apache.commons.io.FilenameUtils
 
+private val serviceScope = CoroutineScope(Dispatchers.IO)
+    
 class DownloadService : Service()
 {
    private val broadcastReceiverCommand : MPBroadcastReceiver = MPBroadcastReceiver()
@@ -170,18 +173,6 @@ class DownloadService : Service()
       }
    }
 
-   internal inner class DownloadRun(private val notif   : DownloadNotif,
-                                    private val category: String)
-      : Runnable
-   {
-      @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-      override fun run()
-      {
-         notif.initialize(category)
-         CoroutineScope(Dispatchers.IO).launch{updatePlaylist(category)}
-      }
-   }
-
    ////////// service lifetime methods
    override fun onBind(intent: Intent): IBinder?
    {
@@ -216,6 +207,7 @@ class DownloadService : Service()
 
    override fun onDestroy()
    {
+      serviceScope.cancel()
       notif.Cancel()
       unregisterReceiver(broadcastReceiverCommand)
       super.onDestroy()
@@ -239,8 +231,11 @@ class DownloadService : Service()
                   prefs.getString(res.getString(R.string.log_level_key),
                                   LogLevel.Info.toString())!!)
 
-                  val runner = DownloadRun(notif, intent.getStringExtra(utils.EXTRA_PLAYLIST_CATEGORY)!!)
-                  Thread(runner).start()
+                  val category = intent.getStringExtra(utils.EXTRA_PLAYLIST_CATEGORY)!!
+                  serviceScope.launch {
+                     notif.initialize(category)
+                     updatePlaylist(category)
+                  }
 
                   return START_NOT_STICKY
             }
