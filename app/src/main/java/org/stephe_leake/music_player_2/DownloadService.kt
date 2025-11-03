@@ -40,10 +40,10 @@ import kotlinx.coroutines.launch
 
 import org.apache.commons.io.FilenameUtils
 
-private val serviceScope = CoroutineScope(Dispatchers.IO)
-    
 class DownloadService : Service()
 {
+   private val serviceScope = CoroutineScope(Dispatchers.IO)
+    
    private val broadcastReceiverCommand : MPBroadcastReceiver = MPBroadcastReceiver()
    private lateinit var notif           : DownloadNotif
    
@@ -69,24 +69,24 @@ class DownloadService : Service()
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    private suspend fun updatePlaylist (category : String)
    {
-      var res                = resources
-      var prefs              : SharedPreferences   = PreferenceManager.getDefaultSharedPreferences(utils.mainActivity!!)
-      var songCountMaxStr    : String?             =
+      val res                = resources
+      val prefs              : SharedPreferences   = PreferenceManager.getDefaultSharedPreferences(this)
+      val songCountMaxStr    : String?             =
          prefs.getString(res.getString(R.string.song_count_max_key),
                          res.getString(R.string.song_count_max_default))
-      var newSongFractionStr : String?             =
+      val newSongFractionStr : String?             =
          prefs.getString (res.getString(R.string.new_song_fraction_key),
                           res.getString(R.string.new_song_fraction_default))
-      var overSelectRatioStr : String?             =
+      val overSelectRatioStr : String?             =
          prefs.getString (res.getString(R.string.over_select_ratio_key),
                           res.getString(R.string.over_select_ratio_default))
-      var songCountThreshStr : String?             =
+      val songCountThreshStr : String?             =
          prefs.getString (res.getString(R.string.song_count_threshold_key),
                           res.getString(R.string.song_count_threshold_default))
 
-      var serverIP        = prefs.getString (res.getString(R.string.server_IP_key), null)
-      var playlistFile    = File(utils.playlistFileName(category))
-      var playlistDirFile = File(FilenameUtils.getPath(playlistFile.path))
+      val serverIP        = prefs.getString (res.getString(R.string.server_IP_key), null)
+      val playlistFile    = File(utils.playlistFileName(category))
+      val playlistDirFile = File(FilenameUtils.getPath(playlistFile.path))
       var status          = StatusCount()
 
       if (serverIP == null || serverIP == "")

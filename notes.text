@@ -6,11 +6,8 @@ app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
 testing update playlist
-    download list works
     song count/max display not reset
         playlist is correct on disk
-        skips to end of current song on reselect
-        something glitched on switch to other playlist
 
 reached end of playlist, did not transition to none.
 

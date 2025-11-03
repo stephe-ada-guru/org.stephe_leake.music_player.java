@@ -304,12 +304,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       {
          if (intent?.action == utils.RESTART_PLAYLIST_COMMAND)
             {
-               if (viewModel.playlistState.value.baseName.isNotEmpty())
-                  {
-                     lifecycleScope.launch {
-                        playlistToPlayer(viewModel.playlistState.value.baseName,
-                                         play = mediaController!!.isPlaying)}
-                  }
+               lifecycleScope.launch {
+                  val playlist = utils.readPlaylistName()
+                  if (playlist.isNotEmpty())
+                     playlistToPlayer(playlist, play = mediaController!!.isPlaying)}
             }
       }
    }

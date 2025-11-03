@@ -325,15 +325,16 @@ class DownloadUtils
                         log(LogLevel.Error, "put notes failed " + response.message)
                      }
                   else
-                     log(LogLevel.Info, "${category} sendNotes")
+                     {
+                        log(LogLevel.Info, "${category} sendNotes")
+                        noteFile.delete()
+                     }
                }
                catch (e: IOException) {
                   // From httpClient.newCall; connection failed after retry
                   log(LogLevel.Error, category + " sendNotes http request failed: " + e.toString())
                   status = ProcessStatus.Retry // retry after delay
                }
-
-               noteFile.delete()
             }
          
          return status

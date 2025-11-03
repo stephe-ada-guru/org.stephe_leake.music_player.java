@@ -97,7 +97,7 @@ class utils
 
       var appDirectory : String = ""
       // Absolute path to application-specific directory, containing
-      // notes files.
+      // nothing at the moment.
       //
       // Set by Activity to getExternalStorageDir().
 
