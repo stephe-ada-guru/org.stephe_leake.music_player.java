@@ -609,8 +609,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             val noteFileName = utils.notesFileName(viewModel.playlistState.value.baseName)
             val metaData = controller.currentMediaItem!!.mediaMetadata
             val writer = BufferedWriter(FileWriter(noteFileName, true)) // append
-            
-            writer.write(metaData.extras!!.getString("Song_File")!! + ' ' + buttonText)
+            val absSongFile = metaData.extras!!.getString("Song_File")!!
+            val relSongFile = absSongFile.substring(utils.globalDirectory.length)
+            writer.write("\"${relSongFile}\" ${buttonText}")
             writer.newLine()
             writer.close()
          }
