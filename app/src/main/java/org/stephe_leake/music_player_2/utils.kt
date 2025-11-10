@@ -116,9 +116,9 @@ class utils
          return "$globalDirectory/$category.m3u"
       }
 
-      suspend fun readPlaylistCounts(playlist : String) : PlaylistCounts
+      suspend fun readPlaylistCounts(context: Context, playlist : String) : PlaylistCounts
       {
-         val preferences = mainActivity!!.playlistPrefsState.data.firstOrNull()
+         val preferences = context.playlistPrefsState.data.firstOrNull()
          if (preferences == null)
             {
                // Never set
@@ -141,16 +141,17 @@ class utils
                else
                   {
                      return PlaylistCounts(
-                        count = preferences[PlaylistPreferenceKeys.count(playlist)]!!,
+                        // count and pos should be set here, but Gemini insists on being "safe"
+                        count = preferences[PlaylistPreferenceKeys.count(playlist)] ?: 0,
                         index = temp,
-                        pos = preferences[PlaylistPreferenceKeys.pos(playlist)]!!)
+                        pos = preferences[PlaylistPreferenceKeys.pos(playlist)] ?: 0)
                   }
             }
       }
       
-      suspend fun savePlaylistCounts(category : String, count : Int, index : Int, pos : Long)
+      suspend fun savePlaylistCounts(context: Context, category : String, count : Int, index : Int, pos : Long)
       {
-         mainActivity!!.playlistPrefsState.edit {
+         context.playlistPrefsState.edit {
             preferences ->
                preferences[PlaylistPreferenceKeys.NAME] = category
                preferences[PlaylistPreferenceKeys.count(category)] = count
@@ -158,9 +159,9 @@ class utils
                preferences[PlaylistPreferenceKeys.pos(category)] = pos}
       }
       
-      suspend fun readPlaylistName() : String
+      suspend fun readPlaylistName(context: Context) : String
       {
-         val preferences = mainActivity!!.playlistPrefsState.data.firstOrNull()
+         val preferences = context.playlistPrefsState.data.firstOrNull()
          if (preferences == null)
             return ""
          else

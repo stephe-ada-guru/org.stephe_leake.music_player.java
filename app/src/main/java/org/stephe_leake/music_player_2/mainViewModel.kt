@@ -21,6 +21,7 @@ package org.stephe_leake.music_player_2
 import android.app.Application
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.State
+import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -58,7 +59,13 @@ class MainViewModel(application : Application, private val songDao: SongDao) : A
    {
       val current = _playlistState.value
       
-      utils.mainActivity!!.playlistPrefsState.edit {
+      _playlistState.value = PlaylistState(
+         baseName = "",
+         count = 0,
+         index = 0,
+         pos = 0)
+
+      (getApplication() as Context).playlistPrefsState.edit {
          preferences ->
             preferences[PlaylistPreferenceKeys.NAME] = ""
          if (current.baseName != "")
@@ -67,18 +74,13 @@ class MainViewModel(application : Application, private val songDao: SongDao) : A
                preferences[PlaylistPreferenceKeys.index(current.baseName)] = 0
                preferences[PlaylistPreferenceKeys.pos(current.baseName)] = 0
 
-               _playlistState.value = PlaylistState(
-                  baseName = "",
-                  count = 0,
-                  index = 0,
-                  pos = 0)
             }
       }
    } // clearSavedState
 
    suspend fun writeCategory(category : String)
    {
-      utils.mainActivity!!.playlistPrefsState.edit {
+      (getApplication() as Context).playlistPrefsState.edit {
          preferences ->
             preferences[PlaylistPreferenceKeys.NAME] = category
       }
@@ -96,25 +98,26 @@ class MainViewModel(application : Application, private val songDao: SongDao) : A
 
       if (current.baseName != "")
          {
-            utils.mainActivity!!.playlistPrefsState.edit {
+            _playlistState.value = PlaylistState(
+               baseName = current.baseName,
+               count = count,
+               index = index,
+               pos = pos)
+
+            (getApplication() as Context).playlistPrefsState.edit {
                preferences ->
                   preferences[PlaylistPreferenceKeys.NAME] = current.baseName
                preferences[PlaylistPreferenceKeys.count(current.baseName)] = count
                preferences[PlaylistPreferenceKeys.index(current.baseName)] = index
                preferences[PlaylistPreferenceKeys.pos(current.baseName)] = pos
 
-               _playlistState.value = PlaylistState(
-                  baseName = current.baseName,
-                  count = count,
-                  index = index,
-                  pos = pos)
             }
          }
    }// writeState
 
    private suspend fun readPlaylistState()
    {
-      val preferences = utils.mainActivity!!.playlistPrefsState.data.firstOrNull()
+      val preferences = (getApplication() as Context).playlistPrefsState.data.firstOrNull()
       if (preferences == null)
          {
             // Never set
@@ -161,11 +164,12 @@ class MainViewModel(application : Application, private val songDao: SongDao) : A
    }
    
    private val _isMediaControllerReady = MutableStateFlow(false)
+   private val _isPlaylistStateLoaded = MutableStateFlow(false)
 
    val isPlayerReadyToInitialize: StateFlow<Boolean> =
-      combine(_playlistState, _isMediaControllerReady)
-   {_, mediaControllerReady ->
-       mediaControllerReady
+      combine(_isPlaylistStateLoaded, _isMediaControllerReady)
+   {playlistStateLoaded, mediaControllerReady ->
+       playlistStateLoaded && mediaControllerReady
    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), false)
 
    init {
@@ -175,10 +179,8 @@ class MainViewModel(application : Application, private val songDao: SongDao) : A
    private fun loadPlaylistState()
    {
       viewModelScope.launch {
-         // FIXME: Maybe this is better? doc all the reasons for utils.mainActivity(= application!?)
-         // val context = getApplication<Application>().applicationContext
-         readPlaylistState() 
-      }
+         readPlaylistState()
+         _isPlaylistStateLoaded.value = true}
    }
    
    fun setMediaControllerReady(isReady: Boolean)

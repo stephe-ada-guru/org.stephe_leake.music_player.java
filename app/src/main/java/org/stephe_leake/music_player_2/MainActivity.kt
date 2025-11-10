@@ -85,7 +85,9 @@ import androidx.media3.ui.PlayerView
 import androidx.preference.PreferenceManager
 import androidx.viewpager2.widget.ViewPager2
 
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.guava.await
+import kotlinx.coroutines.runBlocking
 
 import java.io.BufferedWriter
 import java.io.File
@@ -126,7 +128,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    private val slideshowHandler = Handler(Looper.getMainLooper()) // Handler for slideshow transitions
    private var slideshowRunnable: Runnable? = null
    private val SLIDESHOW_INTERVAL_MS = 10000L // 10 seconds
-     
+
+   // We only need to save the job on write, not on read
+   private var playlistStateJob: Job? = null
+   
    private fun CreateNotificationChannel()
    {
       val channel = NotificationChannel(
@@ -198,7 +203,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       
       val absFilename  = utils.playlistFileName(category)
       val playlistFile = File (absFilename)
-      val counts = utils.readPlaylistCounts(category)
+      val counts = utils.readPlaylistCounts(this@MainActivity, category)
       
       if (!playlistFile.canRead())
          {
@@ -219,7 +224,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          // to match Spotify (and sometimes the Android media scanner
          // screws up), so this is more reliable. We use MediaStore to
          // get all the metadata from the song file.
-         var cursor : Cursor? = utils.mainActivity!!.contentResolver.query(
+         var cursor : Cursor? = getApplication().contentResolver.query(
             MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL),
             /* projection */ arrayOf(MediaStore.Audio.Media._ID,
                                      MediaStore.MediaColumns.ALBUM_ARTIST,
@@ -305,7 +310,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          if (intent?.action == utils.RESTART_PLAYLIST_COMMAND)
             {
                lifecycleScope.launch {
-                  val playlist = utils.readPlaylistName()
+                  val playlist = utils.readPlaylistName(this@MainActivity) //FIXME:?
                   if (playlist.isNotEmpty())
                      playlistToPlayer(playlist, play = mediaController!!.isPlaying)}
             }
@@ -455,15 +460,15 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          val count = mediaController!!.mediaItemCount
          val index = mediaController!!.currentMediaItemIndex
          val pos = mediaController!!.currentPosition
-         lifecycleScope.launch {viewModel.writeState(count, index, pos)}
+         playlistStateJob = lifecycleScope.launch {viewModel.writeState(count, index, pos)}
 
-         val playlistView = utils.findTextViewById(utils.mainActivity!!, R.id.playlist)
-         val yearView = utils.findTextViewById(utils.mainActivity!!, R.id.year)
-         val composerView = utils.findTextViewById(utils.mainActivity!!, R.id.composer)
-         val artistView = utils.findTextViewById(utils.mainActivity!!, R.id.artist)
-         val albumArtistView = utils.findTextViewById(utils.mainActivity!!, R.id.albumArtist)
-         val albumView = utils.findTextViewById(utils.mainActivity!!, R.id.album)
-         val titleView = utils.findTextViewById(utils.mainActivity!!, R.id.title)
+         val playlistView = utils.findTextViewById(this@MainActivity, R.id.playlist)
+         val yearView = utils.findTextViewById(this@MainActivity, R.id.year)
+         val composerView = utils.findTextViewById(this@MainActivity, R.id.composer)
+         val artistView = utils.findTextViewById(this@MainActivity, R.id.artist)
+         val albumArtistView = utils.findTextViewById(this@MainActivity, R.id.albumArtist)
+         val albumView = utils.findTextViewById(this@MainActivity, R.id.album)
+         val titleView = utils.findTextViewById(this@MainActivity, R.id.title)
          
          val metadata = mediaController!!.currentMediaItem!!.mediaMetadata
          val yearInt = metadata.releaseYear ?: 0
@@ -532,7 +537,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                val count = mediaController!!.mediaItemCount
                val index = mediaController!!.currentMediaItemIndex
                val pos = mediaController!!.currentPosition
-               lifecycleScope.launch {viewModel.writeState(count, index, pos)}
+               playlistStateJob = lifecycleScope.launch {viewModel.writeState(count, index, pos)}
             }
       } // onIsPlayingChanged
       
@@ -559,15 +564,14 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          if (mediaItem == null)
             {
                // Playlist ended.
-               lifecycleScope.launch {viewModel.clearSavedState()}
-               
-               val composerView = utils.findTextViewById(utils.mainActivity!!, R.id.composer)
-               val artistView = utils.findTextViewById(utils.mainActivity!!, R.id.artist)
-               val albumArtistView = utils.findTextViewById(utils.mainActivity!!, R.id.albumArtist)
-               val yearView = utils.findTextViewById(utils.mainActivity!!, R.id.year)
-               val albumView = utils.findTextViewById(utils.mainActivity!!, R.id.album)
-               val titleView = utils.findTextViewById(utils.mainActivity!!, R.id.title)
-               // val totalTime = utils.findTextViewById(utils.mainActivity!!, R.id.totalTime)
+               playlistStateJob = lifecycleScope.launch {viewModel.clearSavedState()}
+
+               val composerView = utils.findTextViewById(this@MainActivity, R.id.composer)
+               val artistView = utils.findTextViewById(this@MainActivity, R.id.artist)
+               val albumArtistView = utils.findTextViewById(this@MainActivity, R.id.albumArtist)
+               val yearView = utils.findTextViewById(this@MainActivity, R.id.year)
+               val albumView = utils.findTextViewById(this@MainActivity, R.id.album)
+               val titleView = utils.findTextViewById(this@MainActivity, R.id.title)
 
                composerView.setText("")
                artistView.setText("")
@@ -808,6 +812,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    override fun onStop()
    {
       super.onStop()
+      runBlocking {
+         playlistStateJob?.join() // Wait for the last playlist state operation to finish
+      }
    }
    
    override fun onDestroy()
@@ -857,9 +864,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                   filename ->
                      val category = FilenameUtils.getBaseName(filename)
                   lifecycleScope.launch {
-                     val oldCounts = utils.readPlaylistCounts(category)
-                     var newCount = DownloadUtils.cleanPlaylist(category)
-                     utils.savePlaylistCounts(category, count = newCount, index = 0, pos = oldCounts.pos)
+                     val oldCounts = utils.readPlaylistCounts(this@MainActivity, category)
+                     var newCount = DownloadUtils.cleanPlaylist(this@MainActivity, category)
+                     utils.savePlaylistCounts(
+                        this@MainActivity, category, count = newCount, index = 0, pos = oldCounts.pos)
                      if (viewModel.playlistState.value.baseName == category)
                         playlistToPlayer(viewModel.playlistState.value.baseName, play = mediaController!!.isPlaying)}
                }
@@ -945,7 +953,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          
          R.id.menu_reset_playlist ->
             {
-               lifecycleScope.launch {
+               playlistStateJob = lifecycleScope.launch {
                   viewModel.writeState(0, 0, 0)
                   playlistToPlayer(viewModel.playlistState.value.baseName,
                                    play = mediaController!!.isPlaying)}

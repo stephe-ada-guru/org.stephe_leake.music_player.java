@@ -18,6 +18,8 @@
 
 package org.stephe_leake.music_player_2
 
+import android.content.Context
+
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileReader
@@ -116,13 +118,13 @@ class DownloadUtils
          }
       }
 
-      suspend fun cleanPlaylist(category : String) : Int
+      suspend fun cleanPlaylist(context : Context, category : String) : Int
       {
          // Delete lines in category.m3u that are before preferences(category).index
          // Return count of lines remaining.
 
          val playlistFileName : String = utils.playlistFileName(category)
-         var counts = utils.readPlaylistCounts(category)
+         var counts = utils.readPlaylistCounts(context, category)
 
          try
          {

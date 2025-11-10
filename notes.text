@@ -5,6 +5,13 @@ app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
+ current work
+current index gets reset to 1 sometimes
+    fixes 9 Nov:
+        used getApplication() instead of utils.mainApplication in MainViewModel
+        saved job on playlist state write, wait for it in onStop
+        improved mainViewModel.kt isPlayerReadyToInitialize
+
 testing update playlist
     song count/max display not reset
         playlist is correct on disk

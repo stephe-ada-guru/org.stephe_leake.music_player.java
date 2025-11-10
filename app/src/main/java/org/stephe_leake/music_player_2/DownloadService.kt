@@ -51,7 +51,7 @@ class DownloadService : Service()
 
    suspend fun countSongsRemaining(category : String) : Int 
    {
-      val counts = utils.readPlaylistCounts(category) 
+      val counts = utils.readPlaylistCounts(this, category) 
       
       return counts.count - counts.index - 1
    }
@@ -114,7 +114,7 @@ class DownloadService : Service()
 
                if (playlistFile.exists())
                   {
-                     DownloadUtils.cleanPlaylist(category)
+                     DownloadUtils.cleanPlaylist(this, category)
 
                      status.status = DownloadUtils.sendNotes(serverIP, category)
                      if (status.status != ProcessStatus.Success)
@@ -142,9 +142,9 @@ class DownloadService : Service()
                // new music).
                status = DownloadUtils.getSongs(newSongs.strings, category)
 
-               utils.savePlaylistCounts(category, count = 0, index = 1, pos = 0L)
+               utils.savePlaylistCounts(this, category, count = 0, index = 1, pos = 0L)
                
-               if (utils.readPlaylistName() == category)
+               if (utils.readPlaylistName(this) == category)
                   {
                      // Restart playlist to show song position, count
                      DownloadEvents.sendRestartPlaylist()
