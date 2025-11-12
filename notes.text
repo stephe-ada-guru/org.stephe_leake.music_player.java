@@ -7,10 +7,17 @@ app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 
  current work
 current index gets reset to 1 sometimes
-    fixes 9 Nov:
+    fixes 11 Nov:
         used getApplication() instead of utils.mainApplication in MainViewModel
         saved job on playlist state write, wait for it in onStop
         improved mainViewModel.kt isPlayerReadyToInitialize
+        mainViewModel does not store counts; they were never read
+
+    don't need 'count' in playlistCounts; just index, pos
+        savePlaylistPos (pos = -1) => don't overwrite pos
+
+    don't save index; save song filename (like the old app did)
+        it should only be "" for a new playlist; handle that in create playlist, complain in playlisttoplayer
 
 testing update playlist
     song count/max display not reset

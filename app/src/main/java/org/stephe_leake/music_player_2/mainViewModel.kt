@@ -29,158 +29,83 @@ import androidx.media3.session.MediaController
 
 import com.google.common.util.concurrent.ListenableFuture
 
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
-data class PlaylistState(
-   val baseName: String = "",      // Current playlist file name (empty if no playlist)
-   val count: Int = 0,             // Count of songs in playlist
-   val index: Int = 0,             // Current song in playlist (0 indexed)
-   val pos: Long = 0L              // Current position in song (milliseconds, 0 if none)
-)
+// Define the events ViewModel can send to MainActivity.
+sealed class PlayerEvent
+{
+    data object ReloadPlaylist : PlayerEvent()
+}
 
 class MainViewModel(application : Application, private val songDao: SongDao) : AndroidViewModel(application)
 {
-   private val _playlistState = MutableStateFlow<PlaylistState>(PlaylistState())
-   val playlistState: StateFlow<PlaylistState> = _playlistState.asStateFlow()
+   // We need a state flow for the playlist name to resolve a race
+   // condition at startup.
+   private val _playlistName = MutableStateFlow<String>("")
+   val playlistName: StateFlow<String> = _playlistName.asStateFlow()
 
    // The actual MediaController survives when MainActivity is torn
    // down (MainViewModel also survives); preserve the connection to
    // it.
    var controllerFuture: ListenableFuture<MediaController>? = null
 
-   suspend fun clearSavedState()
-   // Called when a playlist reaches the end.
+   // We need a mutex to serialize savePlaylistCounts calls
+   private val saveStateMutex = Mutex()
+
+   // We need this here to use viewModelScope; see comment in
+   // MainActivity.kt updateDisplay where this is called.
+   fun savePlaylistCounts(count : Int, index : Int, pos : Long)
    {
-      val current = _playlistState.value
-      
-      _playlistState.value = PlaylistState(
-         baseName = "",
-         count = 0,
-         index = 0,
-         pos = 0)
-
-      (getApplication() as Context).playlistPrefsState.edit {
-         preferences ->
-            preferences[PlaylistPreferenceKeys.NAME] = ""
-         if (current.baseName != "")
-            {
-               preferences[PlaylistPreferenceKeys.count(current.baseName)] = 0
-               preferences[PlaylistPreferenceKeys.index(current.baseName)] = 0
-               preferences[PlaylistPreferenceKeys.pos(current.baseName)] = 0
-
-            }
-      }
-   } // clearSavedState
-
-   suspend fun writeCategory(category : String)
-   {
-      (getApplication() as Context).playlistPrefsState.edit {
-         preferences ->
-            preferences[PlaylistPreferenceKeys.NAME] = category
-      }
-         
-      _playlistState.value = PlaylistState(
-         baseName = category,
-         count = 0,
-         index = 0,
-         pos = 0)
-   } // writeCategory
-      
-   suspend fun writeState(count : Int, index : Int, pos : Long)
-   {
-      val current = _playlistState.value
-
-      if (current.baseName != "")
+      val category = _playlistName.value
+      if (category.isNotEmpty())  // defensive programming
          {
-            _playlistState.value = PlaylistState(
-               baseName = current.baseName,
-               count = count,
-               index = index,
-               pos = pos)
-
-            (getApplication() as Context).playlistPrefsState.edit {
-               preferences ->
-                  preferences[PlaylistPreferenceKeys.NAME] = current.baseName
-               preferences[PlaylistPreferenceKeys.count(current.baseName)] = count
-               preferences[PlaylistPreferenceKeys.index(current.baseName)] = index
-               preferences[PlaylistPreferenceKeys.pos(current.baseName)] = pos
-
-            }
-         }
-   }// writeState
-
-   private suspend fun readPlaylistState()
-   {
-      val preferences = (getApplication() as Context).playlistPrefsState.data.firstOrNull()
-      if (preferences == null)
-         {
-            // Never set
-            _playlistState.value = PlaylistState(
-               baseName = "",
-               count = 0,
-               index = 0,
-               pos = 0)
-         }
-      else
-         {
-            var name : String? = preferences[PlaylistPreferenceKeys.NAME]
-            if (name == null)
-               {
-                  // Never set
-                  _playlistState.value = PlaylistState(
-                     baseName = "",
-                     count = 0,
-                     index = 0,
-                     pos = 0)
+            viewModelScope.launch {
+               saveStateMutex.withLock {
+                  utils.savePlaylistCounts((getApplication() as Context), category, count, index, pos)
                }
-            else
-               {
-                  var tempCount : Int? = preferences[PlaylistPreferenceKeys.count(name)]
-                  if (tempCount == null)
-                     {
-                        // Name set, but not counts
-                        _playlistState.value = PlaylistState(
-                           baseName = name,
-                           count = 0,
-                           index = 0,
-                           pos = 0)
-                     }
-               else
-                  {
-                     _playlistState.value = PlaylistState(
-                        baseName = name,
-                        count = tempCount,
-                        index = preferences[PlaylistPreferenceKeys.index(name)]!!,
-                        pos = preferences[PlaylistPreferenceKeys.pos(name)]!!)
-                  }
-               }
+            }
          }
    }
+      
+   suspend fun writeName(name : String)
+   {
+      (getApplication() as Context).playlistPrefsState.edit {
+         preferences ->
+            preferences[PlaylistPreferenceKeys.NAME] = name
+      }
+      
+      _playlistName.value = name
+   } // writeCategory
    
    private val _isMediaControllerReady = MutableStateFlow(false)
-   private val _isPlaylistStateLoaded = MutableStateFlow(false)
+   private val _isPlaylistNameLoaded = MutableStateFlow(false)
 
    val isPlayerReadyToInitialize: StateFlow<Boolean> =
-      combine(_isPlaylistStateLoaded, _isMediaControllerReady)
-   {playlistStateLoaded, mediaControllerReady ->
-       playlistStateLoaded && mediaControllerReady
+      combine(_isPlaylistNameLoaded, _isMediaControllerReady)
+   {playlistNameLoaded, mediaControllerReady ->
+       playlistNameLoaded && mediaControllerReady
    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), false)
 
    init {
-      loadPlaylistState()
+      loadPlaylistName()
    }
    
-   private fun loadPlaylistState()
+   private fun loadPlaylistName()
    {
       viewModelScope.launch {
-         readPlaylistState()
-         _isPlaylistStateLoaded.value = true}
+         _playlistName.value = utils.readPlaylistName(getApplication() as Context)
+         _isPlaylistNameLoaded.value = true}
    }
    
    fun setMediaControllerReady(isReady: Boolean)
@@ -199,4 +124,18 @@ class MainViewModel(application : Application, private val songDao: SongDao) : A
       }
    }
 
- } //MainViewModel
+   private val _playerEvent = MutableSharedFlow<PlayerEvent>()
+   val playerEvent: SharedFlow<PlayerEvent> = _playerEvent.asSharedFlow()
+
+   fun reloadPlaylist()
+   {
+        viewModelScope.launch {
+            // This should not be necessary, but it may be possible
+            // for the DownloadService to get out of sync with
+            // MainViewModel.
+            _playlistName.value = utils.readPlaylistName(getApplication() as Context)
+
+            _playerEvent.emit(PlayerEvent.ReloadPlaylist)
+        }
+    }
+} //MainViewModel

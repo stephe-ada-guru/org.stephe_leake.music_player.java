@@ -85,7 +85,7 @@ import androidx.media3.ui.PlayerView
 import androidx.preference.PreferenceManager
 import androidx.viewpager2.widget.ViewPager2
 
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.runBlocking
 
@@ -129,9 +129,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    private var slideshowRunnable: Runnable? = null
    private val SLIDESHOW_INTERVAL_MS = 10000L // 10 seconds
 
-   // We only need to save the job on write, not on read
-   private var playlistStateJob: Job? = null
-   
    private fun CreateNotificationChannel()
    {
       val channel = NotificationChannel(
@@ -215,7 +212,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       // counts.count can be 0 here if this is a new playlist, or
       // preferences memory cleared
 
-      viewModel.writeCategory(category)
+      viewModel.writeName(category)
       
       playlistFile.forEachLine{
          Filename ->
@@ -309,10 +306,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       {
          if (intent?.action == utils.RESTART_PLAYLIST_COMMAND)
             {
-               lifecycleScope.launch {
-                  val playlist = utils.readPlaylistName(this@MainActivity) //FIXME:?
-                  if (playlist.isNotEmpty())
-                     playlistToPlayer(playlist, play = mediaController!!.isPlaying)}
+               val playlist = viewModel.playlistName.value
+               if (playlist.isNotEmpty())
+                  viewModel.reloadPlaylist()
             }
       }
    }
@@ -460,7 +456,17 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          val count = mediaController!!.mediaItemCount
          val index = mediaController!!.currentMediaItemIndex
          val pos = mediaController!!.currentPosition
-         playlistStateJob = lifecycleScope.launch {viewModel.writeState(count, index, pos)}
+
+         // savePlaylistCounts is "suspend" because it accesses
+         // DataStore<Preferences>. updateDisplay cannot wait for it
+         // to complete, because onMediaItemTransition can't wait. So
+         // we need to launch a coroutine. We can't use
+         // lifecycleScope, because that is _cancelled_ when
+         // MainActivity is not active (which it is not, most of the
+         // time! Coroutine jobs are not even started). So we use
+         // viewModelScope, which can only be accessed from
+         // mainViewModel.
+         viewModel.savePlaylistCounts(count, index, pos)
 
          val playlistView = utils.findTextViewById(this@MainActivity, R.id.playlist)
          val yearView = utils.findTextViewById(this@MainActivity, R.id.year)
@@ -480,7 +486,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          val albumText = metadata.albumTitle ?: ""
          
          // 'index' is 0 indexed
-         playlistView.setText(viewModel.playlistState.value.baseName + " " + (index + 1).toString() + "/" + count)
+         playlistView.setText(viewModel.playlistName.value + " " + (index + 1).toString() + "/" + count)
 
          val songFile = File(metadata.extras!!.getString("Song_File")!!)
          val images = getImages(songFile.parent!!)
@@ -525,22 +531,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
       } // updateDisplay
 
-      override fun onIsPlayingChanged(isPlaying: Boolean)
-      {
-         if (isPlaying)
-            {
-               // nothing to do here
-            }
-         else
-            {
-               // Can't call mediaController methods from another thread
-               val count = mediaController!!.mediaItemCount
-               val index = mediaController!!.currentMediaItemIndex
-               val pos = mediaController!!.currentPosition
-               playlistStateJob = lifecycleScope.launch {viewModel.writeState(count, index, pos)}
-            }
-      } // onIsPlayingChanged
-      
       override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int)
       // This is called when media items are _added_ to the playlist,
       // in _addition_ to when it starts playing.
@@ -563,22 +553,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          
          if (mediaItem == null)
             {
-               // Playlist ended.
-               playlistStateJob = lifecycleScope.launch {viewModel.clearSavedState()}
-
-               val composerView = utils.findTextViewById(this@MainActivity, R.id.composer)
-               val artistView = utils.findTextViewById(this@MainActivity, R.id.artist)
-               val albumArtistView = utils.findTextViewById(this@MainActivity, R.id.albumArtist)
-               val yearView = utils.findTextViewById(this@MainActivity, R.id.year)
-               val albumView = utils.findTextViewById(this@MainActivity, R.id.album)
-               val titleView = utils.findTextViewById(this@MainActivity, R.id.title)
-
-               composerView.setText("")
-               artistView.setText("")
-               albumArtistView.setText("")
-               yearView.setText("")
-               albumView.setText("")
-               titleView.setText("")
+               // Playlist ended. Just stop playing; leave display at
+               // last song so user knows what's going on.
             }
          else
             {
@@ -608,9 +584,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       val controller = mediaController!!
       val index = controller.currentMediaItemIndex
 
-      if (index > 0 && viewModel.playlistState.value.baseName != "")
+      if (index > 0 && viewModel.playlistName.value != "")
          {
-            val noteFileName = utils.notesFileName(viewModel.playlistState.value.baseName)
+            val noteFileName = utils.notesFileName(viewModel.playlistName.value)
             val metaData = controller.currentMediaItem!!.mediaMetadata
             val writer = BufferedWriter(FileWriter(noteFileName, true)) // append
             val absSongFile = metaData.extras!!.getString("Song_File")!!
@@ -660,6 +636,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
       PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this)
 
+      // FIXME: ask Gemini how to eliminate all uses of this.
       utils.mainActivity = this
 
       // viewModel is not destroyed when MainActivity is, for rotate,
@@ -705,6 +682,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       val playlistView = utils.findTextViewById(this, R.id.playlist)
       playlistView.setOnClickListener()
       {
+         // lifecycleScope is ok here; the user has just clicked on an item in MainActivity UI.
          showPlaylistPickerDialog {
             filename ->
                lifecycleScope.launch{playlistToPlayer(FilenameUtils.getBaseName(filename), play = true)}}
@@ -713,47 +691,62 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       slideshow = findViewById(R.id.image_slideshow)
       imageSlideshowAdapter = ImageSlideshowAdapter(emptyList())
       slideshow.adapter = imageSlideshowAdapter
-      
+
+      // Wait for viewModel flows. 
       lifecycleScope.launch {
-         // repeatOnLifecycle was restored to fix a null exception on
-         // rotation, but it didn't (adding the check for
-         // mediaController did). It's supposed to handle restarting
-         // the activity when the screen is rotated, or when the
-         // activity was halted due to memory recovery, etc. It caused
-         // some problem that made me delete it once; ask Gemini this
-         // time.
          repeatOnLifecycle(Lifecycle.State.STARTED) {
-            viewModel.isPlayerReadyToInitialize.collect{
-               // called when it changes state
-               isReady ->
-                  if (isReady)
-                  {
-                     if (mediaController == null)
-                        utils.errorLog ("MainActivity.onCreate launch player: mediaController == null");
-                     else
-                        {
-                           if (mediaController!!.isPlaying)
+
+            // Wait for mediaController to be ready, and the playlist name
+            // to be read from DataStore.
+            launch {
+               viewModel.isPlayerReadyToInitialize.collect{
+                  // called when it changes state
+                  isReady ->
+                     if (isReady)
+                     {
+                        if (mediaController == null)
+                           utils.errorLog ("MainActivity.onCreate launch player: mediaController == null");
+                        else
+                           {
+                              if (mediaController!!.isPlaying)
+                                 {
+                                    // UI was killed, but service still active; update UI
+                                    if (mediaController!!.currentMediaItem != null)
+                                       {
+                                          playerListener.updateDisplay ()
+                                       }
+                                 }
+                              else
+                                 {
+                                    val category : String = viewModel.playlistName.value
+                                    
+                                    if (category.isNotEmpty())
+                                       {
+                                          playlistToPlayer(category, play = false)
+                                       }
+                                 }
+                           }
+                     } 
+               }
+            }
+
+            // Listen for ReloadPlaylist events (and others) from mainViewModel
+            launch {
+               viewModel.playerEvent.collect {
+                  event: PlayerEvent ->
+                     when (event) {
+                        is PlayerEvent.ReloadPlaylist -> {
+                           if (mediaController != null)
                               {
-                                 // UI was killed, but service still active; update UI
-                                 if (mediaController!!.currentMediaItem != null)
-                                    {
-                                       playerListener.updateDisplay ()
-                                    }
-                              }
-                           else
-                              {
-                                 val category : String = viewModel.playlistState.value.baseName
-                                 
-                                 if (category.isNotEmpty())
-                                    {
-                                       playlistToPlayer(category, play = false)
-                                    }
+                                 playlistToPlayer(viewModel.playlistName.value, play = mediaController!!.isPlaying)
                               }
                         }
-                  } 
+                     }
+               }
             }
          }
       }
+
       checkPermission()
    } // onCreate
 
@@ -812,9 +805,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    override fun onStop()
    {
       super.onStop()
-      runBlocking {
-         playlistStateJob?.join() // Wait for the last playlist state operation to finish
-      }
    }
    
    override fun onDestroy()
@@ -860,6 +850,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
          R.id.menu_clean_playlist ->
             {
+               // lifecycleScope is ok here; the user has just clicked
+               // on an item in MainActivity UI.
                showPlaylistPickerDialog {
                   filename ->
                      val category = FilenameUtils.getBaseName(filename)
@@ -868,8 +860,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                      var newCount = DownloadUtils.cleanPlaylist(this@MainActivity, category)
                      utils.savePlaylistCounts(
                         this@MainActivity, category, count = newCount, index = 0, pos = oldCounts.pos)
-                     if (viewModel.playlistState.value.baseName == category)
-                        playlistToPlayer(viewModel.playlistState.value.baseName, play = mediaController!!.isPlaying)}
+                     if (viewModel.playlistName.value == category)
+                        playlistToPlayer(viewModel.playlistName.value, play = mediaController!!.isPlaying)}
                }
             }
          
@@ -953,9 +945,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          
          R.id.menu_reset_playlist ->
             {
-               playlistStateJob = lifecycleScope.launch {
-                  viewModel.writeState(0, 0, 0)
-                  playlistToPlayer(viewModel.playlistState.value.baseName,
+               // lifecycleScope is ok here; the user has just clicked
+               // on an item in MainActivity UI.
+               lifecycleScope.launch {
+                  utils.savePlaylistCounts(this@MainActivity, viewModel.playlistName.value, 0, 0, 0)
+                  playlistToPlayer(viewModel.playlistName.value,
                                    play = mediaController!!.isPlaying)}
             }
 

@@ -158,7 +158,10 @@ class utils
                preferences[PlaylistPreferenceKeys.index(category)] = index
                preferences[PlaylistPreferenceKeys.pos(category)] = pos}
       }
-      
+
+      // This is used by DownloadService and ViewModel to get the
+      // current playlist; we can't share the viewModel between
+      // DownloadService and MainActivity.
       suspend fun readPlaylistName(context: Context) : String
       {
          val preferences = context.playlistPrefsState.data.firstOrNull()

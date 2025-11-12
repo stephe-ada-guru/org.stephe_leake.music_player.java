@@ -115,7 +115,7 @@ class DownloadService : Service()
                if (playlistFile.exists())
                   {
                      DownloadUtils.cleanPlaylist(this, category)
-
+               
                      status.status = DownloadUtils.sendNotes(serverIP, category)
                      if (status.status != ProcessStatus.Success)
                         return
@@ -126,6 +126,9 @@ class DownloadService : Service()
                      playlistFile.createNewFile()
                   }
 
+               // FIXME: don't overwrite pos, delete count
+               utils.savePlaylistCounts(this, category, count = 0, index = 0, pos = 0L)
+               
                newSongs = DownloadUtils.getNewSongsList(
                   serverIP, category, songCount, newSongCount, overSelectRatio, -1)
 
@@ -142,8 +145,6 @@ class DownloadService : Service()
                // new music).
                status = DownloadUtils.getSongs(newSongs.strings, category)
 
-               utils.savePlaylistCounts(this, category, count = 0, index = 1, pos = 0L)
-               
                if (utils.readPlaylistName(this) == category)
                   {
                      // Restart playlist to show song position, count
