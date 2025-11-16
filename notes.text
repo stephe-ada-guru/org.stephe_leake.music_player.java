@@ -7,11 +7,8 @@ app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 
  current work
 current index gets reset to 1 sometimes
-    fixes 11 Nov:
-        used getApplication() instead of utils.mainApplication in MainViewModel
-        saved job on playlist state write, wait for it in onStop
-        improved mainViewModel.kt isPlayerReadyToInitialize
-        mainViewModel does not store counts; they were never read
+    fixes 12 Nov:
+        Don't use lifecycleScope for background stuff!
 
     don't need 'count' in playlistCounts; just index, pos
         savePlaylistPos (pos = -1) => don't overwrite pos
@@ -19,11 +16,10 @@ current index gets reset to 1 sometimes
     don't save index; save song filename (like the old app did)
         it should only be "" for a new playlist; handle that in create playlist, complain in playlisttoplayer
 
-testing update playlist
-    song count/max display not reset
-        playlist is correct on disk
+menu: add 'show playlist'
 
-reached end of playlist, did not transition to none.
+search: show album dir
+    Deep Blue has no album art slideshow; what dir is it in?
 
 implement db sync
     just opening the db assumes you will write, which creates log files for that, which changes mod date on smm.db

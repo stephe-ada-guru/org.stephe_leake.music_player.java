@@ -531,9 +531,27 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
       } // updateDisplay
 
+      override fun onIsPlayingChanged(isPlaying: Boolean)
+      {
+         if (isPlaying)
+            {
+               // User resumed play from saved state; nothing to do here
+            }
+         else
+            {
+               // User paused; save state for later resume.
+               // 
+               // Can't call mediaController methods from another thread
+               val count = mediaController!!.mediaItemCount
+               val index = mediaController!!.currentMediaItemIndex
+               val pos = mediaController!!.currentPosition
+               viewModel.savePlaylistCounts(count, index, pos)
+            }
+      } // onIsPlayingChanged
+      
       override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int)
       // This is called when media items are _added_ to the playlist,
-      // in _addition_ to when it starts playing.
+      // in _addition_ to when it starts playing or moves to the next song.
       {
          super.onMediaItemTransition(mediaItem, reason)
 
@@ -554,7 +572,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          if (mediaItem == null)
             {
                // Playlist ended. Just stop playing; leave display at
-               // last song so user knows what's going on.
+               // last song so user knows what's going on. We'd like
+               // to set count.pos to end of song, but we've missed
+               // that chance.
             }
          else
             {
@@ -644,26 +664,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       viewModel.setMediaControllerReady(false)
 
       utils.appDirectory = this.getExternalFilesDir(null)!!.getAbsolutePath()
-
-      utils.showDownloadLogIntent = Intent(Intent.ACTION_VIEW)
-         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-         .setDataAndType(
-            FileProvider.getUriForFile(
-               this,
-               applicationContext.packageName + ".provider",
-               File(DownloadUtils.downloadLogFileName())),
-            "text/plain")
-
-      utils.showErrorLogIntent = Intent(Intent.ACTION_VIEW)
-         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-         .setDataAndType(
-            FileProvider.getUriForFile(
-               this,
-               applicationContext.packageName + ".provider",
-               File(utils.errorLogFileName())),
-            "text/plain")
 
       CreateNotificationChannel()
 
@@ -972,14 +972,37 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                   utils.alertLog(this, "Database file '${dbFileName}' does not exist; check preference setting.")
             }
 
-         R.id.menu_show_download_log ->
+         R.id.menu_show_playlist ->
             { 
-              startActivity(utils.showDownloadLogIntent)
+              startActivity(
+                 Intent(Intent.ACTION_VIEW)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    .setDataAndType(
+                       FileProvider.getUriForFile(
+                          this,
+                          this@MainActivity.applicationContext.packageName + ".provider",
+                          File(utils.playlistFileName(viewModel.playlistName.value))),
+                       "text/plain"))
+            }
+
+         R.id.menu_show_download_log ->
+            {
+               startActivity(utils.showDownloadLogIntent(this@MainActivity))
             }
 
          R.id.menu_show_error_log ->
             {  
-               startActivity(utils.showErrorLogIntent)
+               startActivity(
+                  Intent(Intent.ACTION_VIEW)
+                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                     .setDataAndType(
+                        FileProvider.getUriForFile(
+                           this,
+                           this.applicationContext.packageName + ".provider",
+                           File(utils.errorLogFileName())),
+                        "text/plain"))
             }
 
          R.id.menu_update_playlist ->

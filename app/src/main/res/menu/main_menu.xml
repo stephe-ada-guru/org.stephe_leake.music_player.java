@@ -39,6 +39,9 @@
       android:id="@id/menu_reset_playlist"
       android:title="@string/menu_reset_playlist"/>
   <item
+      android:id="@id/menu_show_playlist"
+      android:title="@string/menu_show_playlist"/>
+  <item
       android:id="@id/menu_show_download_log"
       android:title="@string/menu_show_download_log"/>
   <item

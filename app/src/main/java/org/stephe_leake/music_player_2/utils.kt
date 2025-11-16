@@ -26,6 +26,7 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -88,9 +89,19 @@ class utils
       //  1        10        20 |
       "stephes_music"
 
-      var showDownloadLogIntent : Intent = Intent(Intent.ACTION_VIEW)
-      var showErrorLogIntent    : Intent = Intent(Intent.ACTION_VIEW)
-
+      fun showDownloadLogIntent(context : Context): Intent
+      {
+         return Intent(Intent.ACTION_VIEW)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            .setDataAndType(
+               FileProvider.getUriForFile(
+                  context,
+                  context.applicationContext.packageName + ".provider",
+                  File(DownloadUtils.downloadLogFileName())),
+               "text/plain")
+      }
+      
       // We need this because there is not always a way to get it
       // programatically.
       var mainActivity: AppCompatActivity? = null

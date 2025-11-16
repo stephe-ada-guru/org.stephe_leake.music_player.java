@@ -193,7 +193,7 @@ class DownloadService : Service()
          showLogPendingIntentInit = PendingIntent.getActivity
          (this.applicationContext,
           utils.showDownloadLogIntentId,
-          utils.showDownloadLogIntent,
+          utils.showDownloadLogIntent(this),
           PendingIntent.FLAG_IMMUTABLE),
 
          cancelIntent = PendingIntent.getBroadcast
