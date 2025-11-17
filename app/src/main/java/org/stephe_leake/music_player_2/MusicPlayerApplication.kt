@@ -24,4 +24,13 @@ import android.app.Application
 
 class MusicPlayerApplication : Application() {
    val db by lazy { SongDatabase.getDatabase(this) }
+
+   // This is declared here because it is needed by MainActivity and SearchActivity. 
+   val mainViewModelFactory by lazy {
+      MainViewModel.Companion.MainViewModelFactory(this, this.db.songDao())}
+
+   // searchViewModelFactory is not declared here because it is only
+   // needed by SearchActivity, and because it needs an actual
+   // mainViewModel reference.
 }
+

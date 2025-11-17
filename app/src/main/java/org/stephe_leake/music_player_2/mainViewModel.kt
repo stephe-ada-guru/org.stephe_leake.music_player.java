@@ -23,7 +23,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.State
 import android.content.Context
 import androidx.datastore.preferences.core.edit
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.media3.session.MediaController
 
@@ -42,14 +43,32 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-// Define the events ViewModel can send to MainActivity.
+// Define the events MainViewModel can send to MainActivity.
 sealed class PlayerEvent
 {
     data object ReloadPlaylist : PlayerEvent()
+    data class PlaySong(val song: Song) : PlayerEvent()
 }
 
-class MainViewModel(application : Application, private val songDao: SongDao) : AndroidViewModel(application)
+class MainViewModel(private val application : Application, private val songDao: SongDao) : ViewModel()
 {
+   companion object
+   {
+      // The view model machinery in Android ensures that this 'create' is only called once.
+      class MainViewModelFactory(
+         private val application: Application,
+         private val songDao: SongDao) : ViewModelProvider.Factory
+      {
+         @Suppress("UNCHECKED_CAST")
+         override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+               return MainViewModel(application, songDao) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+         }
+      }
+   }
+
    // We need a state flow for the playlist name to resolve a race
    // condition at startup.
    private val _playlistName = MutableStateFlow<String>("")
@@ -72,7 +91,7 @@ class MainViewModel(application : Application, private val songDao: SongDao) : A
          {
             viewModelScope.launch {
                saveStateMutex.withLock {
-                  utils.savePlaylistCounts((getApplication() as Context), category, count, index, pos)
+                  utils.savePlaylistCounts((application as Context), category, count, index, pos)
                }
             }
          }
@@ -80,7 +99,7 @@ class MainViewModel(application : Application, private val songDao: SongDao) : A
       
    suspend fun writeName(name : String)
    {
-      (getApplication() as Context).playlistPrefsState.edit {
+      (application as Context).playlistPrefsState.edit {
          preferences ->
             preferences[PlaylistPreferenceKeys.NAME] = name
       }
@@ -104,7 +123,7 @@ class MainViewModel(application : Application, private val songDao: SongDao) : A
    private fun loadPlaylistName()
    {
       viewModelScope.launch {
-         _playlistName.value = utils.readPlaylistName(getApplication() as Context)
+         _playlistName.value = utils.readPlaylistName(application as Context)
          _isPlaylistNameLoaded.value = true}
    }
    
@@ -133,9 +152,15 @@ class MainViewModel(application : Application, private val songDao: SongDao) : A
             // This should not be necessary, but it may be possible
             // for the DownloadService to get out of sync with
             // MainViewModel.
-            _playlistName.value = utils.readPlaylistName(getApplication() as Context)
+            _playlistName.value = utils.readPlaylistName(application as Context)
 
             _playerEvent.emit(PlayerEvent.ReloadPlaylist)
         }
-    }
+   }
+
+   fun playSong(song: Song)
+   {
+      viewModelScope.launch {_playerEvent.emit(PlayerEvent.PlaySong(song))}
+   }
+   
 } //MainViewModel

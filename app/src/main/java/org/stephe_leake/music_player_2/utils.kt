@@ -103,7 +103,7 @@ class utils
       }
       
       // We need this because there is not always a way to get it
-      // programatically.
+      // programatically. FIXME: Ask Gemini.
       var mainActivity: AppCompatActivity? = null
 
       var appDirectory : String = ""

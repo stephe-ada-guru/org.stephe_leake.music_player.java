@@ -107,19 +107,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    
    private var newPlaylistIntent = Intent()
    private var updatePlaylistIntent = Intent()
-   
-   private val viewModel : MainViewModel by viewModels(){
-      object : androidx.lifecycle.ViewModelProvider.Factory {
-         @Suppress("UNCHECKED_CAST")
-         // This is always safe here because this is a locally
-         // declared anonymous factory. But the compiler doesn't know it.
-         override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-            return MainViewModel(
-               application,
-               (application as MusicPlayerApplication).db.songDao()) as T
-         }
-      }
-   }
+
+   // "by viewModels" returns a singleton (shared with
+   // SearchActivity), using the factory if necessary.
+   private val viewModel : MainViewModel by viewModels {(application as MusicPlayerApplication).mainViewModelFactory}
    
    private var mediaController : Player? = null
 
@@ -740,6 +731,15 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                               {
                                  playlistToPlayer(viewModel.playlistName.value, play = mediaController!!.isPlaying)
                               }
+                        }
+
+                        is PlayerEvent.PlaySong -> {
+                           if (mediaController != null) {
+                              // FIXME: Create a new playlist
+                              // containing event.song. Tell
+                              // mainViewModel the current playlist is
+                              // ""? or "SingleSong"?
+                           }
                         }
                      }
                }

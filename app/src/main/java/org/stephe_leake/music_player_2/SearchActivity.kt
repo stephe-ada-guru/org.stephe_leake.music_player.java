@@ -52,16 +52,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 class SearchActivity : ComponentActivity()
 {
+   // "by viewModels" returns a singleton (shared with MainActivity),
+   // using the factory if necessary.
+   private val mainViewModel : MainViewModel by viewModels {
+      (application as MusicPlayerApplication).mainViewModelFactory}
+   
    private val viewModel: SearchViewModel by viewModels {
-      object : androidx.lifecycle.ViewModelProvider.Factory {
-         @Suppress("UNCHECKED_CAST")
-         // This is always safe here because this is a locally
-         // declared anonymous factory. But the compiler doesn't know it.
-         override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-            return SearchViewModel((application as MusicPlayerApplication).db.songDao()) as T
-         }
-      }
-   }
+      SearchViewModel.Companion.SearchViewModelFactory(
+         (application as MusicPlayerApplication).db.songDao(),
+         mainViewModel)}
 
    override fun onCreate(savedInstanceState: Bundle?)
    {
@@ -250,7 +249,7 @@ fun SongRow(
          contentDescription = "Play ${song.Title}",
          modifier = Modifier
             .padding(horizontal = 8.dp).background(lightBackground)
-            .clickable { /* FIXME: Implement play action */ }
+            .clickable { viewModel.playSong(song) }
             ) 
 
       // Using weights to create table-like columns. Include padding
@@ -282,7 +281,11 @@ fun SongRow(
          modifier = Modifier.weight(1.5f).background(lightBackground))
       
       // FIXME: add play before/after, with edit
-   } // end Row
+   } // end Row 1
+
+   if (isExpanded)
+      Row {Text(text = song.File_Name ?: "", maxLines = maxLines)}
+
 } // end SongRow
 
 @Composable

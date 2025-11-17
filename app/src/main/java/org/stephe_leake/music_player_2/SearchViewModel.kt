@@ -47,8 +47,28 @@ data class DetailedInfo(
 
 typealias SongAlbumMap = Map<AlbumInfo, List<Song>>
 
-class SearchViewModel(private val songDao: SongDao) : ViewModel()
+class SearchViewModel(
+   private val songDao: SongDao,
+   private val mainViewModel: MainViewModel) : ViewModel()
 {
+   companion object
+   {
+      // The view model machinery in Android ensures that this 'create' is only called once.
+      class SearchViewModelFactory(
+         private val songDao: SongDao,
+         private val mainViewModel: MainViewModel) :
+         ViewModelProvider.Factory
+      {
+         @Suppress("UNCHECKED_CAST") // FIXME: is is _not_ unchecked!
+         override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
+               return SearchViewModel(songDao, mainViewModel) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+         }
+      }
+   }
+
    private val _groupedResults = MutableStateFlow<SongAlbumMap>(emptyMap())
    val groupedResults: StateFlow<SongAlbumMap> = _groupedResults
    
@@ -107,4 +127,6 @@ class SearchViewModel(private val songDao: SongDao) : ViewModel()
    // return a Flow, Room will automatically push the updated data,
    // and the UI will recompose to show the change.
 
+   fun playSong(song: Song) {mainViewModel.playSong(song)}
+   
 } // end SearchViewModel
