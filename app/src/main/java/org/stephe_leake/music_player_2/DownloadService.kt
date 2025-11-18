@@ -49,11 +49,17 @@ class DownloadService : Service()
    
    ////////// private methods (alphabetical order)
 
-   suspend fun countSongsRemaining(category : String) : Int 
+   suspend fun countSongsRemaining(category : String) : Int
+   // Number of unplayed songs in 'category' playlist file
    {
       val counts = utils.readPlaylistCounts(this, category) 
+      var total = 0
+
+      val playlistFile = File(utils.playlistFileName(category))
+
+      playlistFile.forEachLine{total += 1}
       
-      return counts.count - counts.index - 1
+      return total - counts.index
    }
 
    object DownloadEvents
@@ -126,8 +132,7 @@ class DownloadService : Service()
                      playlistFile.createNewFile()
                   }
 
-               // FIXME: don't overwrite pos, delete count
-               utils.savePlaylistCounts(this, category, count = 0, index = 0, pos = 0L)
+               utils.savePlaylistCounts(this, category, index = 0, pos = -1L)
                
                newSongs = DownloadUtils.getNewSongsList(
                   serverIP, category, songCount, newSongCount, overSelectRatio, -1)

@@ -6,20 +6,24 @@ app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
-current index gets reset to 1 sometimes
-    fixes 12 Nov:
-        Don't use lifecycleScope for background stuff!
+update current playlist still does not refresh display
+    and update instrumental reset vocal to 1!
+    next time, run in debugger
 
-    don't need 'count' in playlistCounts; just index, pos
-        savePlaylistPos (pos = -1) => don't overwrite pos
+    instrumental:  2/102
+    vocal:        51/102
 
-    don't save index; save song filename (like the old app did)
-        it should only be "" for a new playlist; handle that in create playlist, complain in playlisttoplayer
+    update vocal: 50 songs. display not updated; "RESTART_PLAYLIST_COMMAND" not recieved
+    switch to instrumental; 2/102
+    switch to vocal;       1/102
+    switch to instrumental; 1/102
 
-menu: add 'show playlist'
+        need more Log.d
 
-search: show album dir
-    Deep Blue has no album art slideshow; what dir is it in?
+save current playlist pos on switch to new playlist
+
+implement play song from search
+    save playlist pos!
 
 implement db sync
     just opening the db assumes you will write, which creates log files for that, which changes mod date on smm.db
@@ -38,17 +42,6 @@ versions
     https://github.com/protocolbuffers/protobuf/releases
     https://developer.android.com/jetpack/androidx/versions - appcompat
     https://github.com/material-components/material-components-android/releases
-
-https://github.com/androidx/media/issues/651
-    use PlayerView!
-
-    slightly better: pause button shows briefly, then hides, doesn't come back on click
-
-https://github.com/androidx/media/tree/release/demos/session
-    not much help
-
-AndroidStudio doesn't understand git worktree (sigh)
-    gradle sync in work_1 fails mysteriously (sigh)
 
 https://svg2vector.com/
     create svg image with InkScape, convert to Android drawable resource file.

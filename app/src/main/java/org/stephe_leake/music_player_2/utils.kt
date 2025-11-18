@@ -47,21 +47,20 @@ import kotlinx.coroutines.flow.firstOrNull
 // Other preferences (given in preferences.xml) are stored in
 // DefaultSharedPreferences (since that's what the UI edits).
 private const val PLAYLIST_PREFERENCES_NAME = "playlist_prefs"
-val Context.playlistPrefsState : DataStore<Preferences> by preferencesDataStore(name = PLAYLIST_PREFERENCES_NAME)
+private val Context.playlistPrefsState : DataStore<Preferences> by preferencesDataStore(
+   name = PLAYLIST_PREFERENCES_NAME)
 
-object PlaylistPreferenceKeys
+private object PlaylistPreferenceKeys
 {
    val NAME  = stringPreferencesKey("name")
    
-   fun count(Name : String) : Preferences.Key<Int> {return intPreferencesKey(Name + "-count")}
    fun index(Name : String) : Preferences.Key<Int> {return intPreferencesKey(Name + "-index")}
    fun pos(Name : String) : Preferences.Key<Long> {return longPreferencesKey(Name + "-pos")}
 }
       
 data class PlaylistCounts(
-   val count: Int = 0, // Count of songs in playlist; 0 if unknown
-   val index: Int = 0, // Current song in playlist (1-indexed, 0 if none)
-   val pos: Long = 0L  // Current position in song (milliseconds, 0 if none)
+   val index: Int = 0, // Current song in playlist, 0 indexed (same as mediaController)
+   val pos: Long = 0L  // Current position in song (milliseconds)
 )
 
 class utils
@@ -134,7 +133,6 @@ class utils
             {
                // Never set
                return PlaylistCounts(
-                  count = 0,
                   index = 0,
                   pos = 0)
             }
@@ -145,28 +143,35 @@ class utils
                   {
                      // Never set
                      return PlaylistCounts(
-                        count = 0,
                         index = 0,
                         pos = 0)
                   }
                else
                   {
                      return PlaylistCounts(
-                        // count and pos should be set here, but Gemini insists on being "safe"
-                        count = preferences[PlaylistPreferenceKeys.count(playlist)] ?: 0,
+                        // pos should be set here, but Gemini insists on being "safe"
                         index = temp,
                         pos = preferences[PlaylistPreferenceKeys.pos(playlist)] ?: 0)
                   }
             }
       }
       
-      suspend fun savePlaylistCounts(context: Context, category : String, count : Int, index : Int, pos : Long)
+      suspend fun savePlaylistName(context: Context, category : String)
       {
+         Log.d(logTag, "savePlaylistName '$category'")
          context.playlistPrefsState.edit {
             preferences ->
-               preferences[PlaylistPreferenceKeys.NAME] = category
-               preferences[PlaylistPreferenceKeys.count(category)] = count
+               preferences[PlaylistPreferenceKeys.NAME] = category}
+      }
+
+      suspend fun savePlaylistCounts(context: Context, category : String, index : Int, pos : Long)
+      // Does not save 'category'. If pos = -1, don't save that.
+      {
+         Log.d(logTag, "savePlaylistCounts '$category' $index $pos")
+         context.playlistPrefsState.edit {
+            preferences ->
                preferences[PlaylistPreferenceKeys.index(category)] = index
+            if (pos != -1L)
                preferences[PlaylistPreferenceKeys.pos(category)] = pos}
       }
 

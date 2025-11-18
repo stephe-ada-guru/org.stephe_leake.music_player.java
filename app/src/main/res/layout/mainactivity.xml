@@ -57,6 +57,8 @@
           android:focusable="true"
           android:text="@string/null_playlist"
           android:textAppearance="?android:attr/textAppearanceLarge"
+          android:background="@android:color/black"
+          android:textColor="@android:color/white"
           android:weightSum="1"/>
 
       <!-- WORKAROUND: the player controls keep disappearing because

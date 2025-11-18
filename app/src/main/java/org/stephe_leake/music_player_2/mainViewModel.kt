@@ -84,14 +84,14 @@ class MainViewModel(private val application : Application, private val songDao: 
 
    // We need this here to use viewModelScope; see comment in
    // MainActivity.kt updateDisplay where this is called.
-   fun savePlaylistCounts(count : Int, index : Int, pos : Long)
+   fun savePlaylistCounts(index : Int, pos : Long)
    {
       val category = _playlistName.value
       if (category.isNotEmpty())  // defensive programming
          {
             viewModelScope.launch {
                saveStateMutex.withLock {
-                  utils.savePlaylistCounts((application as Context), category, count, index, pos)
+                  utils.savePlaylistCounts((application as Context), category, index, pos)
                }
             }
          }
@@ -99,11 +99,7 @@ class MainViewModel(private val application : Application, private val songDao: 
       
    suspend fun writeName(name : String)
    {
-      (application as Context).playlistPrefsState.edit {
-         preferences ->
-            preferences[PlaylistPreferenceKeys.NAME] = name
-      }
-      
+      utils.savePlaylistName((application as Context), name)
       _playlistName.value = name
    } // writeCategory
    
