@@ -30,6 +30,7 @@ import android.content.ComponentName
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.Resources
@@ -183,11 +184,22 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          }
    }
 
-   private suspend fun playlistToPlayer(category : String, play : Boolean)
+   private suspend fun playlistToPlayer(category : String, play : Boolean, saveState : Boolean)
+   // Start playing playlist utils.globalDirectory/<category>.m3u
    {
-      // Start playing playlist utils.globalDirectory/<category>.m3u
-
-      // FIXME: first save current state, if valid
+      Log.d(utils.logTag, "playlistToPlayer '$category' play=$play saveState=$saveState")
+      
+      // First save current state, if valid
+      if (saveState && viewModel.playlistName.value != "")
+         {
+            viewModel.writeName(category)
+      
+            utils.savePlaylistCounts(
+               this@MainActivity,
+               viewModel.playlistName.value,
+               mediaController!!.currentMediaItemIndex,
+               mediaController!!.currentPosition)
+         }
       
       mediaController!!.clearMediaItems()
       
@@ -202,8 +214,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             return
          }
 
-      viewModel.writeName(category)
-      
       playlistFile.forEachLine{
          Filename ->
          // We search for the file name, not the metadata (despite
@@ -284,7 +294,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             mediaController?.play()
          }
 
-      playerListener.updateDisplay ()                       
+      playerListener.updateDisplay (saveState)                       
    } // playlistToPlayer
 
    val commandReceiver = object : BroadcastReceiver()
@@ -439,8 +449,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       }
 
       @OptIn(UnstableApi::class)
-      fun updateDisplay()
+      fun updateDisplay(saveState : Boolean)
       {
+         Log.d(utils.logTag, "updateDisplay saveState=$saveState")
+
          val count = mediaController!!.mediaItemCount
          val index = mediaController!!.currentMediaItemIndex
          val pos = mediaController!!.currentPosition
@@ -454,7 +466,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          // time! Coroutine jobs are not even started). So we use
          // viewModelScope, which can only be accessed from
          // mainViewModel.
-         viewModel.savePlaylistCounts(index, pos)
+         if (saveState)
+            viewModel.savePlaylistCounts(index, pos)
 
          val playlistView = utils.findTextViewById(this@MainActivity, R.id.playlist)
          val yearView = utils.findTextViewById(this@MainActivity, R.id.year)
@@ -542,6 +555,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       {
          super.onMediaItemTransition(mediaItem, reason)
 
+         Log.d(utils.logTag, "onMediaItemTransition $reason")
+         
          if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED)
             {
                // Called when a new item is added to the list, or an
@@ -565,7 +580,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             }
          else
             {
-               updateDisplay ()                       
+               updateDisplay (saveState = true)                       
             }
       } // onMediaItemTransition
 
@@ -640,6 +655,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    {
       super.onCreate(savedInstanceState)
 
+      registerReceiver(commandReceiver,
+         IntentFilter(utils.RESTART_PLAYLIST_COMMAND), RECEIVER_NOT_EXPORTED)
+      
       PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
       PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this)
 
@@ -672,7 +690,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          // lifecycleScope is ok here; the user has just clicked on an item in MainActivity UI.
          showPlaylistPickerDialog {
             filename ->
-               lifecycleScope.launch{playlistToPlayer(FilenameUtils.getBaseName(filename), play = true)}}
+               lifecycleScope.launch{
+                  playlistToPlayer(FilenameUtils.getBaseName(filename), play = true, saveState = true)}}
       }
 
       slideshow = findViewById(R.id.image_slideshow)
@@ -700,7 +719,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                                     // UI was killed, but service still active; update UI
                                     if (mediaController!!.currentMediaItem != null)
                                        {
-                                          playerListener.updateDisplay ()
+                                          playerListener.updateDisplay (saveState = false)
                                        }
                                  }
                               else
@@ -709,7 +728,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                                     
                                     if (category.isNotEmpty())
                                        {
-                                          playlistToPlayer(category, play = false)
+                                          playlistToPlayer(category, play = false, saveState = false)
                                        }
                                  }
                            }
@@ -726,7 +745,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                            Log.d (utils.logTag, "MainActivity received PlayerEvent.ReloadPlaylist")
                            if (mediaController != null)
                               {
-                                 playlistToPlayer(viewModel.playlistName.value, play = mediaController!!.isPlaying)
+                                 playlistToPlayer(
+                                    viewModel.playlistName.value,
+                                    play = mediaController!!.isPlaying,
+                                    saveState = false)
                               }
                         }
 
@@ -808,9 +830,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    {
       stopSlideshowTimer()
       mediaController?.removeListener(playerListener)
-      
-      super.onDestroy()
       PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(this)
+      unregisterReceiver(commandReceiver)
+ 
+      super.onDestroy()
    }
 
    ////////// Menu
@@ -841,6 +864,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
    override fun onOptionsItemSelected(item: MenuItem): Boolean
    {
+      Log.d(utils.logTag, "onOptionsItemSelected ${item.getItemId()}")
       when (item.getItemId())
       {
          // Alphabetical order
@@ -850,13 +874,17 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                // lifecycleScope is ok here; the user has just clicked
                // on an item in MainActivity UI.
                showPlaylistPickerDialog {
-                  filename -> {
+                  filename -> 
                      val category = FilenameUtils.getBaseName(filename)
                      lifecycleScope.launch {
+                        DownloadUtils.cleanPlaylist(this@MainActivity, category)
                         utils.savePlaylistCounts(this@MainActivity, category, index = 0, pos = -1)
                         if (viewModel.playlistName.value == category)
-                           playlistToPlayer(viewModel.playlistName.value, play = mediaController!!.isPlaying)}
-               }}
+                           playlistToPlayer(
+                              viewModel.playlistName.value,
+                              play = mediaController!!.isPlaying,
+                              saveState = false)}
+               }
             }
          
          R.id.menu_copy ->
@@ -943,8 +971,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                // on an item in MainActivity UI.
                lifecycleScope.launch {
                   utils.savePlaylistCounts(this@MainActivity, viewModel.playlistName.value, 0, 0)
-                  playlistToPlayer(viewModel.playlistName.value,
-                                   play = mediaController!!.isPlaying)}
+                  playlistToPlayer(
+                     viewModel.playlistName.value,
+                     play = mediaController!!.isPlaying,
+                     saveState = false)}
             }
 
          R.id.menu_search ->

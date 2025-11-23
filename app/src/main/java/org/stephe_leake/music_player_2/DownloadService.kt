@@ -26,6 +26,7 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.res.Resources
 import android.os.IBinder
+import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.preference.PreferenceManager
 
@@ -75,6 +76,7 @@ class DownloadService : Service()
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    private suspend fun updatePlaylist (category : String)
    {
+      Log.d(utils.logTag, "updatePlaylist '$category'")
       val res                = resources
       val prefs              : SharedPreferences   = PreferenceManager.getDefaultSharedPreferences(this)
       val songCountMaxStr    : String?             =

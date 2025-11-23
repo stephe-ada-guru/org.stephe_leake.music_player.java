@@ -126,34 +126,32 @@ class utils
          return "$globalDirectory/$category.m3u"
       }
 
-      suspend fun readPlaylistCounts(context: Context, playlist : String) : PlaylistCounts
+      suspend fun readPlaylistCounts(context: Context, category : String) : PlaylistCounts
       {
+         var result = PlaylistCounts(index = 0, pos = 0)
+         
          val preferences = context.playlistPrefsState.data.firstOrNull()
          if (preferences == null)
             {
                // Never set
-               return PlaylistCounts(
-                  index = 0,
-                  pos = 0)
             }
          else
             {
-               var temp : Int? = preferences[PlaylistPreferenceKeys.index(playlist)]
+               var temp : Int? = preferences[PlaylistPreferenceKeys.index(category)]
                if (temp == null)
                   {
                      // Never set
-                     return PlaylistCounts(
-                        index = 0,
-                        pos = 0)
                   }
                else
                   {
-                     return PlaylistCounts(
+                      result = PlaylistCounts(
                         // pos should be set here, but Gemini insists on being "safe"
                         index = temp,
-                        pos = preferences[PlaylistPreferenceKeys.pos(playlist)] ?: 0)
+                        pos = preferences[PlaylistPreferenceKeys.pos(category)] ?: 0)
                   }
             }
+         Log.d(logTag, "readPlaylistCounts '$category' $result")
+         return result
       }
       
       suspend fun savePlaylistName(context: Context, category : String)
@@ -182,17 +180,22 @@ class utils
       {
          val preferences = context.playlistPrefsState.data.firstOrNull()
          if (preferences == null)
-            return ""
+            {
+               Log.d(logTag, "playlist state prefs null")
+               return ""
+            }
          else
             {
                var temp : String? = preferences[PlaylistPreferenceKeys.NAME]
                if (temp == null)
                   {
                      // Never set
+                     Log.d(logTag, "playlist state prefs never set")
                      return ""
                   }
                else
                   {
+                     Log.d(logTag, "playlist name read '$temp'")
                      return temp
                   }
             }

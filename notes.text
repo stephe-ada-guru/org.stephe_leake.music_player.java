@@ -1,11 +1,17 @@
 app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 ~/Projects/smm.main/notes.text
 
+work branches:
+work_1 : sync db
+work_2 : play song from search
+
 (dvc-propagate-one "../org.stephe_leake.music_player" "../org.stephe_leake.music_player.work_1")
 
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
+clean playlist works
+
 update current playlist still does not refresh display
     and update instrumental reset vocal to 1!
     next time, run in debugger
@@ -20,12 +26,12 @@ update current playlist still does not refresh display
 
         need more Log.d
 
-save current playlist pos on switch to new playlist
-
 implement play song from search
+    in work_2
     save playlist pos!
 
 implement db sync
+    in work_1
     just opening the db assumes you will write, which creates log files for that, which changes mod date on smm.db
 
  decisions
