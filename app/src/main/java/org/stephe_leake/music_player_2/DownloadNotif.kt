@@ -26,11 +26,10 @@ import android.app.PendingIntent
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 
-class DownloadNotif
-   constructor (
-      private val context                  : Context,
-      private val showLogPendingIntentInit : PendingIntent,
-      private val cancelIntent             : PendingIntent)
+class DownloadNotif (
+   private val context      : Context,
+   showLogPendingIntentInit : PendingIntent,
+   cancelIntent             : PendingIntent)
 {
    var notifMem : Notification = NotificationCompat.Builder(context, utils.notificationChannelId).build()
    
@@ -61,17 +60,17 @@ class DownloadNotif
       statusText = ""
       contentText = "..."
       maxSongs = 0
-      update()
+      updateInternal()
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    // Permission checked and requested in MainActivity
-   fun update()
+   private fun updateInternal()
    {
       notifMem = NotificationCompat.Builder(context, utils.notificationChannelId)
         .addAction (cancelAction)
         .setContentIntent(showLogPendingIntent)
-        .setContentTitle("Downloading " + playlistName + " " + statusText)
+        .setContentTitle("Downloading $playlistName $statusText")
         .setContentText(contentText)
         .setPriority(NotificationCompat.PRIORITY_DEFAULT) // make sure it shows!
         .setOngoing(true)
@@ -85,30 +84,30 @@ class DownloadNotif
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-   fun Done(msg : String)
+   fun done(msg : String)
    {
       statusText = "done " + formatCounts()
       contentText = msg
-      update()
+      updateInternal()
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-   fun Error(msg : String)
+   fun error(msg : String)
    {
       statusText = "error " + formatCounts()
       contentText = msg
-      update()
+      updateInternal()
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-   fun Update(max : Int)
+   fun update(max : Int)
    {
       maxSongs = max
       statusText = formatCounts()
-      update()
+      updateInternal()
    }
 
-   fun Cancel()
+   fun cancel()
    {
       (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
          .cancel(utils.notif_download_id)

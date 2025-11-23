@@ -101,10 +101,6 @@ class utils
                "text/plain")
       }
       
-      // We need this because there is not always a way to get it
-      // programatically. FIXME: Ask Gemini.
-      var mainActivity: AppCompatActivity? = null
-
       var appDirectory : String = ""
       // Absolute path to application-specific directory, containing
       // nothing at the moment.

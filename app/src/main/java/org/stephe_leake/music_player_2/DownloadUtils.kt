@@ -77,7 +77,7 @@ class DownloadUtils
          // Read playlist file, return list of files (lowercase) in it.
          val playlistFile = File(playlistFilename)
 
-         var result : MutableList<String> = mutableListOf<String>()
+         val result = mutableListOf<String>()
 
          for (line : String in FileUtils.lineIterator(playlistFile))
             {
@@ -124,7 +124,7 @@ class DownloadUtils
       // count of lines remaining.
       {
          val playlistFileName : String = utils.playlistFileName(category)
-         var counts = utils.readPlaylistCounts(context, category)
+         val counts = utils.readPlaylistCounts(context, category)
 
          try
          {
@@ -196,7 +196,7 @@ class DownloadUtils
          }
          catch (e: IOException) {
             // From httpClient.newCall; connection failed after retry
-            log(LogLevel.Error, "getNewSongsList '" + url + "': http request failed: " + e.toString())
+            log(LogLevel.Error, "getNewSongsList '$url': http request failed: ${e.toString()}")
             result.status = ProcessStatus.Retry
          }
 
@@ -230,16 +230,15 @@ class DownloadUtils
                {
                   // Searching MediaStore.Audio on metadata is not
                   // reliable, so we use direct file access.
-                  val FileName = utils.globalDirectory + "/" + song
-                  val file = File (FileName)
+                  val fileName = utils.globalDirectory + "/" + song
+                  val file = File (fileName)
                   
                   if (!file.exists())
                      {
                         newSongs++
-                        // not found; we can't download it to a specific directory, so tell the user to download it
-                        // IMPROVME: with MANAGE_EXTERNAL_STORAGE, can write song file to correct directory
+                        // not found; we let the user to download it using rsync to manage tag updates
                         result.status = ProcessStatus.Retry
-                        log(LogLevel.Info, "not found '" + FileName + "'")
+                        log(LogLevel.Info, "not found '$fileName'")
                      }
 
                   // Write even if not found; user will download the song later.
@@ -304,9 +303,9 @@ class DownloadUtils
          : ProcessStatus
       {
          var status   : ProcessStatus = ProcessStatus.Success
-         val url      = "http://${serverIP}/app/smm/${category}.note"
+         val url      = "http://$serverIP/app/smm/$category.note"
          val noteFile = File(utils.notesFileName(category))
-         var data     = readNotes(noteFile)
+         val data     = readNotes(noteFile)
 
          if (data.isNotEmpty())
             {
@@ -328,13 +327,13 @@ class DownloadUtils
                      }
                   else
                      {
-                        log(LogLevel.Info, "${category} sendNotes")
+                        log(LogLevel.Info, "$category sendNotes")
                         noteFile.delete()
                      }
                }
                catch (e: IOException) {
                   // From httpClient.newCall; connection failed after retry
-                  log(LogLevel.Error, category + " sendNotes http request failed: " + e.toString())
+                  log(LogLevel.Error, "$category sendNotes http request failed: ${e.toString()}")
                   status = ProcessStatus.Retry // retry after delay
                }
             }

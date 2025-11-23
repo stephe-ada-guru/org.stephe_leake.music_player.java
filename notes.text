@@ -10,21 +10,12 @@ work_2 : play song from search
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
+fix most studio warnings
+    Done to MainActivity.kt
+
 clean playlist works
 
-update current playlist still does not refresh display
-    and update instrumental reset vocal to 1!
-    next time, run in debugger
-
-    instrumental:  2/102
-    vocal:        51/102
-
-    update vocal: 50 songs. display not updated; "RESTART_PLAYLIST_COMMAND" not recieved
-    switch to instrumental; 2/102
-    switch to vocal;       1/102
-    switch to instrumental; 1/102
-
-        need more Log.d
+update current playlist - testing
 
 implement play song from search
     in work_2

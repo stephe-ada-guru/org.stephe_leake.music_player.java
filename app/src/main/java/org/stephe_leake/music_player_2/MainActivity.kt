@@ -19,7 +19,6 @@
 package org.stephe_leake.music_player_2
 
 import android.app.AlertDialog
-import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -33,7 +32,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.content.res.Resources
 import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
@@ -58,13 +56,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -86,9 +78,7 @@ import androidx.media3.ui.PlayerView
 import androidx.preference.PreferenceManager
 import androidx.viewpager2.widget.ViewPager2
 
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.guava.await
-import kotlinx.coroutines.runBlocking
 
 import java.io.BufferedWriter
 import java.io.File
@@ -661,9 +651,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
       PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this)
 
-      // FIXME: ask Gemini how to eliminate all uses of this.
-      utils.mainActivity = this
-
       // viewModel is not destroyed when MainActivity is, for rotate,
       // memory recover, etc. So tell it mediaController is now null.
       viewModel.setMediaControllerReady(false)
@@ -962,7 +949,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          R.id.menu_preferences ->
             {
                // We don't need a result
-               this.startActivity(Intent(utils.mainActivity, PrefActivity::class.java))
+               this.startActivity(Intent(this@MainActivity, PrefActivity::class.java))
             }
          
          R.id.menu_reset_playlist ->

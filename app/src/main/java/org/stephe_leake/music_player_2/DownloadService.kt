@@ -99,7 +99,7 @@ class DownloadService : Service()
 
       if (serverIP == null || serverIP == "")
          {
-            notif.Error("Server IP preference not set")
+            notif.error("Server IP preference not set")
             return
          }
 
@@ -116,9 +116,9 @@ class DownloadService : Service()
          if (songsRemaining < songCountMax - songCountThresh)
             {
                var newSongs          : StatusStrings 
-               var songCount         : Int   = songCountMax - songsRemaining
-               var newSongCountFloat : Float = songCount * newSongFractionStr!!.toFloat()
-               var newSongCount      : Int   = newSongCountFloat.toInt()
+               val songCount         : Int   = songCountMax - songsRemaining
+               val newSongCountFloat : Float = songCount * newSongFractionStr!!.toFloat()
+               val newSongCount      : Int   = newSongCountFloat.toInt()
 
                if (playlistFile.exists())
                   {
@@ -141,11 +141,11 @@ class DownloadService : Service()
 
                if (newSongs.status != ProcessStatus.Success)
                   {
-                     notif.Error("get song list from server failed")
+                     notif.error("get song list from server failed")
                      return
                   }
 
-               notif.Update(newSongs.strings.size)
+               notif.update(newSongs.strings.size)
 
                // Add all songs to playlist, log any missing songs
                // (should all be on phone already, but this handles
@@ -160,24 +160,24 @@ class DownloadService : Service()
                
                if (status.status != ProcessStatus.Success)
                   {
-                     notif.Error("check local/get songs from server failed")
+                     notif.error("check local/get songs from server failed")
                      return
                   }
 
-               notif.Done("")
-               DownloadUtils.log(LogLevel.Info, category + ": update done\n\n")
+               notif.done("")
+               DownloadUtils.log(LogLevel.Info, "$category : update done\n\n")
 
             }
          else
             {
-               notif.Done("no update needed")
-               DownloadUtils.log(LogLevel.Info, category + ": no update needed\n\n")
+               notif.done("no update needed")
+               DownloadUtils.log(LogLevel.Info, "$category : no update needed\n\n")
             }
       }
       catch (e : IOException)
       {
          // something is screwed up
-         notif.Error("error: " + e.toString())
+         notif.error("error: ${e.toString()}")
       }
    }
 
@@ -216,13 +216,26 @@ class DownloadService : Service()
    override fun onDestroy()
    {
       serviceScope.cancel()
-      notif.Cancel()
+      if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+             android.content.pm.PackageManager.PERMISSION_GRANTED)
+      {
+         notif.cancel()
+      }
       unregisterReceiver(broadcastReceiverCommand)
       super.onDestroy()
    }
    
    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int
    {
+      if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+             android.content.pm.PackageManager.PERMISSION_GRANTED)
+      {
+         // The media controller also requires POST_NOTIFICATIONS, so
+         // there's no point in continuing here; the user _must_ grant
+         // this permission to use this app.
+         return START_NOT_STICKY
+      }
+      
       if (intent == null)
          {
             // intent is null if the service is restarted by Android
