@@ -74,7 +74,7 @@ class DownloadService : Service()
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-   private suspend fun updatePlaylist (category : String)
+   private suspend fun updatePlaylist(category : String)
    {
       Log.d(utils.logTag, "updatePlaylist '$category'")
       val res                = resources
@@ -124,9 +124,9 @@ class DownloadService : Service()
                   {
                      DownloadUtils.cleanPlaylist(this, category)
                
-                     status.status = DownloadUtils.sendNotes(serverIP, category)
-                     if (status.status != ProcessStatus.Success)
-                        return
+                     DownloadUtils.sendNotes(serverIP, category)
+                     // sendNotes already reported any error; don't
+                     // need to abort update for this.
                   }
                else
                   {
@@ -155,6 +155,7 @@ class DownloadService : Service()
                if (utils.readPlaylistName(this) == category)
                   {
                      // Restart playlist to show song position, count
+                     Log.d(utils.logTag, "DownloadService.updatePlaylist sendRestartPlaylist")
                      DownloadEvents.sendRestartPlaylist()
                   }
                

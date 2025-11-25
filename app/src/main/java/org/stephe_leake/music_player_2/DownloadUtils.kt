@@ -34,8 +34,10 @@ import kotlin.collections.MutableList
 import org.apache.commons.io.FilenameUtils
 import org.apache.commons.io.FileUtils
 
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 
 class DownloadUtils
@@ -165,7 +167,7 @@ class DownloadUtils
          "&new_count=" + newCount.toString() +
          "&over_select_ratio=" + overSelectRatio.toString() +
          "&record_downloaded=" + if (category == "instrumental" || category == "vocal")
-             "true" else "false" +
+         "true" else "false" +
          (if (-1 == randomSeed) "" else "&seed=$randomSeed")
 
          val request : Request = Request.Builder().url(url).build()
@@ -207,11 +209,11 @@ class DownloadUtils
       fun getSongs(songs    : List<String>,
                    category : String)
          : StatusCount
+      // Append 'songs' to 'category' playlist file.
       {
          val playlistFile   = File(utils.playlistFileName(category))
          val playlistWriter : FileWriter
          val result         = StatusCount()
-         var newSongs       = 0
 
          try
          {
@@ -235,14 +237,13 @@ class DownloadUtils
                   
                   if (!file.exists())
                      {
-                        newSongs++
                         // not found; we let the user to download it using rsync to manage tag updates
-                        result.status = ProcessStatus.Retry
                         log(LogLevel.Info, "not found '$fileName'")
                      }
 
                   // Write even if not found; user will download the song later.
-                  playlistWriter.write("$song\n")    
+                  playlistWriter.write("$song\n")
+                  result.count++
                }
          }
          catch (_: IOException)
@@ -265,8 +266,7 @@ class DownloadUtils
             }
          }
 
-         log(LogLevel.Info,
-             result.count.toString() + " songs added to " + category + ", " + newSongs + " new.")
+         log(LogLevel.Info, "${result.count.toString()} songs added to $category.")
 
          return result
 
@@ -297,7 +297,7 @@ class DownloadUtils
             }
          return data
       }
-   
+      
       fun sendNotes(serverIP : String,
                     category : String)
          : ProcessStatus
@@ -309,7 +309,7 @@ class DownloadUtils
 
          if (data.isNotEmpty())
             {
-               val body    = TextBody(data)
+               val body    = data.toRequestBody("text/plain".toMediaType())
                val request = Request.Builder()
                   .url(url)
                   .put(body)
@@ -318,7 +318,7 @@ class DownloadUtils
                ensureHttpClient()
                try
                {
-                  val response : Response =httpClient!!.newCall(request).execute()
+                  val response : Response = httpClient!!.newCall(request).execute()
                   
                   if (200 != response.code)
                      {

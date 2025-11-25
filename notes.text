@@ -18,6 +18,9 @@ add button for "volume+"
 clean playlist works
 
 update current playlist - testing
+    send notes fails with http protocol error
+        don't abort update for that.
+    playlist not restarted; added log.d in downloadService at sendRestartPlaylist
 
 implement play song from search
     in work_2

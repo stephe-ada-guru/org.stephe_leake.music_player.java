@@ -849,7 +849,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
    override fun onOptionsItemSelected(item: MenuItem): Boolean
    {
-      Log.d(utils.logTag, "onOptionsItemSelected ${item.getItemId()}")
       when (item.getItemId())
       {
          // Alphabetical order
