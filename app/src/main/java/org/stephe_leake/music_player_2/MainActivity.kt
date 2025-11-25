@@ -659,8 +659,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
       CreateNotificationChannel()
 
-      WindowCompat.setDecorFitsSystemWindows(window, true) // Don't let status and nav bars overlay app
-      
       setContentView(R.layout.mainactivity)
       setSupportActionBar(findViewById(R.id.main_toolbar)) // for menu
 
