@@ -22,14 +22,11 @@ import android.app.AlertDialog
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.BroadcastReceiver
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.ContentUris
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.database.Cursor
@@ -63,7 +60,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.core.view.WindowCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -109,14 +106,14 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    private lateinit var imageSlideshowAdapter: ImageSlideshowAdapter
    private val slideshowHandler = Handler(Looper.getMainLooper()) // Handler for slideshow transitions
    private var slideshowRunnable: Runnable? = null
-   private val SLIDESHOW_INTERVAL_MS = 10000L // 10 seconds
+   private val slideshowIntervalMs = 10000L // 10 seconds
 
-   private fun CreateNotificationChannel()
+   private fun createNotificationChannel()
    {
       val channel = NotificationChannel(
          utils.notificationChannelId, utils.notificationChannelId, NotificationManager.IMPORTANCE_LOW)
       
-      channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC)
+      channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
 
       (this.getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
          .createNotificationChannel(channel)
@@ -124,7 +121,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
    private fun checkPermission()
    {
-      val REQUIRED_PERMISSIONS = arrayOf(
+      val requiredPermissions = arrayOf(
          android.Manifest.permission.POST_NOTIFICATIONS,
          android.Manifest.permission.READ_MEDIA_AUDIO,
          android.Manifest.permission.READ_MEDIA_IMAGES)
@@ -137,12 +134,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          {
             val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
             intent.addCategory("android.intent.category.DEFAULT")
-            intent.data = Uri.parse("package:${applicationContext.packageName}")
+            intent.data = "package:${applicationContext.packageName}".toUri()
             startActivity(intent)
             // This does _not_ trigger MainActivity.onRequestPermissionsResult
          }
 
-      for (permission in REQUIRED_PERMISSIONS)
+      for (permission in requiredPermissions)
          {
             if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED)
                {
@@ -154,7 +151,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          {
             var rationaleRequired = false
             
-            for (permission in REQUIRED_PERMISSIONS)
+            for (permission in requiredPermissions)
                {
                   if (this.shouldShowRequestPermissionRationale(permission))
                      {
@@ -200,18 +197,18 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       if (!playlistFile.canRead())
          {
             // This is an SMM error, or failing sdcard
-            utils.alertLog(this, "can't read " + absFilename)
+            utils.alertLog(this, "can't read $absFilename")
             return
          }
 
       playlistFile.forEachLine{
-         Filename ->
+         filename ->
          // We search for the file name, not the metadata (despite
          // Android's recommendation); we sometimes edit the metadata
          // to match Spotify (and sometimes the Android media scanner
          // screws up), so this is more reliable. We use MediaStore to
          // get all the metadata from the song file.
-         var cursor : Cursor? = getApplication().contentResolver.query(
+         val cursor : Cursor? = application.contentResolver.query(
             MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL),
             /* projection */ arrayOf(MediaStore.Audio.Media._ID,
                                      MediaStore.MediaColumns.ALBUM_ARTIST,
@@ -221,13 +218,13 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                                      MediaStore.MediaColumns.COMPOSER,
                                      MediaStore.MediaColumns.YEAR),
             /* selection  */ "${MediaStore.MediaColumns.DATA} = ?",
-            /* selectionArgs */ arrayOf(utils.globalDirectory + "/" + Filename),
+            /* selectionArgs */ arrayOf(utils.globalDirectory + "/" + filename),
             /* sortOrder */ null)
          
          if (cursor == null || !cursor.moveToFirst())
             {
                // not found. Also checked in DownloadUtils.getSongs, but it might get deleted.
-               utils.errorLog("not found '" + Filename + "'")
+               utils.errorLog("not found '$filename'")
             }
          else
             {
@@ -241,12 +238,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                   cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.COMPOSER))
                val year =
                   cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.YEAR))
-               val songFileName = utils.globalDirectory + "/" + Filename
+               val songFileName = utils.globalDirectory + "/" + filename
                val songFile = File(songFileName)
                val extra = Bundle()
 
                extra.putString("Song_File", songFileName)
-               extra.putString("Liner_Notes", songFile.getParent()!! + "/" + "liner_notes.pdf")
+               extra.putString("Liner_Notes", songFile.parent!! + "/" + "liner_notes.pdf")
                
                val metaData = androidx.media3.common.MediaMetadata.Builder()
                // Adding the artwork here makes switching playlists
@@ -365,9 +362,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          }
          slideshow.setCurrentItem(currentItem, true) // Use true for smooth scroll
          if (slideshowRunnable != null)
-            slideshowHandler.postDelayed(slideshowRunnable!!, SLIDESHOW_INTERVAL_MS)
+            slideshowHandler.postDelayed(slideshowRunnable!!, slideshowIntervalMs)
       }
-      slideshowHandler.postDelayed(slideshowRunnable!!, SLIDESHOW_INTERVAL_MS)
+      slideshowHandler.postDelayed(slideshowRunnable!!, slideshowIntervalMs)
    }
 
    private fun stopSlideshowTimer()
@@ -400,12 +397,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    {
       private fun updateText(view: TextView, content: CharSequence?)
       {
-         if (content == null || content.length == 0)
-            view.setVisibility(GONE)
+         if (content == null || content.isEmpty())
+            view.visibility = GONE
          else
             {
-               view.setVisibility(VISIBLE)
-               view.setText(content)
+               view.visibility = VISIBLE
+               view.text = content
             }
       }
 
@@ -415,12 +412,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          compare1: CharSequence?,
          compare2: CharSequence?)
       {
-         if (content == null || content.length == 0) view.setVisibility(GONE)
-            else if (content == compare1) view.setVisibility(GONE)
-            else if (content == compare2) view.setVisibility(GONE)
+         if (content == null || content.isEmpty()) view.visibility = GONE
+            else if (content == compare1) view.visibility = GONE
+            else if (content == compare2) view.visibility = GONE
             else {
-               view.setVisibility(VISIBLE)
-               view.setText(content)
+               view.visibility = VISIBLE
+               view.text = content
             }
       }
 
@@ -463,7 +460,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          val albumText = metadata.albumTitle ?: ""
          
          // 'index' is 0 indexed
-         playlistView.setText(viewModel.playlistName.value + " " + (index + 1).toString() + "/" + count)
+         playlistView.text = viewModel.playlistName.value + " " + (index + 1).toString() + "/" + count
 
          val songFile = File(metadata.extras!!.getString("Song_File")!!)
          val images = getImages(songFile.parent!!)
@@ -500,8 +497,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          updateText(artistView, artistText, albumArtistText, null)
          updateText(albumArtistView, albumArtistText, null, null)
          updateText(yearView, yearText)
-         albumView.setText(albumText)
-         titleView.setText(titleText)
+         albumView.text = albumText
+         titleView.text = titleText
          
          // categoryView is managed by CategoryDisplay above, triggered by this:
          viewModel.getCategory (albumArtistText.toString(), albumText.toString(), titleText.toString())
@@ -565,7 +562,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          val metadata = mediaController!!.currentMediaItem!!.mediaMetadata
          val songFile = File(metadata.extras!!.getString("Song_File")!!)
 
-         utils.errorLog("cannot play '" + songFile + "'")
+         utils.errorLog("cannot play '$songFile'")
       }
       
       override fun onTracksChanged(tracks: Tracks)
@@ -578,7 +575,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
    fun onClickNote(v : View)
    {
-      val buttonText = (((v as Button).getText() as String).replace('\n', ' '))
+      val buttonText = (((v as Button).text as String).replace('\n', ' '))
       val controller = mediaController!!
       val index = controller.currentMediaItemIndex
 
@@ -589,7 +586,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             val writer = BufferedWriter(FileWriter(noteFileName, true)) // append
             val absSongFile = metaData.extras!!.getString("Song_File")!!
             val relSongFile = absSongFile.substring(utils.globalDirectory.length)
-            writer.write("\"${relSongFile}\" ${buttonText}")
+            writer.write("\"${relSongFile}\" $buttonText")
             writer.newLine()
             writer.close()
          }
@@ -607,7 +604,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       }
       catch (_ : NumberFormatException)
       {
-         utils.errorLog("invalid text_scale preference: " + scale)
+         utils.errorLog("invalid text_scale preference: $scale")
          return 1.0f
       }
    }
@@ -616,13 +613,13 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    {
       val scale = getTextViewTextScale()
 
-      utils.findTextViewById(this, R.id.album).setTextSize(scale * defaultTextViewTextSize)
-      utils.findTextViewById(this, R.id.albumArtist).setTextSize(scale * defaultTextViewTextSize)
-      utils.findTextViewById(this, R.id.artist).setTextSize(0.5f * scale * defaultTextViewTextSize)
-      utils.findTextViewById(this, R.id.composer).setTextSize(0.5f * scale * defaultTextViewTextSize)
-      utils.findTextViewById(this, R.id.title).setTextSize(scale * defaultTextViewTextSize)
-      utils.findTextViewById(this, R.id.title).setTextSize(scale * defaultTextViewTextSize)
-      utils.findTextViewById(this, R.id.year).setTextSize(0.5f * scale * defaultTextViewTextSize)
+      utils.findTextViewById(this, R.id.album).textSize = scale * defaultTextViewTextSize
+      utils.findTextViewById(this, R.id.albumArtist).textSize = scale * defaultTextViewTextSize
+      utils.findTextViewById(this, R.id.artist).textSize = 0.5f * scale * defaultTextViewTextSize
+      utils.findTextViewById(this, R.id.composer).textSize = 0.5f * scale * defaultTextViewTextSize
+      utils.findTextViewById(this, R.id.title).textSize = scale * defaultTextViewTextSize
+      utils.findTextViewById(this, R.id.title).textSize = scale * defaultTextViewTextSize
+      utils.findTextViewById(this, R.id.year).textSize = 0.5f * scale * defaultTextViewTextSize
    }
 
    ////////// Activity lifetime methods (in lifecycle order)
@@ -638,9 +635,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       // memory recover, etc. So tell it mediaController is now null.
       viewModel.setMediaControllerReady(false)
 
-      utils.appDirectory = this.getExternalFilesDir(null)!!.getAbsolutePath()
+      utils.appDirectory = this.getExternalFilesDir(null)!!.absolutePath
 
-      CreateNotificationChannel()
+      createNotificationChannel()
 
       setContentView(R.layout.mainactivity)
       setSupportActionBar(findViewById(R.id.main_toolbar)) // for menu
@@ -650,7 +647,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       
       defaultTextViewTextSize = utils.findTextViewById(this, R.id.artist).textSize
 
-      scaleTextViews();
+      scaleTextViews()
       
       val playlistView = utils.findTextViewById(this, R.id.playlist)
       playlistView.setOnClickListener()
@@ -679,7 +676,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                      if (isReady)
                      {
                         if (mediaController == null)
-                           utils.errorLog ("MainActivity.onCreate launch player: mediaController == null");
+                           utils.errorLog ("MainActivity.onCreate launch player: mediaController == null")
                         else
                            {
                               if (mediaController!!.isPlaying)
@@ -742,7 +739,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    {
       if (key == getString(R.string.text_scale_key))
            {
-              scaleTextViews();
+              scaleTextViews()
            }
     }
    
@@ -808,8 +805,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
    override fun onCreateOptionsMenu(menu: Menu): Boolean
    {
-      val Inf: MenuInflater = getMenuInflater()
-      Inf.inflate(R.menu.main_menu, menu)
+      val inf: MenuInflater = menuInflater
+      inf.inflate(R.menu.main_menu, menu)
       return true // display menu
    }
 
@@ -819,12 +816,15 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
       if (mediaController == null || mediaController!!.currentMediaItem == null)
          {
+            // MenuItem doesn't declare isEnabled.
+            @Suppress("UsePropertyAccessSyntax")
             menu.findItem(R.id.menu_liner_notes).setEnabled(false)
             return false
          }
 
       val metaData = mediaController!!.currentMediaItem!!.mediaMetadata
       val file = File(metaData.extras!!.getString("Liner_Notes")!!)
+      @Suppress("UsePropertyAccessSyntax")
       menu.findItem(R.id.menu_liner_notes).setEnabled(file.exists())
 
       return true
@@ -832,7 +832,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
    override fun onOptionsItemSelected(item: MenuItem): Boolean
    {
-      when (item.getItemId())
+      when (item.itemId)
       {
          // Alphabetical order
 
@@ -856,7 +856,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          
          R.id.menu_copy ->
             {
-               var clipManage: ClipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+               val clipManage: ClipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
 
                val album       : TextView = utils.findTextViewById(this, R.id.album)
                val albumArtist : TextView = utils.findTextViewById(this, R.id.albumArtist)
@@ -864,13 +864,13 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                val composer    : TextView = utils.findTextViewById(this, R.id.composer)
                val title       : TextView = utils.findTextViewById(this, R.id.title)
                
-               val Msg: String = albumArtist.getText().toString() +
-               " " + artist.getText().toString() +
-               " " + album.getText().toString() +
-               " " + title.getText().toString() +
-               " " + composer.getText().toString()
+               val msg: String = albumArtist.text.toString() +
+               " " + artist.text.toString() +
+               " " + album.text.toString() +
+               " " + title.text.toString() +
+               " " + composer.text.toString()
 
-               clipManage.setPrimaryClip (ClipData.newPlainText ("song", Msg))
+               clipManage.setPrimaryClip (ClipData.newPlainText ("song", msg))
             }
 
          R.id.menu_liner_notes ->
@@ -882,7 +882,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                   "${this.applicationContext.packageName}.provider",
                   file)
 
-               var intent: Intent = Intent(Intent.ACTION_VIEW)
+               val intent: Intent = Intent(Intent.ACTION_VIEW)
                   .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                   .setDataAndType(contentUri, "application/pdf")
                
@@ -891,8 +891,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
          R.id.menu_new_playlist ->
             {
-               var prefs   : SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-               var serverIP: String?           = prefs.getString (this.getString(R.string.server_IP_key), null)
+               val prefs   : SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+               val serverIP: String?           = prefs.getString (this.getString(R.string.server_IP_key), null)
                
                if (null == serverIP)
                   {
@@ -903,7 +903,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                      // Get the playlist name, which is the song category;
                      // tell play service to download initial playlist.
                      
-                     var builder: AlertDialog.Builder = AlertDialog.Builder(this)
+                     val builder: AlertDialog.Builder = AlertDialog.Builder(this)
                      builder.setTitle("new playlist category")
                      
                      val input = EditText(this)
@@ -913,7 +913,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                      {_, _ ->
 
                          newPlaylistIntent = Intent (utils.DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
-                         .putExtra(utils.EXTRA_PLAYLIST_CATEGORY, input.getText().toString())
+                         .putExtra(utils.EXTRA_PLAYLIST_CATEGORY, input.text.toString())
                       this.startService(newPlaylistIntent)
                      } 
 
@@ -998,8 +998,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
          R.id.menu_update_playlist ->
             {
-               var prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-               var serverIP: String?        = prefs.getString (this.getString(R.string.server_IP_key), null)
+               val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+               val serverIP: String?        = prefs.getString (this.getString(R.string.server_IP_key), null)
 
                if (null == serverIP)
                   utils.alertLog(this, "set Server IP in preferences")
@@ -1018,7 +1018,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
          else ->
             {
-               Log.e(utils.logTag, "activity.onOptionsItemSelected: unknown MenuItemId " + item.getItemId())
+               Log.e(utils.logTag, "activity.onOptionsItemSelected: unknown MenuItemId $item.itemId")
             }
       }
       return false // continue menu processing

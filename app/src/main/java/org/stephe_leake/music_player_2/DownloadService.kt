@@ -34,7 +34,6 @@ import java.io.File
 import java.io.IOException
 
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -85,8 +84,7 @@ class DownloadService : Service()
       val serverIP        = prefs.getString (res.getString(R.string.server_IP_key), null)
       val playlistFile    = File(utils.playlistFileName(category))
       val playlistDirFile = File(FilenameUtils.getPath(playlistFile.path))
-      var status          = StatusCount()
-
+  
       if (serverIP == null || serverIP == "")
          {
             notif.error("Server IP preference not set")
@@ -140,7 +138,7 @@ class DownloadService : Service()
                // Add all songs to playlist, log any missing songs
                // (should all be on phone already, but this handles
                // new music).
-               status = DownloadUtils.getSongs(newSongs.strings, category)
+               val status = DownloadUtils.getSongs(newSongs.strings, category)
 
                if (utils.readPlaylistName(this) == category)
                   {

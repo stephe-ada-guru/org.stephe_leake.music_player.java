@@ -266,7 +266,7 @@ class DownloadUtils
             }
          }
 
-         log(LogLevel.Info, "${result.count.toString()} songs added to $category.")
+         log(LogLevel.Info, "${result.count} songs added to $category.")
 
          return result
 
