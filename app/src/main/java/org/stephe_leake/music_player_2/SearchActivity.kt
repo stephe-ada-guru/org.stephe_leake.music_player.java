@@ -40,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,17 +51,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+import kotlinx.coroutines.launch
+
 class SearchActivity : ComponentActivity()
 {
    // "by viewModels" returns a singleton (shared with MainActivity),
    // using the factory if necessary.
-   private val mainViewModel : MainViewModel by viewModels {
-      (application as MusicPlayerApplication).mainViewModelFactory}
-   
    private val viewModel: SearchViewModel by viewModels {
       SearchViewModel.Companion.SearchViewModelFactory(
-         (application as MusicPlayerApplication).db.songDao(),
-         mainViewModel)}
+         (application as MusicPlayerApplication).db.songDao())}
 
    override fun onCreate(savedInstanceState: Bundle?)
    {
@@ -238,7 +237,8 @@ fun SongRow(
    val lightBackground = MaterialTheme.colorScheme.surfaceVariant // A different color
 
    val maxLines = if (isExpanded) Int.MAX_VALUE else 1
-   
+
+   val coroutineScope = rememberCoroutineScope()
    Row(
       verticalAlignment = Alignment.CenterVertically,
       modifier = Modifier.fillMaxWidth()
@@ -249,7 +249,7 @@ fun SongRow(
          contentDescription = "Play ${song.Title}",
          modifier = Modifier
             .padding(horizontal = 8.dp).background(lightBackground)
-            .clickable { viewModel.playSong(song) }
+            .clickable {coroutineScope.launch {AppEventBus.emitEvent(AppEvent.PlaySong(song))}}
             ) 
 
       // Using weights to create table-like columns. Include padding

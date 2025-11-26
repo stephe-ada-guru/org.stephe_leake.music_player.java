@@ -43,13 +43,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-// Define the events MainViewModel can send to MainActivity.
-sealed class PlayerEvent
-{
-    data object ReloadPlaylist : PlayerEvent()
-    data class PlaySong(val song: Song) : PlayerEvent()
-}
-
 class MainViewModel(private val application : Application, private val songDao: SongDao) : ViewModel()
 {
    companion object
@@ -137,26 +130,6 @@ class MainViewModel(private val application : Application, private val songDao: 
          val song = songDao.getSong(albumArtist, album, title)
          _currentCategory.value = song?.Category
       }
-   }
-
-   private val _playerEvent = MutableSharedFlow<PlayerEvent>()
-   val playerEvent: SharedFlow<PlayerEvent> = _playerEvent.asSharedFlow()
-
-   fun reloadPlaylist()
-   {
-        viewModelScope.launch {
-            // This should not be necessary, but it may be possible
-            // for the DownloadService to get out of sync with
-            // MainViewModel.
-            _playlistName.value = utils.readPlaylistName(application as Context)
-
-            _playerEvent.emit(PlayerEvent.ReloadPlaylist)
-        }
-   }
-
-   fun playSong(song: Song)
-   {
-      viewModelScope.launch {_playerEvent.emit(PlayerEvent.PlaySong(song))}
    }
    
 } //MainViewModel

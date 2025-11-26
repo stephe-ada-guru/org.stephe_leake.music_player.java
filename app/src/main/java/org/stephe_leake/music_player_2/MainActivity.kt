@@ -287,20 +287,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       playerListener.updateDisplay (saveState)                       
    } // playlistToPlayer
 
-   val commandReceiver = object : BroadcastReceiver()
-   {
-      override fun onReceive(context: Context?, intent: Intent?)
-      {
-         if (intent?.action == utils.RESTART_PLAYLIST_COMMAND)
-            {
-               Log.d (utils.logTag, "MainActivity received RESTART_PLAYLIST_COMMAND")
-               val playlist = viewModel.playlistName.value
-               if (playlist.isNotEmpty())
-                  viewModel.reloadPlaylist()
-            }
-      }
-   }
-   
    private fun showPlaylistPickerDialog(onPlaylistSelected: (String) -> Unit)
    {
       val playlistDir = File (utils.globalDirectory)
@@ -645,9 +631,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    {
       super.onCreate(savedInstanceState)
 
-      registerReceiver(commandReceiver,
-         IntentFilter(utils.RESTART_PLAYLIST_COMMAND), RECEIVER_NOT_EXPORTED)
-      
       PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
       PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this)
 
@@ -723,11 +706,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
             // Listen for ReloadPlaylist events (and others) from mainViewModel
             launch {
-               viewModel.playerEvent.collect {
-                  event: PlayerEvent ->
+               AppEventBus.events.collect {
+                  event: AppEvent ->
                      when (event) {
-                        is PlayerEvent.ReloadPlaylist -> {
-                           Log.d (utils.logTag, "MainActivity received PlayerEvent.ReloadPlaylist")
+                        is AppEvent.ReloadPlaylist -> {
+                           Log.d (utils.logTag, "MainActivity received AppEvent.ReloadPlaylist")
                            if (mediaController != null)
                               {
                                  playlistToPlayer(
@@ -737,7 +720,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                               }
                         }
 
-                        is PlayerEvent.PlaySong -> {
+                        is AppEvent.PlaySong -> {
+                           Log.d (utils.logTag, "MainActivity received AppEvent.PlaySong")
                            if (mediaController != null) {
                               // FIXME: Create a new playlist
                               // containing event.song. Tell
@@ -816,7 +800,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       stopSlideshowTimer()
       mediaController?.removeListener(playerListener)
       PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(this)
-      unregisterReceiver(commandReceiver)
  
       super.onDestroy()
    }

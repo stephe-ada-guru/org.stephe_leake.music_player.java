@@ -22,6 +22,9 @@ package org.stephe_leake.music_player_2
 
 import android.app.Application
 
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+
 class MusicPlayerApplication : Application() {
    val db by lazy { SongDatabase.getDatabase(this) }
 
@@ -34,3 +37,20 @@ class MusicPlayerApplication : Application() {
    // mainViewModel reference.
 }
 
+// Define the events MainViewModel can send to MainActivity.
+sealed class AppEvent
+{
+    data object ReloadPlaylist : AppEvent()
+    data class PlaySong(val song: Song) : AppEvent()
+}
+
+object AppEventBus
+{
+    private val _events = MutableSharedFlow<AppEvent>()
+    val events = _events.asSharedFlow()
+
+    suspend fun emitEvent(event: AppEvent)
+ {
+        _events.emit(event)
+    }
+}

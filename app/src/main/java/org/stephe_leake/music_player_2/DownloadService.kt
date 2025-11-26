@@ -63,16 +63,6 @@ class DownloadService : Service()
       return total - counts.index
    }
 
-   object DownloadEvents
-   {
-      private val _events = MutableSharedFlow<String>()
-
-      suspend fun sendRestartPlaylist()
-      {
-         _events.emit(utils.RESTART_PLAYLIST_COMMAND)
-      }
-   }
-
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    private suspend fun updatePlaylist(category : String)
    {
@@ -155,8 +145,8 @@ class DownloadService : Service()
                if (utils.readPlaylistName(this) == category)
                   {
                      // Restart playlist to show song position, count
-                     Log.d(utils.logTag, "DownloadService.updatePlaylist sendRestartPlaylist")
-                     DownloadEvents.sendRestartPlaylist()
+                     Log.d(utils.logTag, "DownloadService.updatePlaylist send ReloadPlaylist")
+                     serviceScope.launch {AppEventBus.emitEvent(AppEvent.ReloadPlaylist)}
                   }
                
                if (status.status != ProcessStatus.Success)
