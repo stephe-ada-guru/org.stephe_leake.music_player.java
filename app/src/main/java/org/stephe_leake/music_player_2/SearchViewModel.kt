@@ -47,6 +47,7 @@ data class DetailedInfo(
 
 typealias SongAlbumMap = Map<AlbumInfo, List<Song>>
 
+@kotlinx.coroutines.ExperimentalCoroutinesApi
 class SearchViewModel(private val songDao: SongDao) : ViewModel()
 {
    companion object
@@ -98,6 +99,7 @@ class SearchViewModel(private val songDao: SongDao) : ViewModel()
       }
    }
 
+   @kotlinx.coroutines.ExperimentalCoroutinesApi
    private fun groupAndDisplaySongs() {
       viewModelScope.launch {
          songListFlow

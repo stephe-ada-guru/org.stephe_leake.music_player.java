@@ -16,9 +16,10 @@
 //  write to the Free Software Foundation, 51 Franklin Street, Suite
 //  500, Boston, MA 02110-1335, USA.
 
+@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+
 package org.stephe_leake.music_player_2
 
-import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,17 +32,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,9 +53,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 import kotlinx.coroutines.launch
+
+val LocalSearchViewModel = staticCompositionLocalOf<SearchViewModel> {error("No SearchViewModel provided")}
 
 class SearchActivity : ComponentActivity()
 {
@@ -71,29 +76,30 @@ class SearchActivity : ComponentActivity()
 @Composable
 fun SearchScreen(viewModel: SearchViewModel)
 {
-   val groupedResults by viewModel.groupedResults.collectAsState()
-   var selectedTab by remember { mutableStateOf(0) }
+   var selectedTab by remember { mutableIntStateOf(0) }
    val tabs = listOf("General Search", "Detailed Search")
 
-   Column() {
-      TabRow(selectedTabIndex = selectedTab) {
-         tabs.forEachIndexed { index, title ->
-                                  Tab(
-                                     selected = selectedTab == index,
-                                     onClick = { selectedTab = index },
-                                     text = { Text(title) }
-                                  )
+   CompositionLocalProvider(LocalSearchViewModel provides viewModel) {
+      Column {
+         TabRow(selectedTabIndex = selectedTab) {
+            tabs.forEachIndexed { index, title ->
+                                     Tab(
+                                        selected = selectedTab == index,
+                                        onClick = { selectedTab = index },
+                                        text = { Text(title) }
+                                     )
+            }
          }
-      }
-      
-      when (selectedTab) {
-         0 -> GeneralSearchTab(onSearch = { query -> viewModel.performGeneralSearch(query) })
-         1 -> DetailedSearchTab(onSearch = { info -> viewModel.performDetailedSearch(info) })
-      }
+         
+         when (selectedTab) {
+            0 -> GeneralSearchTab(onSearch = { query -> viewModel.performGeneralSearch(query) })
+            1 -> DetailedSearchTab(onSearch = { info -> viewModel.performDetailedSearch(info) })
+         }
 
-      HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-      SearchResults(viewModel)
+         SearchResults()
+      }
    }
 }
 
@@ -158,20 +164,21 @@ private fun SearchField(label: String, value: String, onValueChange: (String) ->
 }
 
 @Composable
-fun SearchResults(viewModel: SearchViewModel) {
+fun SearchResults() {
     // Collect the grouped results from the ViewModel
+    val viewModel = LocalSearchViewModel.current
     val groupedResults by viewModel.groupedResults.collectAsState()
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         // Iterate through each album group in the map
         items(groupedResults.entries.toList()) { (albumInfo, songs) ->
-            AlbumGroup(albumInfo, songs, viewModel)
+            AlbumGroup(albumInfo, songs)
         }
     }
 } // end SearchResults
 
 @Composable
-fun AlbumGroup(albumInfo: AlbumInfo, songs: List<Song>, viewModel: SearchViewModel) {
+fun AlbumGroup(albumInfo: AlbumInfo, songs: List<Song>) {
    var expandedSong by remember {mutableStateOf<Int?>(null)}
    
    Card(
@@ -190,7 +197,6 @@ fun AlbumGroup(albumInfo: AlbumInfo, songs: List<Song>, viewModel: SearchViewMod
             song ->
                SongRow(
                   song,
-                  viewModel,
                   isExpanded = song.ID == expandedSong,
                   onRowClick = {
                      // Toggle expansion: if it's already expanded, collapse it. Otherwise, expand it.
@@ -221,14 +227,13 @@ fun AlbumHeader(albumInfo: AlbumInfo) {
                 color = Color.Gray
             )
         }
-        // Not displayling album art images here; no room on phone screen.
+        // Not displaying album art images here; no room on phone screen.
     }
 } // end AlbumHeader
 
 @Composable
 fun SongRow(
    song: Song,
-   viewModel: SearchViewModel,
    isExpanded: Boolean,
    onRowClick: () -> Unit) {
 
@@ -239,6 +244,8 @@ fun SongRow(
    val maxLines = if (isExpanded) Int.MAX_VALUE else 1
 
    val coroutineScope = rememberCoroutineScope()
+   val viewModel = LocalSearchViewModel.current
+
    Row(
       verticalAlignment = Alignment.CenterVertically,
       modifier = Modifier.fillMaxWidth()

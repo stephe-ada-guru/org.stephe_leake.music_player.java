@@ -10,9 +10,6 @@ work_2 : play song from search
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
-fix most studio warnings
-    Done thru MainActivity.kt
-
 clean playlist works
 
 update current playlist - testing

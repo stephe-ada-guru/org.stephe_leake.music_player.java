@@ -18,12 +18,10 @@
 
 package org.stephe_leake.music_player_2
 
-class StatusCount
-constructor (
+class StatusCount(
    var status : ProcessStatus = ProcessStatus.Success,
    // True if caller should proceed to next step in playlist update.
 
    var count  : Int = 0
    // songs cleaned/downloaded/whatever
 )
-{}

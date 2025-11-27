@@ -14,7 +14,7 @@
 
 package org.stephe_leake.music_player_2
 
-class StatusStrings
-constructor (var status  : ProcessStatus = ProcessStatus.Success,
-             var strings : List<String>  = emptyList())
-{}
+class StatusStrings(
+    var status  : ProcessStatus = ProcessStatus.Success,
+    var strings : List<String>  = emptyList())
+

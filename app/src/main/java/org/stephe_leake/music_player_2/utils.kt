@@ -54,8 +54,8 @@ private object PlaylistPreferenceKeys
 {
    val NAME  = stringPreferencesKey("name")
    
-   fun index(Name : String) : Preferences.Key<Int> {return intPreferencesKey(Name + "-index")}
-   fun pos(Name : String) : Preferences.Key<Long> {return longPreferencesKey(Name + "-pos")}
+   fun index(name : String) : Preferences.Key<Int> {return intPreferencesKey("$name-index")}
+   fun pos(name : String) : Preferences.Key<Long> {return longPreferencesKey("$name-pos")}
 }
       
 data class PlaylistCounts(
@@ -77,7 +77,6 @@ class utils
 
       const val EXTRA_PLAYLIST_CATEGORY  : String = "PLAYLIST_CATEGORY"
       const val DOWNLOAD_COMMAND         : String = "download_command" // Update existing or create new playlist
-      const val RESTART_PLAYLIST_COMMAND : String = "restart_playlist_command"
       const val COMMAND_CANCEL_DOWNLOAD  : String = "org.stephe_leake.stephes_music.cancel_download"
 
       const val showDownloadLogIntentId : Int = 6
@@ -133,7 +132,7 @@ class utils
             }
          else
             {
-               var temp : Int? = preferences[PlaylistPreferenceKeys.index(category)]
+               val temp : Int? = preferences[PlaylistPreferenceKeys.index(category)]
                if (temp == null)
                   {
                      // Never set
@@ -182,7 +181,7 @@ class utils
             }
          else
             {
-               var temp : String? = preferences[PlaylistPreferenceKeys.NAME]
+               val temp : String? = preferences[PlaylistPreferenceKeys.NAME]
                if (temp == null)
                   {
                      // Never set
@@ -199,14 +198,14 @@ class utils
    
       fun notesFileName(category : String) : String
       {
-         return globalDirectory + "/" + category + ".note"
+         return "$globalDirectory/$category.note"
       }
 
       fun findTextViewById (a: AppCompatActivity, id: Int) : TextView
       {
          val v : View? = a.findViewById(id)
          
-         if (v == null) {throw RuntimeException("no such id " + id)}
+         if (v == null) {throw RuntimeException("no such id $id")}
             
          if (v is TextView)
             {
@@ -214,7 +213,7 @@ class utils
             }
          else
             {
-               throw RuntimeException(id.toString() + " is not a TextView; it is a " + v.toString())
+               throw RuntimeException("$id is not a TextView; it is a $v")
             }
       }
 
@@ -232,7 +231,7 @@ class utils
       fun logFileName(logFileBaseName : String) : String
       {
          // In global so user can read it (file provider doesn't work)
-         return globalDirectory + "/" + logFileBaseName + logFileExt
+         return "$globalDirectory/$logFileBaseName$logFileExt"
       }
 
       fun errorLogFileName() : String

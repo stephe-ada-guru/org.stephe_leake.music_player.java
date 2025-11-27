@@ -19,9 +19,6 @@
 package org.stephe_leake.music_player_2
 
 import android.content.Context
-import android.content.SharedPreferences
-import android.content.res.Resources
-import androidx.preference.PreferenceManager
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase

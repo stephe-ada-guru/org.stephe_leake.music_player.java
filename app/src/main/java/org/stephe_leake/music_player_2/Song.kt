@@ -22,11 +22,9 @@
 
 package org.stephe_leake.music_player_2
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverters
 
 @Entity(tableName = "Song",
         indices = [
@@ -37,6 +35,7 @@ import androidx.room.TypeConverters
            Index(value = ["Last_Downloaded"], name = "Last_Downloaded"),
            Index(value = ["Album_Artist", "Album", "Title"], unique = true, name = "Song_Name")
         ])
+@Suppress("PropertyName")
 data class Song(
    // Names match [1] _exactly_
    @PrimaryKey
