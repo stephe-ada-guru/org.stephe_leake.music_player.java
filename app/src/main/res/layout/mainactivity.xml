@@ -200,11 +200,6 @@
           android:layout_marginTop="1dip"
           android:layout_marginBottom="2dip"
           android:gravity="center">
-        <!-- SDK 20: can't use @string in textSize attribute, despite the documentation
-             API 10: layout_height of wrap_content on buttons screws up; only last button will wrap text
-        -->
-        <!-- notes buttons, row 1
-        -->
         <com.google.android.material.button.MaterialButton
             style="@style/Widget.App.Button.TextButton"
             android:id="@+id/note_category"
@@ -245,10 +240,6 @@
           android:layout_marginTop="1dip"
           android:layout_marginBottom="2dip"
           android:gravity="center">
-
-        <!-- notes buttons, row 2
-             text color broken on Galaxy Note 3 Android 5.0 upgrade
-        -->
         <com.google.android.material.button.MaterialButton
             style="@style/Widget.App.Button.TextButton"
             android:id="@+id/note_want_more"
@@ -277,6 +268,24 @@
             android:layout_height="match_parent"
             android:layout_width="wrap_content"
             android:text="@string/note_other"
+            android:onClick="onClickNote"/>
+      </LinearLayout>
+      <LinearLayout
+          style="?android:attr/buttonBarButtonStyle"
+          android:id="@+id/notes_buttons_2"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="horizontal"
+          android:layout_gravity="center"
+          android:layout_marginTop="1dip"
+          android:layout_marginBottom="2dip"
+          android:gravity="center">
+        <com.google.android.material.button.MaterialButton
+            style="@style/Widget.App.Button.TextButton"
+            android:id="@+id/note_want_more"
+            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:text="@string/note_volume"
             android:onClick="onClickNote"/>
       </LinearLayout>
     </LinearLayout>
