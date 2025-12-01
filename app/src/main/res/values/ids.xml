@@ -23,6 +23,7 @@
   <item type="id" name="main_pref_frag"/>
 
   <item type="id" name="menu_clean_playlist" />
+  <item type="id" name="menu_close" />
   <item type="id" name="menu_copy" />
   <item type="id" name="menu_liner_notes" />
   <item type="id" name="menu_new_playlist" />

@@ -667,6 +667,24 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       lifecycleScope.launch {
          repeatOnLifecycle(Lifecycle.State.STARTED) {
 
+            launch {
+               viewModel.errorMessage.collect {
+                  message -> 
+                     if (message != null)
+                     {
+                        AlertDialog.Builder(this@MainActivity)
+                           .setTitle("Database or File Error")
+                           .setMessage(message)
+                           .setPositiveButton("OK") {
+                              dialog, _ ->
+                                 viewModel.clearError()
+                              dialog.dismiss()}
+                           .setCancelable(false)
+                           .show()
+                     }
+               }
+            }
+            
             // Wait for mediaController to be ready, and the playlist name
             // to be read from DataStore.
             launch {
@@ -852,6 +870,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                               play = mediaController!!.isPlaying,
                               saveState = false)}
                }
+            }
+         
+         R.id.menu_close ->
+            {
+               finishAndRemoveTask()
             }
          
          R.id.menu_copy ->

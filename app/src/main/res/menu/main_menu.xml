@@ -21,6 +21,12 @@
 <menu
     xmlns:android="http://schemas.android.com/apk/res/android">
   <item
+      android:id="@id/menu_update_playlist"
+      android:title="@string/menu_update_playlist"/>
+  <item
+      android:id="@id/menu_close"
+      android:title="@string/menu_close"/>
+  <item
       android:id="@id/menu_search"
       android:title="@string/menu_search"/>
   <item
@@ -32,9 +38,6 @@
   <item
       android:id="@id/menu_clean_playlist"
       android:title="@string/menu_clean_playlist"/>
-  <item
-      android:id="@id/menu_update_playlist"
-      android:title="@string/menu_update_playlist"/>
   <item
       android:id="@id/menu_reset_playlist"
       android:title="@string/menu_reset_playlist"/>

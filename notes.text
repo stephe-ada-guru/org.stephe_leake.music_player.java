@@ -13,9 +13,9 @@ work_2 : play song from search
 clean playlist works
 
 update current playlist - testing
-    playlist not restarted
-        fixed events
-    vocal playlist reset to 1!?
+    playlist not restarted, wether it's current or not
+    other playlist reset to 1!?
+    next time, run with logcat
 
 implement play song from search
     in work_2

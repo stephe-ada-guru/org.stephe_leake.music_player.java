@@ -22,6 +22,7 @@ import android.app.Application
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.State
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -57,6 +58,14 @@ class MainViewModel(private val application : Application, private val songDao: 
       }
    }
 
+   private val _errorMessage = MutableStateFlow<String?>(null)
+   val errorMessage: StateFlow<String?> = _errorMessage
+
+   fun clearError()
+   {
+      _errorMessage.value = null
+   }
+   
    // We need a state flow for the playlist name to resolve a race
    // condition at startup.
    private val _playlistName = MutableStateFlow<String>("")
@@ -78,8 +87,15 @@ class MainViewModel(private val application : Application, private val songDao: 
       if (category.isNotEmpty())  // defensive programming
          {
             viewModelScope.launch {
-               saveStateMutex.withLock {
-                  utils.savePlaylistCounts((application as Context), category, index, pos)
+               try
+               {
+                  saveStateMutex.withLock {
+                     utils.savePlaylistCounts((application as Context), category, index, pos)
+                  }
+               }
+               catch (e: Exception)
+               {
+                  _errorMessage.value = "mainViewModel.savePlaylistCounts failed: ${e.message}"
                }
             }
          }
@@ -87,8 +103,15 @@ class MainViewModel(private val application : Application, private val songDao: 
       
    suspend fun writeName(name : String)
    {
-      utils.savePlaylistName((application as Context), name)
-      _playlistName.value = name
+      try
+      {
+         utils.savePlaylistName((application as Context), name)
+         _playlistName.value = name
+      }
+      catch (e: Exception)
+      {
+         _errorMessage.value = "mainViewModel.writeName failed: ${e.message}"
+      }
    } // writeCategory
    
    private val _isMediaControllerReady = MutableStateFlow(false)
@@ -107,8 +130,16 @@ class MainViewModel(private val application : Application, private val songDao: 
    private fun loadPlaylistName()
    {
       viewModelScope.launch {
-         _playlistName.value = utils.readPlaylistName(application as Context)
-         _isPlaylistNameLoaded.value = true}
+         try
+         {
+            _playlistName.value = utils.readPlaylistName(application as Context)
+            _isPlaylistNameLoaded.value = true
+         }
+         catch (e: Exception)
+         {
+            _errorMessage.value = "mainViewModel.loadPlaylistName failed: ${e.message}"
+         }
+      }
    }
    
    fun setMediaControllerReady(isReady: Boolean)
@@ -122,8 +153,18 @@ class MainViewModel(private val application : Application, private val songDao: 
    
    fun getCategory(albumArtist : String, album : String, title: String) {
       viewModelScope.launch {
-         val song = songDao.getSong(albumArtist, album, title)
-         _currentCategory.value = song?.Category
+         try
+         {
+            // This did _not_ report a corrupt db. Sigh
+            Log.d(utils.logTag, "mainViewModel.getCategory '$albumArtist' '$album' '$title'")
+            val song = songDao.getSong(albumArtist, album, title)
+            _currentCategory.value = song?.Category
+            Log.d(utils.logTag, " ... '${_currentCategory.value}'")
+         }
+         catch (e: Exception)
+         {
+            _errorMessage.value = "mainViewModel.getCategory ${e.message}"
+         }
       }
    }
    
