@@ -323,7 +323,9 @@ class DownloadUtils
                   if (200 != response.code)
                      {
                         status = ProcessStatus.Fatal // something wrong with server
-                        log(LogLevel.Error, "put notes failed " + response.message)
+                        log(LogLevel.Error, "put notes failed: ${response.code} '${response.message}'")
+                        if (response.body != null)
+                           log(LogLevel.Error, "stack trace: ${response.body}")
                      }
                   else
                      {

@@ -204,6 +204,7 @@ class DownloadService : Service()
 
    override fun onDestroy()
    {
+      Log.d(utils.logTag, "DownloadService destroyed")
       serviceScope.cancel()
       if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
              android.content.pm.PackageManager.PERMISSION_GRANTED)

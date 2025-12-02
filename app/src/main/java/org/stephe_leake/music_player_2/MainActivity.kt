@@ -179,8 +179,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       // First save current state, if valid
       if (saveState && viewModel.playlistName.value != "")
          {
-            viewModel.writeName(category)
-      
             utils.savePlaylistCounts(
                this@MainActivity,
                viewModel.playlistName.value,
@@ -188,6 +186,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                mediaController!!.currentPosition)
          }
       
+      viewModel.writeName(category)
       mediaController!!.clearMediaItems()
       
       val absFilename  = utils.playlistFileName(category)
