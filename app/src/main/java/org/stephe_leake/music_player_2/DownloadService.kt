@@ -154,13 +154,13 @@ class DownloadService : Service()
                   }
 
                notif.done("")
-               DownloadUtils.log(LogLevel.Info, "$category : update done\n\n")
+               DownloadUtils.log("$category : update done\n\n")
 
             }
          else
             {
                notif.done("no update needed")
-               DownloadUtils.log(LogLevel.Info, "$category : no update needed\n\n")
+               DownloadUtils.log("$category : no update needed\n\n")
             }
       }
       catch (e : IOException)
@@ -237,10 +237,6 @@ class DownloadService : Service()
             try {
                val res   : Resources = resources
                val prefs : SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-
-               DownloadUtils.prefLogLevel = LogLevel.valueOf(
-                  prefs.getString(res.getString(R.string.log_level_key),
-                                  LogLevel.Info.toString())!!)
 
                   val category = intent.getStringExtra(utils.EXTRA_PLAYLIST_CATEGORY)!!
                   serviceScope.launch {

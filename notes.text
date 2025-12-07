@@ -19,8 +19,6 @@ update current playlist - testing
         indicates non-200 status code from server
         apache log:
             nothing in error.log
-                should be! run in debugger?
-                get rid of prefloglevel
 
 Music search Spotify
     broadcast intent?

@@ -202,17 +202,6 @@ class utils
             }
       }
 
-      fun logImage (item : LogLevel) : String
-      {
-         return when (item)
-         {
-            LogLevel.Verbose-> ""
-            LogLevel.Info -> ""
-            LogLevel.Error -> "ERROR: "
-            LogLevel.Debug -> "Debug: "
-         }
-      }
-      
       fun logFileName(logFileBaseName : String) : String
       {
          // In global so user can read it (file provider doesn't work)
@@ -224,7 +213,7 @@ class utils
          return logFileName(errorLogFileBaseName)
       }
       
-      fun log(level : LogLevel, msg : String, logFileBaseName : String)
+      fun log(msg : String, logFileBaseName : String)
       // errors go in utils.errorLogFileBaseName, download messages in
       // DownloadUtils.downloadLogFileBaseName
       {
@@ -233,7 +222,6 @@ class utils
          val fmt       = SimpleDateFormat("yyyy-MM-dd HH:mm:ss : ", Locale.US)
          val time      : Long     = System.currentTimeMillis() // local time zone
          val timeStamp : String   = fmt.format(time)
-         val levelImg  : String   = logImage (level)
          val logFile   = File(logFileName(logFileBaseName))
          val writer    = PrintWriter(FileWriter(logFileName(logFileBaseName), true)) // append
          
@@ -247,14 +235,14 @@ class utils
                
                logFile.renameTo(oldLogFile)
             }
-         writer.println(timeStamp + levelImg + msg)
+         writer.println(timeStamp + " " + msg)
          writer.close()
       }
 
       fun errorLog(context : Context?, msg : String, e : Throwable)
       {
          // programmer errors (possibly due to Android bugs :)
-         log(LogLevel.Error, msg + e.toString(), errorLogFileBaseName)
+         log(msg + e.toString(), errorLogFileBaseName)
          if (null != context)
             Toast.makeText(context, msg + e.toString(), Toast.LENGTH_LONG).show()
       }
@@ -262,7 +250,7 @@ class utils
       fun errorLog(msg : String)
       {
          // programmer errors (possibly due to Android bugs :)
-         log(LogLevel.Error, msg, errorLogFileBaseName)
+         log(msg, errorLogFileBaseName)
 
          // This can crash due to lack of resources; happens when run on new device.
          // Toast.makeText(context, msg, Toast.LENGTH_LONG).show();

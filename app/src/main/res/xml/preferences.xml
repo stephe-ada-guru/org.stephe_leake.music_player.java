@@ -71,15 +71,6 @@ write to the Free Software Foundation, 51 Franklin Street, Suite
         app:summary="@string/song_count_threshold_summary"
         app:dialogTitle="@string/song_count_threshold_dialog_title" />
 
-    <androidx.preference.ListPreference
-        app:key="@string/log_level_key"
-        app:defaultValue="Info"
-        app:title="@string/log_level_title"
-        app:summary="@string/log_level_summary"
-        app:dialogTitle="@string/log_level_dialog_title"
-        app:entries="@array/log_level_entries"
-        app:entryValues="@array/log_level_entries"/>
-
     <androidx.preference.EditTextPreference
         app:key="@string/prev_threshold_key"
         app:defaultValue="@string/prev_threshold_default"

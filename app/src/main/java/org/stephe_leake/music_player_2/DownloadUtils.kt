@@ -44,8 +44,6 @@ class DownloadUtils
 {
    companion object
    {
-      var prefLogLevel : LogLevel = LogLevel.Info
-
       const val downloadLogFileBaseName = "download_log"
 
       var httpClient : OkHttpClient? = null
@@ -55,12 +53,9 @@ class DownloadUtils
          return utils.logFileName(downloadLogFileBaseName)
       }
 
-      fun log(level : LogLevel, msg : String)
+      fun log(msg : String)
       {
-         if (level >= prefLogLevel)
-            {
-               utils.log(level, msg, downloadLogFileBaseName)
-            }
+         utils.log(msg, downloadLogFileBaseName)
       }
 
       fun ensureHttpClient()
@@ -181,13 +176,12 @@ class DownloadUtils
 
             if (response.code < 200 || response.code > 299)
                {
-                  log(LogLevel.Error,
-                      "getNewSongsList server error: ${response.code}:${response.message}:${response.body?.string()}")
+                  log("getNewSongsList server error: ${response.code}:${response.message}:${response.body?.string()}")
                   result.status = ProcessStatus.Fatal
                }
             else if (response.body == null)
                {
-                  log(LogLevel.Error, "getNewSongsList request has no body")
+                  log("getNewSongsList request has no body")
                   result.status = ProcessStatus.Fatal
                }
             else
@@ -198,11 +192,11 @@ class DownloadUtils
          }
          catch (e: IOException) {
             // From httpClient.newCall; connection failed after retry
-            log(LogLevel.Error, "getNewSongsList '$url': http request failed: ${e.toString()}")
+            log("getNewSongsList '$url': http request failed: ${e.toString()}")
             result.status = ProcessStatus.Retry
          }
 
-         log(LogLevel.Info, "getNewSongsList: " + result.strings.size.toString() + " songs")
+         log("getNewSongsList: " + result.strings.size.toString() + " songs")
          return result
       } // getNewSongsList
 
@@ -221,7 +215,7 @@ class DownloadUtils
          }
          catch (_: IOException)
          {
-            log(LogLevel.Error, "cannot open '" + playlistFile.absolutePath + "' for append.")
+            log("cannot open '" + playlistFile.absolutePath + "' for append.")
             result.status = ProcessStatus.Fatal
             return result
          }
@@ -238,7 +232,7 @@ class DownloadUtils
                   if (!file.exists())
                      {
                         // not found; we let the user to download it using rsync to manage tag updates
-                        log(LogLevel.Info, "not found '$fileName'")
+                        log("not found '$fileName'")
                      }
 
                   // Write even if not found; user will download the song later.
@@ -249,7 +243,7 @@ class DownloadUtils
          catch (_: IOException)
          {
             // From playlistWriter.write
-            log(LogLevel.Error, "cannot append to '" + playlistFile.absolutePath + "'; disk full?")
+            log("cannot append to '" + playlistFile.absolutePath + "'; disk full?")
             result.status = ProcessStatus.Fatal // non-recoverable
          }
          finally
@@ -261,12 +255,12 @@ class DownloadUtils
             catch (_: IOException)
             {
                // probably from flush cache
-               log(LogLevel.Error, "cannot close '" + playlistFile.absolutePath + "'; disk full?")
+               log("cannot close '" + playlistFile.absolutePath + "'; disk full?")
                result.status = ProcessStatus.Fatal // non-recoverable
             }
          }
 
-         log(LogLevel.Info, "${result.count} songs added to $category.")
+         log("${result.count} songs added to $category.")
 
          return result
 
@@ -323,19 +317,19 @@ class DownloadUtils
                   if (200 != response.code)
                      {
                         status = ProcessStatus.Fatal // something wrong with server
-                        log(LogLevel.Error, "put notes failed: ${response.code} '${response.message}'")
+                        log("put notes failed: ${response.code} '${response.message}'")
                         if (response.body != null)
-                           log(LogLevel.Error, "stack trace: ${response.body}")
+                           log("stack trace: ${response.body}")
                      }
                   else
                      {
-                        log(LogLevel.Info, "$category sendNotes")
+                        log("$category sendNotes")
                         noteFile.delete()
                      }
                }
                catch (e: IOException) {
                   // From httpClient.newCall; connection failed after retry
-                  log(LogLevel.Error, "$category sendNotes http request failed: ${e.toString()}")
+                  log("$category sendNotes http request failed: ${e.toString()}")
                   status = ProcessStatus.Retry // retry after delay
                }
             }
