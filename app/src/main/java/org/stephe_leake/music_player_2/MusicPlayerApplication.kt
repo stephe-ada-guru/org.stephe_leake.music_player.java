@@ -21,6 +21,10 @@
 package org.stephe_leake.music_player_2
 
 import android.app.Application
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -54,3 +58,13 @@ object AppEventBus
         _events.emit(event)
     }
 }
+
+// Playlist preferences are actually state data, so we use DataStore.
+// Other preferences (given in preferences.xml) are stored in
+// DefaultSharedPreferences (since that's what the UI edits). We
+// declare this here because utils and mainViewModel both need it.
+const val PLAYLIST_PREFERENCES_NAME = "playlist_prefs"
+val Context.playlistPrefsState : DataStore<Preferences> by preferencesDataStore(
+   name = PLAYLIST_PREFERENCES_NAME)
+
+// end of file

@@ -698,14 +698,19 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                            {
                               if (mediaController!!.isPlaying)
                                  {
-                                    // UI was killed, but service still active; update UI
+                                    // UI was killed, but service is
+                                    // still active, and has been
+                                    // playing; update UI
                                     if (mediaController!!.currentMediaItem != null)
                                        {
-                                          playerListener.updateDisplay (saveState = false)
+                                          playerListener.updateDisplay (saveState = true)
                                        }
                                  }
                               else
                                  {
+                                    // We don't know the state of the
+                                    // media controller playlist;
+                                    // restore it from scratch.
                                     val category : String = viewModel.playlistName.value
                                     
                                     if (category.isNotEmpty())
@@ -727,6 +732,13 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                            Log.d (utils.logTag, "MainActivity received AppEvent.ReloadPlaylist")
                            if (mediaController != null)
                               {
+                                 // We only get this when the playlist
+                                 // file corresponding to
+                                 // viewModel.playlistName.value has
+                                 // been edited, and the correct
+                                 // counts saved. So don't overwrite
+                                 // them with the outdated state of
+                                 // the current mediaController playlist.
                                  playlistToPlayer(
                                     viewModel.playlistName.value,
                                     play = mediaController!!.isPlaying,
@@ -864,6 +876,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                         DownloadUtils.cleanPlaylist(this@MainActivity, category)
                         utils.savePlaylistCounts(this@MainActivity, category, index = 0, pos = -1)
                         if (viewModel.playlistName.value == category)
+                           // See comment at ReloadPlaylist.
                            playlistToPlayer(
                               viewModel.playlistName.value,
                               play = mediaController!!.isPlaying,
@@ -960,6 +973,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                // on an item in MainActivity UI.
                lifecycleScope.launch {
                   utils.savePlaylistCounts(this@MainActivity, viewModel.playlistName.value, 0, 0)
+                  // See comment at ReloadPlaylist
                   playlistToPlayer(
                      viewModel.playlistName.value,
                      play = mediaController!!.isPlaying,

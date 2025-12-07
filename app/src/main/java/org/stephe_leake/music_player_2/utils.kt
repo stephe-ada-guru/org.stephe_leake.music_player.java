@@ -33,7 +33,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 
 import java.io.File
 import java.io.FileWriter
@@ -43,17 +42,11 @@ import java.util.Locale
 
 import kotlinx.coroutines.flow.firstOrNull
 
-// Playlist preferences are actually state data, so we use DataStore.
-// Other preferences (given in preferences.xml) are stored in
-// DefaultSharedPreferences (since that's what the UI edits).
-private const val PLAYLIST_PREFERENCES_NAME = "playlist_prefs"
-private val Context.playlistPrefsState : DataStore<Preferences> by preferencesDataStore(
-   name = PLAYLIST_PREFERENCES_NAME)
-
-private object PlaylistPreferenceKeys
+private object PlaylistCountsPreferenceKeys
 {
+   // NAME is shared with mainViewModel, but only mainViewModel writes to it.
    val NAME  = stringPreferencesKey("name")
-   
+
    fun index(name : String) : Preferences.Key<Int> {return intPreferencesKey("$name-index")}
    fun pos(name : String) : Preferences.Key<Long> {return longPreferencesKey("$name-pos")}
 }
@@ -132,7 +125,7 @@ class utils
             }
          else
             {
-               val temp : Int? = preferences[PlaylistPreferenceKeys.index(category)]
+               val temp : Int? = preferences[PlaylistCountsPreferenceKeys.index(category)]
                if (temp == null)
                   {
                      // Never set
@@ -142,30 +135,22 @@ class utils
                       result = PlaylistCounts(
                         // pos should be set here, but Gemini insists on being "safe"
                         index = temp,
-                        pos = preferences[PlaylistPreferenceKeys.pos(category)] ?: 0)
+                        pos = preferences[PlaylistCountsPreferenceKeys.pos(category)] ?: 0)
                   }
             }
          Log.d(logTag, "readPlaylistCounts '$category' $result")
          return result
       }
       
-      suspend fun savePlaylistName(context: Context, category : String)
-      {
-         Log.d(logTag, "savePlaylistName '$category'")
-         context.playlistPrefsState.edit {
-            preferences ->
-               preferences[PlaylistPreferenceKeys.NAME] = category}
-      }
-
       suspend fun savePlaylistCounts(context: Context, category : String, index : Int, pos : Long)
       // Does not save 'category'. If pos = -1, don't save that.
       {
          Log.d(logTag, "savePlaylistCounts '$category' $index $pos")
          context.playlistPrefsState.edit {
             preferences ->
-               preferences[PlaylistPreferenceKeys.index(category)] = index
+               preferences[PlaylistCountsPreferenceKeys.index(category)] = index
             if (pos != -1L)
-               preferences[PlaylistPreferenceKeys.pos(category)] = pos}
+               preferences[PlaylistCountsPreferenceKeys.pos(category)] = pos}
       }
 
       // This is used by DownloadService and ViewModel to get the
@@ -181,7 +166,7 @@ class utils
             }
          else
             {
-               val temp : String? = preferences[PlaylistPreferenceKeys.NAME]
+               val temp : String? = preferences[PlaylistCountsPreferenceKeys.NAME]
                if (temp == null)
                   {
                      // Never set

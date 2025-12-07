@@ -22,6 +22,8 @@ import android.app.Application
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.State
 import android.content.Context
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -38,6 +40,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+
+private object PlaylistNamePreferenceKeys
+{
+   // This key is shared with utils, but only this file writes to it.
+   val NAME  = stringPreferencesKey("name")
+}
 
 class MainViewModel(private val application : Application, private val songDao: SongDao) : ViewModel()
 {
@@ -105,14 +113,17 @@ class MainViewModel(private val application : Application, private val songDao: 
    {
       try
       {
-         utils.savePlaylistName((application as Context), name)
+         Log.d(utils.logTag, "savePlaylistName '$name'")
+         (application as Context).playlistPrefsState.edit {
+            preferences ->
+               preferences[PlaylistNamePreferenceKeys.NAME] = name}
          _playlistName.value = name
       }
       catch (e: Exception)
       {
          _errorMessage.value = "mainViewModel.writeName failed: ${e.message}"
       }
-   } // writeCategory
+   } // writeName
    
    private val _isMediaControllerReady = MutableStateFlow(false)
    private val _isPlaylistNameLoaded = MutableStateFlow(false)

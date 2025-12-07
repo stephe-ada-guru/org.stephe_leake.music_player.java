@@ -21,12 +21,10 @@ update current playlist - testing
             nothing in error.log
                 should be! run in debugger?
                 get rid of prefloglevel
-            access.log says code 501 "server error", but no other message
-            from Handle_put_notes; should have exception_name, _message
-                in html body, not "message"?
-                don't use sal.web_utils.HTML_CGI_Response
-                use sal.web_utils.CGI_Status
-                    put exception_message in status_reason.
+
+Music search Spotify
+    broadcast intent?
+    use Spotify API?
 
 implement play song from search
     in work_2
