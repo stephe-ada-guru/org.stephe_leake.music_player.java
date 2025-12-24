@@ -177,7 +177,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       Log.d(utils.logTag, "playlistToPlayer '$category' play=$play saveState=$saveState")
       
       // First save current state, if valid
-      if (saveState && viewModel.playlistName.value != "")
+      if (saveState && viewModel.playlistName.value != "" && category != viewModel.playlistName.value)
          {
             utils.savePlaylistCounts(
                this@MainActivity,
@@ -429,7 +429,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          val index = mediaController!!.currentMediaItemIndex
          val pos = mediaController!!.currentPosition
 
-         // savePlaylistCounts is "suspend" because it accesses
+         // utils.savePlaylistCounts is "suspend" because it accesses
          // DataStore<Preferences>. updateDisplay cannot wait for it
          // to complete, because onMediaItemTransition can't wait. So
          // we need to launch a coroutine. We can't use
@@ -513,11 +513,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          else
             {
                // User paused; save state for later resume.
-               // 
-               // Can't call mediaController methods from another thread
-               val index = mediaController!!.currentMediaItemIndex
-               val pos = mediaController!!.currentPosition
-               viewModel.savePlaylistCounts(index, pos)
+               viewModel.savePlaylistCounts(
+                  index = mediaController!!.currentMediaItemIndex,
+                  pos = mediaController!!.currentPosition)
             }
       } // onIsPlayingChanged
       
