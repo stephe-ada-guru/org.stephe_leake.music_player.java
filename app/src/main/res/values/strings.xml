@@ -47,7 +47,6 @@
 
   <!-- menu -->
   <string name="menu_clean_playlist">Clean playlist</string>
-  <string name="menu_close">Close (for db backup)</string>
   <string name="menu_copy">Copy</string>
   <string name="menu_jump_to_song">Jump to song</string>
   <string name="menu_liner_notes">Liner notes</string>

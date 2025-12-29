@@ -882,11 +882,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                }
             }
          
-         R.id.menu_close ->
-            {
-               finishAndRemoveTask()
-            }
-         
          R.id.menu_copy ->
             {
                val clipManage: ClipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
