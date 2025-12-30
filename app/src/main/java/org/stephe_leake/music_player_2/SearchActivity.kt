@@ -20,7 +20,10 @@
 
 package org.stephe_leake.music_player_2
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -47,12 +50,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
+
+import java.io.File
 
 import kotlinx.coroutines.launch
 
@@ -245,6 +252,7 @@ fun SongRow(
 
    val coroutineScope = rememberCoroutineScope()
    val viewModel = LocalSearchViewModel.current
+   val context = LocalContext.current
 
    Row(
       verticalAlignment = Alignment.CenterVertically,
@@ -256,8 +264,23 @@ fun SongRow(
          contentDescription = "Play ${song.Title}",
          modifier = Modifier
             .padding(horizontal = 8.dp).background(lightBackground)
-            .clickable {coroutineScope.launch {AppEventBus.emitEvent(AppEvent.PlaySong(song))}}
-            ) 
+            .clickable {
+               Log.d (utils.logTag, "SearchActivity PlaySong")
+               val browserIntent = Intent(Intent.ACTION_VIEW)
+                  .apply {
+                     setDataAndType(
+                        FileProvider.getUriForFile
+                        (context, context.getPackageName() + ".provider", File(utils.songFileName(song.File_Name!!))),
+                        "audio/*")
+                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)}
+               
+               try {
+                  context.startActivity(browserIntent)
+               } catch (e: android.content.ActivityNotFoundException) {
+                  utils.errorLog("No application found to play this song: ${e.message}")
+               }
+            }
+      )
 
       // Using weights to create table-like columns. Include padding
       // in text fields so it can be squashed on the phone.

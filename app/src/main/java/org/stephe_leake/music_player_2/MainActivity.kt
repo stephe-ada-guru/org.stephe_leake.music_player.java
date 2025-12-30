@@ -743,16 +743,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                                     saveState = false)
                               }
                         }
-
-                        is AppEvent.PlaySong -> {
-                           Log.d (utils.logTag, "MainActivity received AppEvent.PlaySong")
-                           if (mediaController != null) {
-                              // FIXME: Create a new playlist
-                              // containing event.song. Tell
-                              // mainViewModel the current playlist is
-                              // ""? or "SingleSong"?
-                           }
-                        }
                      }
                }
             }

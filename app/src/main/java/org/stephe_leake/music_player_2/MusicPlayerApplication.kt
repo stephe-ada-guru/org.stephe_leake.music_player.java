@@ -45,7 +45,6 @@ class MusicPlayerApplication : Application() {
 sealed class AppEvent
 {
     data object ReloadPlaylist : AppEvent()
-    data class PlaySong(val song: Song) : AppEvent()
 }
 
 object AppEventBus

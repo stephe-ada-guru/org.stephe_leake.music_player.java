@@ -114,6 +114,12 @@ class utils
          return "$globalDirectory/$category.m3u"
       }
 
+      fun songFileName(relFileName : String) : String 
+      // return absolute file name; relFileName must be relative to utils.globalDirectory.
+      {
+         return "$globalDirectory/$relFileName"
+      }
+
       suspend fun readPlaylistCounts(context: Context, category : String) : PlaylistCounts
       {
          var result = PlaylistCounts(index = 0, pos = 0)
