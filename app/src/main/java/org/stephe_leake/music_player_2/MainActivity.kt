@@ -22,6 +22,8 @@ import android.app.AlertDialog
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.SearchManager
+import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
@@ -982,6 +984,25 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                   utils.alertLog(this, "Database file '${dbFileName}' does not exist; check preference setting.")
             }
 
+         R.id.menu_search_spotify ->
+            {
+               val metadata = mediaController!!.currentMediaItem!!.mediaMetadata
+               val titleText = metadata.title ?: ""
+               val albumArtistText = metadata.albumArtist ?: ""
+               val query = "${albumArtistText} ${titleText}"
+               val intent = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
+                  putExtra(SearchManager.QUERY, query)
+                  setPackage("com.spotify.music")
+                  addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+               }
+
+               try {
+                  startActivity(intent)
+               } catch (e: ActivityNotFoundException) {
+                  utils.errorLog("Spotify is not installed.")
+               }
+            }
+            
          R.id.menu_show_playlist ->
             { 
               startActivity(

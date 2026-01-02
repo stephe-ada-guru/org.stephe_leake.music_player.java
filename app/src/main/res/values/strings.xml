@@ -54,7 +54,8 @@
   <string name="menu_preferences">Preferences</string>
   <string name="menu_quit">Quit</string>
   <string name="menu_reset_playlist">Reset playlist</string>
-  <string name="menu_search">Search</string>
+  <string name="menu_search">Search local db</string>
+  <string name="menu_search_spotify">Search Spotify</string>
   <string name="menu_share">Share</string>
   <string name="menu_show_playlist">Show playlist</string>
   <string name="menu_show_download_log">Show download log</string>

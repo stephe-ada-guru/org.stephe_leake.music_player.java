@@ -10,20 +10,11 @@ work_2 : play song from search
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
-Music search play
-    launch intent url; browser will play
-
-Music search Spotify
-    broadcast intent?
-    use Spotify API?
-
-implement play song from search
-    in work_2
-    save playlist pos!
-
 implement db sync
     in work_1
     just opening the db assumes you will write, which creates log files for that, which changes mod date on smm.db
+
+edit category on main view
 
  decisions
 standard notification doesn't display album

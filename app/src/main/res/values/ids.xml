@@ -31,6 +31,7 @@
   <item type="id" name="menu_quit" />
   <item type="id" name="menu_reset_playlist" />
   <item type="id" name="menu_search" />
+  <item type="id" name="menu_search_spotify" />
   <item type="id" name="menu_show_playlist" />
   <item type="id" name="menu_show_download_log" />
   <item type="id" name="menu_show_error_log" />
