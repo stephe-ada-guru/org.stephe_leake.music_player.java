@@ -20,7 +20,9 @@ package org.stephe_leake.music_player_2
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.ContentUris
 import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import android.view.View
 import android.widget.TextView
@@ -105,21 +107,36 @@ class utils
 
       const val logFileExt : String = ".txt"
 
-      const val errorLogFileBaseName : String = "error_log"
+      const val errorLogFileBaseName: String = "error_log"
 
-      fun playlistFileName(category : String) : String 
+      fun playlistFileName(category: String) : String 
       // return 'category' playlist file absolute path
       {
          // In global so user can look at it to see what's been played recently
          return "$globalDirectory/$category.m3u"
       }
 
-      fun songFileName(relFileName : String) : String 
+      fun songFileName(relFileName: String) : String 
       // return absolute file name; relFileName must be relative to utils.globalDirectory.
       {
          return "$globalDirectory/$relFileName"
       }
 
+      fun viewPDF(context: Context, absFileName : String)
+      {
+         val file = File(absFileName)
+         val contentUri: Uri? =  FileProvider.getUriForFile(
+            context,
+            "${context.applicationContext.packageName}.provider",
+            file)
+
+         val intent: Intent = Intent(Intent.ACTION_VIEW)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            .setDataAndType(contentUri, "application/pdf")
+               
+         context.startActivity(intent)
+      }
+      
       suspend fun readPlaylistCounts(context: Context, category : String) : PlaylistCounts
       {
          var result = PlaylistCounts(index = 0, pos = 0)

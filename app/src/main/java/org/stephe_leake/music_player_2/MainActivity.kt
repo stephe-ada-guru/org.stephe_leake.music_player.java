@@ -244,7 +244,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                val extra = Bundle()
 
                extra.putString("Song_File", songFileName)
-               extra.putString("Liner_Notes", songFile.parent!! + "/" + "liner_notes.pdf")
+               extra.putString("Liner_Notes", songFile.parent!! + "/liner_notes.pdf")
                
                val metaData = androidx.media3.common.MediaMetadata.Builder()
                // Adding the artwork here makes switching playlists
@@ -896,17 +896,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          R.id.menu_liner_notes ->
             {
                val metaData = mediaController!!.currentMediaItem!!.mediaMetadata
-               val file = File(metaData.extras!!.getString("Liner_Notes")!!)
-               val contentUri: Uri? =  FileProvider.getUriForFile(
-                  this,
-                  "${this.applicationContext.packageName}.provider",
-                  file)
-
-               val intent: Intent = Intent(Intent.ACTION_VIEW)
-                  .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                  .setDataAndType(contentUri, "application/pdf")
-               
-               startActivity(intent)
+               utils.viewPDF(this,metaData.extras!!.getString("Liner_Notes")!!)
             }
 
          R.id.menu_new_playlist ->

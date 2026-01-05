@@ -21,7 +21,6 @@
 package org.stephe_leake.music_player_2
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -46,13 +45,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,8 +59,6 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 
 import java.io.File
-
-import kotlinx.coroutines.launch
 
 val LocalSearchViewModel = staticCompositionLocalOf<SearchViewModel> {error("No SearchViewModel provided")}
 
@@ -160,11 +157,11 @@ private fun SearchField(label: String, value: String, onValueChange: (String) ->
         onValueChange = onValueChange,
         label = { Text(label) },
         modifier = Modifier
-           .fillMaxWidth()
-        // There's a lot of wasted space because of Material Design 3.
-        // Setting height smaller than the default (56) hides the
-        // user's text. Apparently there is no way to say "use less
-        // padding". Sigh.
+            .fillMaxWidth()
+         // There's a lot of wasted space because of Material Design 3.
+         // Setting height smaller than the default (56) hides the
+         // user's text. Apparently there is no way to say "use less
+         // padding". Sigh.
            .height(56.dp),
         singleLine = true
     )
@@ -190,12 +187,12 @@ fun AlbumGroup(albumInfo: AlbumInfo, songs: List<Song>) {
    
    Card(
       modifier = Modifier
-         .fillMaxWidth()
-         .padding(horizontal = 8.dp, vertical = 4.dp),
+          .fillMaxWidth()
+          .padding(horizontal = 8.dp, vertical = 4.dp),
       elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
    ) {
       Column(modifier = Modifier.padding(8.dp)) {
-         AlbumHeader(albumInfo)
+         AlbumHeader(albumInfo, directory = File(utils.songFileName(songs.first().File_Name!!)).parent!!)
          Spacer(modifier = Modifier.height(8.dp))
          HorizontalDivider()
          Spacer(modifier = Modifier.height(8.dp))
@@ -216,26 +213,37 @@ fun AlbumGroup(albumInfo: AlbumInfo, songs: List<Song>) {
 } // end albumGroup
 
 @Composable
-fun AlbumHeader(albumInfo: AlbumInfo) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column {
-            Text(
-                text = albumInfo.name ?: "<unknown album>",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "${albumInfo.artist ?: ""} ${albumInfo.year ?: ""}".trim(),
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
-        }
-        // Not displaying album art images here; no room on phone screen.
-    }
+fun AlbumHeader(albumInfo: AlbumInfo, directory: String)
+{
+   Row(
+      modifier = Modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.SpaceBetween
+   ) {
+      Column {
+         Text(
+            text = albumInfo.name ?: "<unknown album>",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+         )
+         Text(
+            text = "${albumInfo.artist ?: ""} ${albumInfo.year ?: ""}".trim(),
+            fontSize = 14.sp,
+            color = Color.Gray
+         )
+      }
+
+      // Not displaying album art images here; no room on phone screen.
+      
+      val liner_notes = directory + "/liner_notes.pdf"
+      val context = LocalContext.current
+      if (File(liner_notes).exists())
+         Icon(
+            painter = painterResource(id = R.drawable.liner_notes_icon),
+            contentDescription = "liner_notes",
+            modifier = Modifier.clickable { utils.viewPDF(context, liner_notes) }
+         )
+   }
 } // end AlbumHeader
 
 @Composable
@@ -250,29 +258,36 @@ fun SongRow(
 
    val maxLines = if (isExpanded) Int.MAX_VALUE else 1
 
-   val coroutineScope = rememberCoroutineScope()
    val viewModel = LocalSearchViewModel.current
    val context = LocalContext.current
 
    Row(
       verticalAlignment = Alignment.CenterVertically,
-      modifier = Modifier.fillMaxWidth()
-         .clickable {onRowClick()} ) {
+      modifier = Modifier
+          .fillMaxWidth()
+          .clickable { onRowClick() } ) {
       
       Icon(
          imageVector = Icons.Default.PlayArrow,
          contentDescription = "Play ${song.Title}",
          modifier = Modifier
-            .padding(horizontal = 8.dp).background(lightBackground)
+            .padding(horizontal = 8.dp)
+            .background(lightBackground)
             .clickable {
-               Log.d (utils.logTag, "SearchActivity PlaySong")
+               Log.d(utils.logTag, "SearchActivity PlaySong")
                val browserIntent = Intent(Intent.ACTION_VIEW)
                   .apply {
                      setDataAndType(
                         FileProvider.getUriForFile
-                        (context, context.getPackageName() + ".provider", File(utils.songFileName(song.File_Name!!))),
-                        "audio/*")
-                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)}
+                        (
+                           context,
+                           context.packageName + ".provider",
+                           File(utils.songFileName(song.File_Name!!))
+                        ),
+                        "audio/*"
+                     )
+                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                  }
                
                try {
                   context.startActivity(browserIntent)
@@ -286,21 +301,30 @@ fun SongRow(
       // in text fields so it can be squashed on the phone.
       Text(
          text = song.Artist ?: "",
-         modifier = Modifier.weight(1.5f).background(darkBackground).padding(horizontal = 4.dp),
+         modifier = Modifier
+             .weight(1.5f)
+             .background(darkBackground)
+             .padding(horizontal = 4.dp),
          maxLines = maxLines,
          overflow = TextOverflow.Ellipsis
       )
       
       Text(
          text = song.Composer ?: "",
-         modifier = Modifier.weight(1.5f).background(lightBackground).padding(horizontal = 4.dp),
+         modifier = Modifier
+             .weight(1.5f)
+             .background(lightBackground)
+             .padding(horizontal = 4.dp),
          maxLines = maxLines,
          overflow = TextOverflow.Ellipsis
       )
       
       Text(
          text = song.Title ?: "",
-         modifier = Modifier.weight(2f).background(darkBackground).padding(horizontal = 4.dp),
+         modifier = Modifier
+             .weight(2f)
+             .background(darkBackground)
+             .padding(horizontal = 4.dp),
          maxLines = maxLines,
          overflow = TextOverflow.Ellipsis
       )
@@ -308,7 +332,9 @@ fun SongRow(
       EditableText(
          initialValue = song.Category ?: "",
          onSave = {category -> viewModel.updateSong(song.copy(Category = category))},  
-         modifier = Modifier.weight(1.5f).background(lightBackground))
+         modifier = Modifier
+             .weight(1.5f)
+             .background(lightBackground))
       
       // FIXME: add play before/after, with edit
    } // end Row 1
