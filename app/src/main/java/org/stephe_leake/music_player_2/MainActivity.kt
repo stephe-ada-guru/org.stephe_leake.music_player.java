@@ -584,7 +584,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             val metaData = controller.currentMediaItem!!.mediaMetadata
             val writer = BufferedWriter(FileWriter(noteFileName, true)) // append
             val absSongFile = metaData.extras!!.getString("Song_File")!!
-            val relSongFile = absSongFile.substring(utils.globalDirectory.length)
+            val relSongFile = absSongFile.substring(utils.globalDirectory.length + 1) // no leading /
             writer.write("\"${relSongFile}\" $buttonText")
             writer.newLine()
             writer.close()

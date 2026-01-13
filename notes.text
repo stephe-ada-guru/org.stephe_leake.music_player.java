@@ -2,7 +2,7 @@ app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 ~/Projects/smm.main/notes.text
 
 work branches:
-work_1 : sync db
+../org.stephe_leake.music_player.work_1/notes.text : sync db
 work_2 : play song from search
 
 (dvc-propagate-one "../org.stephe_leake.music_player" "../org.stephe_leake.music_player.work_1")
@@ -22,8 +22,9 @@ standard notification doesn't display album
     not with API > 33. sigh.
 
  Resources
-tablet: Android 14 = api 34
-phone:  Android 14
+6 Jan 2026:
+    tablet: Android 14 = api 34
+    phone:  Android 16
 
 versions
     https://developer.android.com/jetpack/androidx/releases/media3
