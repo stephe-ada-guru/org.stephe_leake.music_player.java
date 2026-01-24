@@ -41,6 +41,12 @@ interface SongDao
            """)
     suspend fun getSong(albumArtist : String, album: String, title : String) : Song?
 
+    @Query("SELECT * FROM Song WHERE (ID = :id) LIMIT 1 ")
+    suspend fun getSong(id : Int) : Song?
+
+    @Query("SELECT MAX (ID) FROM Song")
+    suspend fun getLastId() : Int
+
     @Query("""
         SELECT * FROM Song WHERE
         Artist LIKE '%' || :query || '%' OR

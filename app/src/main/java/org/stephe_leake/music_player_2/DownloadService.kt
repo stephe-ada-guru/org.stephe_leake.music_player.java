@@ -133,7 +133,7 @@ class DownloadService : Service()
                      return
                   }
 
-               notif.update(newSongs.strings.size)
+               notif.update(if (newSongs.strings.size == 0 "" else "$newSongs.strings.size"))
 
                // Add all songs to playlist, log any missing songs
                // (should all be on phone already, but this handles
@@ -170,7 +170,7 @@ class DownloadService : Service()
       }
    }
 
-   ////////// service lifetime methods
+   ////////// service lifetime methods; parent Service is abstract
    override fun onBind(intent: Intent): IBinder?
    {
       return null
@@ -184,8 +184,10 @@ class DownloadService : Service()
       filter.addAction(utils.DOWNLOAD_COMMAND)
       registerReceiver(broadcastReceiverCommand, filter, RECEIVER_NOT_EXPORTED)
 
-      notif = DownloadNotif(
+      notif = ServiceNotif(
          context = this,
+         notificationId = utils.notif_download_id,
+         title = "Downloading playlist "
          showLogPendingIntentInit = PendingIntent.getActivity
          (this.applicationContext,
           utils.showDownloadLogIntentId,
@@ -235,22 +237,24 @@ class DownloadService : Service()
       else if (intent.action == utils.DOWNLOAD_COMMAND)
          {
             try {
-               val res   : Resources = resources
-               val prefs : SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+               val category = intent.getStringExtra(utils.EXTRA_PLAYLIST_CATEGORY)!!
+               serviceScope.launch {
+                  notif.initialize()
+                  updatePlaylist(category)
+               }
 
-                  val category = intent.getStringExtra(utils.EXTRA_PLAYLIST_CATEGORY)!!
-                  serviceScope.launch {
-                     notif.initialize(category)
-                     updatePlaylist(category)
-                  }
-
-                  return START_NOT_STICKY
+               return START_NOT_STICKY
             }
             catch (e: Exception)
             {
                utils.errorLog(this, "DownloadService::onStartCommand: ", e)
                return START_NOT_STICKY
             }
+         }
+      else if (intent.action == utils.STOP_SERVICE_COMMAND)
+         {
+            stopSelf()
+            return START_NOT_STICKY
          }
       else
          {

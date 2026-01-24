@@ -69,10 +69,13 @@ class utils
       
       //  Notification ids; all with null tag
       const val notif_download_id : Int = 1
+      const val notif_sync_id     : Int = 2
 
       const val EXTRA_PLAYLIST_CATEGORY  : String = "PLAYLIST_CATEGORY"
       const val DOWNLOAD_COMMAND         : String = "download_command" // Update existing or create new playlist
       const val COMMAND_CANCEL_DOWNLOAD  : String = "org.stephe_leake.stephes_music.cancel_download"
+      const val SYNC_DB_COMMAND          : String = "org.stephe_leake.stephes_music.sync_db"
+      const val COMMAND_CANCEL_SYNC_DB   : String = "org.stephe_leake.stephes_music.cancel_sync_db"
 
       const val showDownloadLogIntentId : Int = 6
       const val cancelDownloadIntentId  : Int = 8

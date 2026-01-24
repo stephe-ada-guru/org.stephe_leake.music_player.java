@@ -3,7 +3,7 @@ app/src/main/java/org/stephe_leake/music_player_2/MainActivity.kt
 
 work branches:
 ../org.stephe_leake.music_player.work_1/notes.text : sync db
-work_2 : play song from search
+work_2 :
 
 (dvc-propagate-one "../org.stephe_leake.music_player" "../org.stephe_leake.music_player.work_1")
 

@@ -1,8 +1,8 @@
 //  Abstract :
 //
-//  Manage download notification.
+//  Generic notification for Stephe's Music Player.
 //
-//  Copyright (C) 2021 Stephen Leake. All Rights Reserved.
+//  Copyright (C) 2026 Stephen Leake. All Rights Reserved.
 //
 //  This program is free software; you can redistribute it and/or
 //  modify it under terms of the GNU General Public License as
@@ -26,27 +26,17 @@ import android.app.PendingIntent
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 
-class DownloadNotif (
-   private val context      : Context,
-   showLogPendingIntentInit : PendingIntent,
-   cancelIntent             : PendingIntent)
+class ServiceNotif (
+   private val context                  : Context,
+   private val notificationId           : Int,
+   private val title                    : String,
+   private val showLogPendingIntentInit : PendingIntent,
+   private val cancelPendingIntent      : PendingIntent)
 {
    var notifMem : Notification = NotificationCompat.Builder(context, utils.notificationChannelId).build()
-   
-   var showLogPendingIntent : PendingIntent = showLogPendingIntentInit
 
-   var cancelAction : NotificationCompat.Action = NotificationCompat.Action.Builder(
-      R.drawable.cancel, "cancel", cancelIntent).build()
-
-   var playlistName : String = ""
    var statusText   : String = ""
    var contentText  : String = "..."
-   var maxSongs     : Int = 0
-
-   fun formatCounts() : String
-   {
-      return if (maxSongs == 0) "" else "$maxSongs"
-   }
 
    fun getNotif() : Notification
    {
@@ -54,12 +44,10 @@ class DownloadNotif (
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-   fun initialize(playlistName : String)
+   fun initialize()
    {
-      this.playlistName = playlistName
       statusText = ""
       contentText = "..."
-      maxSongs = 0
       updateInternal()
    }
 
@@ -67,26 +55,27 @@ class DownloadNotif (
    // Permission checked and requested in MainActivity
    private fun updateInternal()
    {
-      notifMem = NotificationCompat.Builder(context, utils.notificationChannelId)
-        .addAction (cancelAction)
-        .setContentIntent(showLogPendingIntent)
-        .setContentTitle("Downloading $playlistName $statusText")
-        .setContentText(contentText)
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT) // make sure it shows!
-        .setOngoing(true)
-        .setSmallIcon(R.mipmap.download_icon) // shown in status bar
-        .build()
-
-     val notifManager : NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as
-     NotificationManager
-                                           
-     notifManager.notify(utils.notif_download_id, notifMem)
+      val cancelAction = NotificationCompat.Action.Builder(
+         R.drawable.cancel, "cancel", cancelPendingIntent).build()
+      
+      val notifMem = NotificationCompat.Builder(context, utils.notificationChannelId)
+         .addAction(cancelAction)
+         .setContentIntent(showLogPendingIntent)
+         .setContentTitle(title + statusText)
+         .setContentText(contentText)
+         .setPriority(NotificationCompat.PRIORITY_DEFAULT) // make sure it shows!
+         .setOngoing(true)
+         .setSmallIcon(R.mipmap.download_icon) // shown in status bar
+         .build()
+      
+      val notifManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+      notifManager.notify(notificationId, notifMem)
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    fun done(msg : String)
    {
-      statusText = "done " + formatCounts()
+      statusText = "done " + statusText
       contentText = msg
       updateInternal()
    }
@@ -94,23 +83,23 @@ class DownloadNotif (
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    fun error(msg : String)
    {
-      statusText = "error " + formatCounts()
+      statusText = "error"
       contentText = msg
       updateInternal()
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-   fun update(max : Int)
+   fun update(progress : String)
    {
-      maxSongs = max
-      statusText = formatCounts()
+      statusText = progress
       updateInternal()
    }
 
    fun cancel()
    {
       (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-         .cancel(utils.notif_download_id)
+         .cancel(utils.notif_sync_id)
       showLogPendingIntent.cancel()
+      cancelPendingIntent.cancel() // FIXME: not needed since that is what triggered cancel?
    }
 }

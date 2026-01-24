@@ -37,20 +37,31 @@ import androidx.room.PrimaryKey
         ])
 @Suppress("PropertyName")
 data class Song(
-   // Names match [1] _exactly_. FIXME: update SMM sql so Field types without ? are required
+   // Names match [1] _exactly_. 
    @PrimaryKey
    val ID               : Int,
-   val File_Name        : String?, // FIXME: required
-   val Category         : String?,
+   var Modified         : String, 
+   var Deleted          : String, 
+   val File_Name        : String, 
+   val Category         : String,
    val Artist           : String?,
-   val Album_Artist     : String?, // FIXME: required
+   val Album_Artist     : String,
    val Composer         : String?,
    val Album            : String?,
    val Year             : Int?,
-   val Title            : String?, // FIXME: required
+   val Title            : String, 
    var Track            : Int?,
    var Last_Downloaded  : String?, 
    var Prev_Downloaded  : String?,
    var Play_Before      : Int?,
    var Play_After       : Int?
 )
+{
+   companion object
+   {
+      const val Null_ID  : Int = -1
+      const val No_Track : Int = -1
+      const val No_Year  : Int = -1
+      const val Default_Time_String : String = "1958-01-01 00:00:00" 
+   }
+}

@@ -23,16 +23,18 @@ import android.content.Intent
 
 class MPBroadcastReceiver : android.content.BroadcastReceiver()
 {
-   // Intent filter set for utils.DOWNLOAD_COMMAND
    override fun onReceive(context : Context, intent : Intent)
    {
       if (intent.action == utils.COMMAND_CANCEL_DOWNLOAD)
          {
-            // Stop download service; intent must match startService
-            // call in MainActivity new_playlist.
-            context.stopService (Intent (context, DownloadService::class.java))
+            context.startService (
+               Intent (utils.STOP_SERVICE_COMMAND, null, context, DownloadService::class.java))
          }
-         
-         // else just ignore.
+      else if (intent.action == utils.COMMAND_CANCEL_SYNC_DB)
+         {
+            context.startService (
+               Intent (utils.STOP_SERVICE_COMMAND, null, context, SyncService::class.java))
+         }      
+      // else just ignore.
    }
 }

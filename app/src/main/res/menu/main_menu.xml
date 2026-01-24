@@ -33,6 +33,9 @@
       android:id="@id/menu_liner_notes"
       android:title="@string/menu_liner_notes"/>
   <item
+      android:id="@id/menu_sync_db"
+      android:title="@string/menu_sync_db"/>
+  <item
       android:id="@id/menu_copy"
       android:title="@string/menu_copy"/>
   <item

@@ -60,6 +60,7 @@
   <string name="menu_show_playlist">Show playlist</string>
   <string name="menu_show_download_log">Show download log</string>
   <string name="menu_show_error_log">Show error log</string>
+  <string name="menu_sync_db">Sync database</string>
   <string name="menu_update_playlist">Update playlist</string>
 
 

@@ -83,6 +83,7 @@ import java.io.BufferedWriter
 import java.io.File
 import java.io.FilenameFilter
 import java.io.FileWriter
+import java.nio.ByteOrder
 
 import kotlinx.coroutines.launch
 
@@ -1024,6 +1025,30 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                            this.applicationContext.packageName + ".provider",
                            File(utils.errorLogFileName())),
                         "text/plain"))
+            }
+
+         R.id.menu_db_sync ->
+            {
+               if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN)
+                  this.startService(Intent(utils.SYNC_DB_COMMAND, null, this, SyncService::class.java))
+               else
+                  utils.alertLog(this, "processor is little endian; code assumes big endian")
+            }
+
+         R.id.menu_db_init ->
+            {
+               if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN)
+                  this.startService(Intent(utils.INIT_DB_COMMAND, null, this, SyncService::class.java))
+               else
+                  utils.alertLog(this, "processor is little endian; code assumes big endian")
+            }
+
+         R.id.menu_db_resume_init ->
+            {
+               if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN)
+                  this.startService(Intent(utils.RESUME_INIT_DB_COMMAND, null, this, SyncService::class.java))
+               else
+                  utils.alertLog(this, "processor is little endian; code assumes big endian")
             }
 
          R.id.menu_update_playlist ->
