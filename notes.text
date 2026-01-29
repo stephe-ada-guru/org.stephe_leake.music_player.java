@@ -10,6 +10,17 @@ work_2 : play song from search
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
+instrumental count gets stored in vocal
+    switch playlists: onClick calls playlistToPlayer (new_category, savestate = true)
+    calls utils.savePlaylistCounts with current category, counts
+    calls viewModel.writeName(category)
+    calls utils.readPlaylistCounts
+    calls mediaController.clearMediaItems => calls updateDisplay first?
+        gemini says it can
+        so call clearMediaItems before call writeName.
+
+
+
 implement db sync
     in work_1
     just opening the db assumes you will write, which creates log files for that, which changes mod date on smm.db

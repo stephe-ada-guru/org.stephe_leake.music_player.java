@@ -188,8 +188,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                mediaController!!.currentPosition)
          }
       
-      viewModel.writeName(category)
+      // This can trigger onMediaItemTransition, which saves counts
+      // for the current playlist. So call viewModel.writeName after
+      // this. IMPROVEME: add flag "clearing" to disable save state?
       mediaController!!.clearMediaItems()
+
+      viewModel.writeName(category)     
       
       val absFilename  = utils.playlistFileName(category)
       val playlistFile = File (absFilename)
