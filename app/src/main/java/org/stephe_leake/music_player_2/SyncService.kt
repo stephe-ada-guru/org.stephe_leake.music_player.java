@@ -18,9 +18,17 @@
 
 package org.stephe_leake.music_player_2
 
+import android.Manifest
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
+import android.database.sqlite.SQLiteConstraintException
+import android.os.IBinder
 import android.util.Log
+import androidx.annotation.RequiresPermission
 import androidx.preference.PreferenceManager
 
 import java.io.BufferedReader
@@ -34,16 +42,23 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
+
 class SyncService : Service()
 {
    private val serviceScope = CoroutineScope(Dispatchers.IO)
+   private lateinit var notif : ServiceNotif
 
    // Note that this is a different instance from DownloadService, so
    // they have different intent filters.
    private val broadcastReceiverCommand : MPBroadcastReceiver = MPBroadcastReceiver()
 
+   @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    private suspend fun syncDB(serverIP: String, serverPort: Int, intentAction : String)
    {
+      var conflictCount = 0
       var dao: SongDao = (application as MusicPlayerApplication).db.songDao()
       
       // Connect to the sync server on the laptop, do what it says.
@@ -62,7 +77,6 @@ class SyncService : Service()
          try {
             val msg = JSONObject()
             msg.put("ROLE", "COMPUTE")
-            
             msg.put("DISPLAY_PROGRESS", "TRUE")
             
             // Action values must match Ada Books.Database_Remote Actions enums.
@@ -70,15 +84,15 @@ class SyncService : Service()
                msg.put("ACTION", "SYNC_INCREMENTAL")
             else if (intentAction == utils.RESUME_INIT_DB_COMMAND)
                msg.put("ACTION", "RESUME_INIT_REMOTE")
-            else if (intent.getAction() == utils.INIT_DB_COMMAND)
+            else if (intentAction == utils.INIT_DB_COMMAND)
                msg.put("ACTION", "INIT_REMOTE")
 
-            sendString(msg.toString(outputStream))
-            syncUtils.checkAck()
+            syncUtils.sendString(outputStream, msg.toString())
+            syncUtils.checkAck(inputStream)
             }
          catch (e: JSONException)
          {
-            sendError("bad value: " + e.message)
+            syncUtils.sendError(outputStream, e.message?: "")
             return
          }
 
@@ -92,114 +106,112 @@ class SyncService : Service()
                   
                   when (operation)
                   {
-                     QUIT ->
+                     Operations.QUIT ->
                         {
-                           sendUserMsg("Finished")
+                           notif.done(if (conflictCount == 0) "" else "$conflictCount conflicts")
                            done = true
-                           sendAck(outputStream)
+                           syncUtils.sendAck(outputStream)
                         }
                      
-                        GET -> sendData(outputStream, syncUtils.toJSON(dao.getSong(msg.getInt("ID"))))
+                        Operations.GET ->
+                           {
+                              val id = msg.getInt("ID")
+                              var song = dao.getSong(id)
+                              if (song == null)
+                                 syncUtils.sendError(outputStream, "invalid ID: $id")
+                              else
+                                 syncUtils.sendData(outputStream, syncUtils.toJSON(song))
+                           }
 
-                        GET_LAST_ID ->
+                        Operations.GET_LAST_ID ->
                         {
-                           result : JSONObject
+                           val result = JSONObject()
                            result.put("ID", dao.getLastId())
-                           sendData(outputStream, result)
+                           syncUtils.sendData(outputStream, result)
                         }
                      
-                        GET_MODIFIED -> sendData(
-                            dao.getModified(
-                                msg.getInt("ID"),
-                                msg.getString("Modified")
-                            )
-                        )
-
-                        GET_DATA_NEW -> sendData(
-                            db.getNew(
-                                TableName.valueOf(msg.getString("Table")),
-                                msg.getInt("Sync_ID")
-                            )
-                        )
-
-                        GET_LINK_MODIFIED -> sendData(
-                            db.getModified(
-                                TableName.valueOf(msg.getString("Table_0")),
-                                TableName.valueOf(msg.getString("Table_1")),
-                                msg.getInt("Sync_ID"),
-                                msg.getString("Sync_Time")
-                            )
-                        )
-
-                        GET_LINK_NEW -> sendData(
-                            db.getNew(
-                                TableName.valueOf(msg.getString("Table_0")),
-                                TableName.valueOf(msg.getString("Table_1")),
-                                msg.getInt("Sync_ID")
-                            )
-                        )
-
-                        CONFLICT_DATA, CONFLICT_LINK -> {
-                            sendUserConflict(msg)
-                            sendAck()
+                        Operations.GET_MODIFIED ->
+                        {
+                           val result = JSONObject()
+                           result.put("List",
+                                      syncUtils.toJSON(dao.getModified(msg.getInt("ID"), msg.getString("Modified"))))
+                           syncUtils.sendData(outputStream, result)
                         }
 
-                        PROGRESS -> {
-                            sendUserProgress(msg)
-                            sendAck()
+                        Operations.GET_NEW ->
+                        {
+                           val result = JSONObject()
+                           result.put("List", syncUtils.toJSON(dao.getNew(msg.getInt("ID"), msg.getInt("Max_Count"))))
+                           syncUtils.sendData(outputStream, result)
                         }
 
-                        INSERT_DATA, INSERT_LINK, UPDATE_DATA, UPDATE_LINK, RENUMBER_DATA, RENUMBER_LINK -> {
-                            try {
-                                db.apply(msg)
-                            } catch (e: SQLiteConstraintException) {
-                                // This happens when resuming init; some records are repeated. Just ignore.
+                        Operations.CONFLICT ->
+                           {
+                              conflictCount++ // So user knows there was a conflict
+                              utils.errorLog(msg.toString())
+                              // So user can refer to the details later to resolve the conflict
+
+                              syncUtils.sendAck(outputStream)
+                           }
+
+                        Operations.PROGRESS ->
+                           {
+                              val result = msg.get("Label") + " " + msg.get("Current") + "/" + msg.get("Max")
+                              notif.update(result)
+                              syncUtils.sendAck(outputStream)
+                           }
+
+                        Operations.INSERT,
+                        Operations.UPDATE,
+                        Operations.RENUMBER ->
+                           {
+                              // FIXME: need dao functions for these
+                            try
+                            {
+                            } catch (e: SQLiteConstraintException)
+                            {
+                               // This happens when resuming init; some records are repeated. Just ignore.
                             }
-                            sendAck()
+                            syncUtils.sendAck(outputStream)
                         }
                     }
-                } catch (e: JSONException) {
-                    sendUserMsg("bad value: " + e.message)
-                    sendError("bad value: " + e.message)
-                } catch (e: ProtocolError) {
-                    sendUserMsg("remote protocol error: " + e.message)
-                    done = true
-                } catch (e: SocketClosed) {
-                    sendUserMsg("remote closed socket: " + e.message)
-                    done = true
-                } catch (e: IOException) {
-                    sendUserMsg("remote closed socket: " + e.message)
-                    done = true
                 }
+               catch (e: JSONException)
+               {
+                  notif.error("error: " + e.message)
+                  syncUtils.sendError(outputStream, e.message?:"")
+                  done = true
+               }
+               catch (e: java.net.ProtocolException)
+               {
+                  notif.error(e.message?:"")
+                  done = true
+                }
+               catch (e: java.net.SocketException)
+               {
+                  notif.error("remote closed socket: " + e.message?:"")
+                  done = true
+               }
             }
-
-            server!!.close()
-        } catch (e: IOException) {
-            sendUserMsg("error: " + e.toString())
-        } catch (e: RuntimeException) {
-            sendUserMsg("error: " + e.toString())
-            sendError("error: " + e.toString())
-            try {
-                checkAck()
-                server!!.close()
-            } catch (f: JSONException) {
-            } catch (g: IOException) {
-            }
-        }
-    }
-            }
-
-      } catch (e: Exception) {
-         // Handle exceptions: server not found, connection reset, etc.
+      }
+      catch (e: Exception)
+      {
+         // server not found, connection reset, etc.
          Log.e(utils.logTag, "SyncService Error: ${e.message}", e)
-         // Optionally, update the notification to show an error state.
-         // notif.error("Connection failed: ${e.message}")
-      } finally {
+         notif.error("error: ${e.message}")
+         // Any conflicts found this round will be found again in the
+         // next sync round.
+      }
+      finally
+      {
          // Always ensure the socket is closed
-         try {
+         try
+         {
             clientSocket?.close()
             Log.d(utils.logTag, "SyncService: Socket closed.")
-         } catch (e: Exception) {
+         }
+         catch (e: Exception)
+         {
             Log.e(utils.logTag, "SyncService: Error closing socket.", e)
          }
       }
@@ -222,28 +234,28 @@ class SyncService : Service()
       notif = ServiceNotif(
          context = this,
          notificationId = utils.notif_sync_id,
-         title = "Synchronizing music dbs "
+         title = "Synchronizing music dbs ",
          showLogPendingIntentInit = PendingIntent.getActivity
          (this.applicationContext,
           utils.showSyncLogIntentId,
-          utils.showSyncLogIntent(this),
+          utils.showLogIntent(this, utils.logFileName("sync")),
           PendingIntent.FLAG_IMMUTABLE),
 
-         cancelIntent = PendingIntent.getBroadcast
+         cancelPendingIntent = PendingIntent.getBroadcast
          (this.applicationContext,
           utils.cancelSyncIntentId,
           Intent(this, MPBroadcastReceiver::class.java).apply{action = utils.COMMAND_CANCEL_DOWNLOAD},
           PendingIntent.FLAG_IMMUTABLE))
 
       startForeground (utils.notif_sync_id, notif.getNotif(),
-                       android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+                       ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
    }
 
    override fun onDestroy()
    {
       serviceScope.cancel()
       if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
-             android.content.pm.PackageManager.PERMISSION_GRANTED)
+             PackageManager.PERMISSION_GRANTED)
       {
          notif.cancel()
       }
@@ -254,7 +266,7 @@ class SyncService : Service()
    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int
    {
       if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
-             android.content.pm.PackageManager.PERMISSION_GRANTED)
+             PackageManager.PERMISSION_GRANTED)
       {
          // The media controller also requires POST_NOTIFICATIONS, so
          // there's no point in continuing here; the user _must_ grant
@@ -272,11 +284,12 @@ class SyncService : Service()
                   intent.action == utils.INIT_DB_COMMAND ||
                intent.action == utils.RESUME_INIT_DB_COMMAND)
          {
+            val res        = resources
             val prefs      = PreferenceManager.getDefaultSharedPreferences(this)
             val serverIP   = prefs.getString (res.getString(R.string.server_IP_key), null)
-            var serverPort = prefs.getInt (res.getString(R.string.server_Port_key), null)
+            var serverPort = prefs.getInt (res.getString(R.string.server_Port_key), 0)
             
-            if (serverIP.isNullOrEmpty() || serverPort == null)
+            if (serverIP.isNullOrEmpty() || serverPort == 0)
                {
                   notif.error("Server IP or port preference not set")
                   return START_NOT_STICKY
@@ -284,8 +297,8 @@ class SyncService : Service()
 
             serviceScope.launch {
                notif.initialize()
-               syncDB(serverIP, serverPort, intent.action)
-               notif.done()
+               syncDB(serverIP, serverPort, intent.action!!)
+               notif.done("")
                stopSelf()
             }
 
@@ -302,122 +315,4 @@ class SyncService : Service()
             return START_NOT_STICKY
          }
    }
-    public override fun onHandleIntent(intent: Intent) {
-        // This runs in the main activity process, in a separate thread.
-        var done = false
-
-        verbosity = intent.getIntExtra(Common.VERBOSITY, 0)
-
-        try {
-
-
-
-
-            while (!done) {
-                try {
-                    val msgString = syncUtils.readString(inputStream)
-                    val msg = JSONObject(msgString)
-                    val operation = Operations.valueOf(msg.getString("Operation"))
-
-                    when (operation)
-                    {
-                        QUIT -> {
-                            sendUserMsg("Finished")
-                            done = true
-                            sendAck()
-                        }
-
-                        GET_DATA_DATA -> sendData(
-                            db.getData(
-                                TableName.valueOf(msg.getString("Table")),
-                                msg.getInt("ID")
-                            )
-                        )
-
-                        GET_LINK_DATA -> sendData(
-                            db.getData(
-                                TableName.valueOf(msg.getString("Table_0")),
-                                TableName.valueOf(msg.getString("Table_1")), msg.getInt("ID")
-                            )
-                        )
-
-                        GET_DATA_LAST_ID -> sendData(db.getLastId(TableName.valueOf(msg.getString("Table"))))
-                        GET_LINK_LAST_ID -> sendData(
-                            db.getLastId(
-                                TableName.valueOf(msg.getString("Table_0")),
-                                TableName.valueOf(msg.getString("Table_1"))
-                            )
-                        )
-
-                        GET_DATA_MODIFIED -> sendData(
-                            db.getModified(
-                                TableName.valueOf(msg.getString("Table")),
-                                msg.getInt("Sync_ID"),
-                                msg.getString("Sync_Time")
-                            )
-                        )
-
-                        GET_DATA_NEW -> sendData(
-                            db.getNew(
-                                TableName.valueOf(msg.getString("Table")),
-                                msg.getInt("Sync_ID")
-                            )
-                        )
-
-                        GET_LINK_MODIFIED -> sendData(
-                            db.getModified(
-                                TableName.valueOf(msg.getString("Table_0")),
-                                TableName.valueOf(msg.getString("Table_1")),
-                                msg.getInt("Sync_ID"),
-                                msg.getString("Sync_Time")
-                            )
-                        )
-
-                        GET_LINK_NEW -> sendData(
-                            db.getNew(
-                                TableName.valueOf(msg.getString("Table_0")),
-                                TableName.valueOf(msg.getString("Table_1")),
-                                msg.getInt("Sync_ID")
-                            )
-                        )
-
-                        CONFLICT_DATA, CONFLICT_LINK -> {
-                            sendUserConflict(msg)
-                            sendAck()
-                        }
-
-                        PROGRESS -> {
-                            sendUserProgress(msg)
-                            sendAck()
-                        }
-
-                        INSERT_DATA, INSERT_LINK, UPDATE_DATA, UPDATE_LINK, RENUMBER_DATA, RENUMBER_LINK -> {
-                            try {
-                                db.apply(msg)
-                            } catch (e: SQLiteConstraintException) {
-                                // This happens when resuming init; some records are repeated. Just ignore.
-                            }
-                            sendAck()
-                        }
-                    }
-                } catch (e: JSONException) {
-                    sendUserMsg("bad value: " + e.message)
-                    sendError("bad value: " + e.message)
-                } catch (e: ProtocolError) {
-                    sendUserMsg("remote protocol error: " + e.message)
-                    done = true
-                } catch (e: SocketClosed) {
-                    sendUserMsg("remote closed socket: " + e.message)
-                    done = true
-                } catch (e: IOException) {
-                    sendUserMsg("remote closed socket: " + e.message)
-                    done = true
-                }
-            }
-
-            server!!.close()
-        } catch (e: IOException) {
-            sendUserMsg("error: " + e.toString())
-        } catch (e: RuntimeException) 
-    }
 }

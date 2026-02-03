@@ -48,6 +48,20 @@ interface SongDao
     suspend fun getLastId() : Int
 
     @Query("""
+           SELECT ID FROM Song WHERE ID > :id
+           ORDER BY ID
+           LIMIT :maxCount
+           """)
+    suspend fun getNew(id : Int, maxCount : Int) : List<Int>
+
+    @Query("""
+           SELECT ID FROM Song WHERE ID <= :id
+           AND (Modified > :modified or Deleted > :modified)
+           ORDER BY ID
+           """)
+    suspend fun getModified(id : Int, modified : String) : List<Int>
+
+    @Query("""
         SELECT * FROM Song WHERE
         Artist LIKE '%' || :query || '%' OR
         Album LIKE '%' || :query || '%' OR

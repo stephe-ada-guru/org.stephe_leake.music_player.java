@@ -45,7 +45,7 @@ class DownloadService : Service()
    private val serviceScope = CoroutineScope(Dispatchers.IO)
     
    private val broadcastReceiverCommand : MPBroadcastReceiver = MPBroadcastReceiver()
-   private lateinit var notif           : DownloadNotif
+   private lateinit var notif           : ServiceNotif
    
    ////////// private methods (alphabetical order)
 
@@ -133,7 +133,7 @@ class DownloadService : Service()
                      return
                   }
 
-               notif.update(if (newSongs.strings.size == 0 "" else "$newSongs.strings.size"))
+               notif.update(if (newSongs.strings.size == 0) "" else "$newSongs.strings.size")
 
                // Add all songs to playlist, log any missing songs
                // (should all be on phone already, but this handles
@@ -187,14 +187,14 @@ class DownloadService : Service()
       notif = ServiceNotif(
          context = this,
          notificationId = utils.notif_download_id,
-         title = "Downloading playlist "
+         title = "Downloading playlist ",
          showLogPendingIntentInit = PendingIntent.getActivity
          (this.applicationContext,
           utils.showDownloadLogIntentId,
-          utils.showDownloadLogIntent(this),
+          utils.showLogIntent(this, DownloadUtils.downloadLogFileName()),
           PendingIntent.FLAG_IMMUTABLE),
 
-         cancelIntent = PendingIntent.getBroadcast
+         cancelPendingIntent = PendingIntent.getBroadcast
          (this.applicationContext,
           utils.cancelDownloadIntentId,
           Intent(this, MPBroadcastReceiver::class.java).apply{action = utils.COMMAND_CANCEL_DOWNLOAD},

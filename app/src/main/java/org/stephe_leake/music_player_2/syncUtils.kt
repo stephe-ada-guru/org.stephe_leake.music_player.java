@@ -31,7 +31,7 @@ import java.nio.ByteOrder
 import java.nio.charset.StandardCharsets
 import java.util.Collections
 
-class SyncUtils
+class syncUtils
  {
     companion object
     {
@@ -158,6 +158,14 @@ class SyncUtils
                 if (song.Modified != Song.Default_Time_String) {result.put("Modified", song.Modified)}
                 result.put("Data", data)
              }
+          return result
+       }
+
+       fun toJSON(list: List<Int>): JSONArray
+       // Same format as smm.ads To_JSON
+       {
+          result: JSONArray
+          for (id in list) {result.put(id)}
           return result
        }
     }
