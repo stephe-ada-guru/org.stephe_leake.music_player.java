@@ -121,9 +121,12 @@ class SearchViewModel(private val songDao: SongDao) : ViewModel()
       }
    } // end groupAndDisplaySongs
 
-   fun updateSong(song: Song) {viewModelScope.launch {songDao.updateSong(song)}}    
-   // No need to manually refresh the list. Since the search functions
-   // return a Flow, Room will automatically push the updated data,
-   // and the UI will recompose to show the change.
-
+   fun updateSong(song: Song)
+   {
+      viewModelScope.launch {songDao.updateSong(song.copy(Modified = Song.getTime()))}
+      // No need to manually refresh the search results list. Since the
+      // search functions return a Flow, Room will automatically push the
+      // updated data, and the UI will recompose to show the change.
+   }
+   
 } // end SearchViewModel

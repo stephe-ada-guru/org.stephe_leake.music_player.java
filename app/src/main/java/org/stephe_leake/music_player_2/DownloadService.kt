@@ -97,8 +97,8 @@ class DownloadService : Service()
       try
       {
          val songsRemaining  : Int   = if (playlistFile.exists()) {countSongsRemaining(category)} else 0
-         val songCountMax    : Int   = Integer.parseInt(songCountMaxStr!!)
-         val songCountThresh : Int   = Integer.parseInt(songCountThreshStr!!)
+         val songCountMax    : Int   = Integer.decode(songCountMaxStr!!)
+         val songCountThresh : Int   = Integer.decode(songCountThreshStr!!)
          val overSelectRatio : Float = overSelectRatioStr!!.toFloat()
 
          if (songsRemaining < songCountMax - songCountThresh)
@@ -188,7 +188,7 @@ class DownloadService : Service()
          context = this,
          notificationId = utils.notif_download_id,
          title = "Downloading playlist ",
-         showLogPendingIntentInit = PendingIntent.getActivity
+         showLogPendingIntent = PendingIntent.getActivity
          (this.applicationContext,
           utils.showDownloadLogIntentId,
           utils.showLogIntent(this, DownloadUtils.downloadLogFileName()),

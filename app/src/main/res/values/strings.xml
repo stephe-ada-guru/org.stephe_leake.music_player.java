@@ -48,6 +48,9 @@
   <!-- menu -->
   <string name="menu_clean_playlist">Clean playlist</string>
   <string name="menu_copy">Copy</string>
+  <string name="menu_db_sync">Sync database</string>
+  <string name="menu_db_init">Init database</string>
+  <string name="menu_db_resume_init">Resume init database</string>
   <string name="menu_jump_to_song">Jump to song</string>
   <string name="menu_liner_notes">Liner notes</string>
   <string name="menu_new_playlist">Create new playlist</string>
@@ -60,7 +63,6 @@
   <string name="menu_show_playlist">Show playlist</string>
   <string name="menu_show_download_log">Show download log</string>
   <string name="menu_show_error_log">Show error log</string>
-  <string name="menu_sync_db">Sync database</string>
   <string name="menu_update_playlist">Update playlist</string>
 
 
@@ -79,11 +81,16 @@
   <string name="prev_threshold_dialog_title">previous threshold (milliseconds)</string>
 
   <string name="server_IP_key">server_IP</string>
-  <string name="server_Port_key">server_Port</string>
   <string name="server_IP_default"></string>
   <string name="server_IP_title">Server IP</string>
   <string name="server_IP_summary">Server for download</string>
   <string name="server_IP_dialog_title">Server IP</string>
+
+  <string name="server_Port_key">server_Port</string>
+  <string name="server_Port_default">0</string>
+  <string name="server_Port_title">Server Port</string>
+  <string name="server_Port_summary">Server Port for db sync</string>
+  <string name="server_Port_dialog_title">Server Port</string>
 
   <string name="min_image_size_key">min_image_size</string>
   <string name="min_image_size_default">40000</string>

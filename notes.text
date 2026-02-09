@@ -11,8 +11,16 @@ work_2 :
 
  current work
 implement db sync
-    in work_1
-    just opening the db assumes you will write, which creates log files for that, which changes mod date on smm.db
+    ~/Projects/smm.work_1/notes.text
+
+    syncUtils.kt toJSON: FIXME: Song.* can be null
+
+    init db running
+        progress shows as nn/100; should also show overall progress; chunk count?
+            or don't show chunks to user
+
+old books app port: 16#9001#
+    can't use that for music!
 
 edit category on main view
 

@@ -18,6 +18,7 @@
 
 package org.stephe_leake.music_player_2
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.Notification
 import android.app.NotificationChannel
@@ -345,13 +346,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          imageExtensions.any {ext -> file.name.endsWith(".$ext", ignoreCase = true)} &&
          file.length() > minSize}
 
-      if (files == null) // How can this happen!? Should just be an empty array
-         return emptyList()
-      else
-         return files.mapNotNull{
-            file ->
-               try {Uri.fromFile(file)}
-            catch (_ : Exception) {null}}
+      return files // files can be null if there is an IO error.
+          ?.mapNotNull{ file ->
+              try {Uri.fromFile(file)} catch (_ : Exception) {null}}
+          ?: emptyList()
    }
 
    private fun startSlideshowTimer()
@@ -423,6 +421,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             }
       }
 
+      @SuppressLint("SetTextI18n")
       @OptIn(UnstableApi::class)
       fun updateDisplay(saveState : Boolean)
       {
@@ -894,6 +893,21 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                clipManage.setPrimaryClip (ClipData.newPlainText ("song", msg))
             }
 
+         R.id.menu_db_sync ->
+            {
+               this.startService(Intent(utils.SYNC_DB_COMMAND, null, this, SyncService::class.java))
+            }
+
+         R.id.menu_db_init ->
+            {
+               this.startService(Intent(utils.INIT_DB_COMMAND, null, this, SyncService::class.java))
+            }
+
+         R.id.menu_db_resume_init ->
+            {
+               this.startService(Intent(utils.RESUME_INIT_DB_COMMAND, null, this, SyncService::class.java))
+            }
+
          R.id.menu_liner_notes ->
             {
                val metaData = mediaController!!.currentMediaItem!!.mediaMetadata
@@ -980,7 +994,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                val metadata = mediaController!!.currentMediaItem!!.mediaMetadata
                val titleText = metadata.title ?: ""
                val albumArtistText = metadata.albumArtist ?: ""
-               val query = "${albumArtistText} ${titleText}"
+               val query = "$albumArtistText $titleText"
                val intent = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
                   putExtra(SearchManager.QUERY, query)
                   setPackage("com.spotify.music")
@@ -989,7 +1003,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
                try {
                   startActivity(intent)
-               } catch (e: ActivityNotFoundException) {
+               } catch (_: ActivityNotFoundException) {
                   utils.errorLog("Spotify is not installed.")
                }
             }
@@ -1010,7 +1024,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
          R.id.menu_show_download_log ->
             {
-               startActivity(utils.showDownloadLogIntent(this@MainActivity))
+               startActivity(utils.showLogIntent(this@MainActivity, DownloadUtils.downloadLogFileName()))
             }
 
          R.id.menu_show_error_log ->
@@ -1025,30 +1039,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                            this.applicationContext.packageName + ".provider",
                            File(utils.errorLogFileName())),
                         "text/plain"))
-            }
-
-         R.id.menu_db_sync ->
-            {
-               if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN)
-                  this.startService(Intent(utils.SYNC_DB_COMMAND, null, this, SyncService::class.java))
-               else
-                  utils.alertLog(this, "processor is little endian; code assumes big endian")
-            }
-
-         R.id.menu_db_init ->
-            {
-               if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN)
-                  this.startService(Intent(utils.INIT_DB_COMMAND, null, this, SyncService::class.java))
-               else
-                  utils.alertLog(this, "processor is little endian; code assumes big endian")
-            }
-
-         R.id.menu_db_resume_init ->
-            {
-               if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN)
-                  this.startService(Intent(utils.RESUME_INIT_DB_COMMAND, null, this, SyncService::class.java))
-               else
-                  utils.alertLog(this, "processor is little endian; code assumes big endian")
             }
 
          R.id.menu_update_playlist ->

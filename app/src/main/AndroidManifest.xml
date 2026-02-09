@@ -59,6 +59,11 @@
         </intent-filter>
       </service>
 
+      <service
+          android:name=".SyncService"
+          android:foregroundServiceType="dataSync"
+          android:exported="false" />
+
       <receiver
           android:name=".MPBroadcastReceiver"
           android:exported="true">

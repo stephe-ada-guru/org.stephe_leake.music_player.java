@@ -33,8 +33,8 @@
       android:id="@id/menu_liner_notes"
       android:title="@string/menu_liner_notes"/>
   <item
-      android:id="@id/menu_sync_db"
-      android:title="@string/menu_sync_db"/>
+      android:id="@id/menu_db_sync"
+      android:title="@string/menu_db_sync"/>
   <item
       android:id="@id/menu_copy"
       android:title="@string/menu_copy"/>
@@ -56,6 +56,12 @@
   <item
       android:id="@id/menu_preferences"
       android:title="@string/menu_preferences"/>
+  <item
+      android:id="@id/menu_db_init"
+      android:title="@string/menu_db_init"/>
+  <item
+      android:id="@id/menu_db_resume_init"
+      android:title="@string/menu_db_resume_init"/>
   <item
       android:id="@id/menu_new_playlist"
       android:title="@string/menu_new_playlist"/>

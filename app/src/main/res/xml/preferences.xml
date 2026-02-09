@@ -32,6 +32,14 @@ write to the Free Software Foundation, 51 Franklin Street, Suite
         app:dialogTitle="@string/server_IP_dialog_title" />
 
     <androidx.preference.EditTextPreference
+        app:key="@string/server_Port_key"
+        app:defaultValue="0"
+        android:numeric="integer"
+        app:title="@string/server_Port_title"
+        app:summary="@string/server_Port_summary"
+        app:dialogTitle="@string/server_Port_dialog_title" />
+
+    <androidx.preference.EditTextPreference
         app:key="@string/min_image_size_key"
         app:defaultValue="@string/min_image_size_default"
         android:numeric="integer"

@@ -18,34 +18,31 @@
 
 package org.stephe_leake.music_player_2
 
-import android.content.Intent
-import org.json.JSONObject
+import android.util.Log
+
+import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.net.InetAddress
-import java.net.NetworkInterface
-import java.net.ServerSocket
-import java.net.Socket
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.charset.StandardCharsets
-import java.util.Collections
+
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 
 class syncUtils
  {
     companion object
     {
-       const val BooksPort: Int = 0x9001
-
        fun readInt(inputStream: InputStream): Int
        {
           val bytes     = ByteArray(4)
           val bytesRead = inputStream.read(bytes)
           if (bytesRead < 4)
-             throw java.net.SocketException("expected 4 byte integer, got $length bytes")
+             throw java.net.SocketException("expected 4 byte integer, got $bytesRead bytes")
 
           val byteBuffer = ByteBuffer.wrap(bytes)
-          byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+          byteBuffer.order(ByteOrder.BIG_ENDIAN) // network order
           
           return byteBuffer.getInt()   
        }
@@ -64,7 +61,7 @@ class syncUtils
           
           val result = ByteArray(length)
           val bytesRead = inputStream.read(result)
-          if bytesRead < length
+          if (bytesRead < length)
              throw java.net.SocketException("expected $length byte string, got $bytesRead bytes")
 
           return String(result)
@@ -74,7 +71,7 @@ class syncUtils
        {
           val response = JSONObject(readString(inputStream))
           if (0 != response.getString("Status").compareTo("ACK"))
-             throw ProgrammerError("expecting ACK, got $response")
+             throw java.net.ProtocolException("expecting ACK, got $response")
        }
 
        fun sendString(outputStream: OutputStream, item: String)
@@ -85,12 +82,13 @@ class syncUtils
           val bytes = item.toByteArray(Charsets.UTF_8)
 
           val headerBuffer = ByteBuffer.allocate(8) // 4 bytes for each integer
-          headerBuffer.order(ByteOrder.LITTLE_ENDIAN) // Match the server's endianness
-          headerBuffer.putInt(firstIndex)
-          headerBuffer.putInt(lastIndex)
+          headerBuffer.order(ByteOrder.BIG_ENDIAN) // The server expects network order
+          headerBuffer.putInt(1)
+          headerBuffer.putInt(bytes.size)
 
-          outputStream.write(headerBuffer)
+          outputStream.write(headerBuffer.array())
           outputStream.write(bytes)
+          //Log.d(utils.logTag, "sync sent '${headerBuffer.array()}' '$item'") // FIXME: delete; debugging
        }
 
        fun sendAck(outputStream: OutputStream)
@@ -107,7 +105,7 @@ class syncUtils
           
           response.put("Status", "ACK")
           response.put("Data", data)
-          sendString(outputStream. response.toString())
+          sendString(outputStream, response.toString())
        }
 
        fun sendError(outputStream: OutputStream, msg: String)
@@ -122,14 +120,14 @@ class syncUtils
              response.put("Message", msg)
              sendString(outputStream, response.toString())
           }
-          catch (e: JSONException) {}
-          catch (e: IOException) {}
+          catch (_: JSONException) {}
+          catch (_: IOException) {}
        }
 
        fun toJSON(song: Song) : JSONObject
        // Same format as smm-database.adb Get_JSON
        {
-          result: JSONObject
+          val result = JSONObject()
           if (song.Deleted != "")
              {
                 result.put("ID", song.ID)
@@ -137,7 +135,7 @@ class syncUtils
              }
           else
              {
-                dataf : JSONObject
+                val dataf = JSONObject()
                 dataf.put("File_Name", song.File_Name)
                 dataf.put("Category", song.Category)
                 if (song.Artist != "") {dataf.put("Artist", song.Artist)}
@@ -147,16 +145,16 @@ class syncUtils
                 if (song.Year != Song.No_Year) {dataf.put("Year", song.Year)}
                 dataf.put("Title", song.Title)
                 if (song.Track != Song.No_Track) {dataf.put("Track", song.Track)}
-                if (song.Last_Downloaded != Default_Time_String) 
+                if (song.Last_Downloaded != Song.Default_Time_String) 
                    {dataf.put("Last_Downloaded", song.Last_Downloaded)}
-                if (song.Prev_Downloaded != Default_Time_String)
+                if (song.Prev_Downloaded != Song.Default_Time_String)
                    {dataf.put("Prev_Downloaded", song.Prev_Downloaded)}
                 if (song.Play_Before != Song.Null_ID) {dataf.put("Play_Before", song.Play_Before)}
                 if (song.Play_After != Song.Null_ID) {dataf.put("Play_After", song.Play_After)}
                 
                 result.put("ID", song.ID)
                 if (song.Modified != Song.Default_Time_String) {result.put("Modified", song.Modified)}
-                result.put("Data", data)
+                result.put("Data", dataf)
              }
           return result
        }
@@ -164,7 +162,7 @@ class syncUtils
        fun toJSON(list: List<Int>): JSONArray
        // Same format as smm.ads To_JSON
        {
-          result: JSONArray
+          val result = JSONArray()
           for (id in list) {result.put(id)}
           return result
        }

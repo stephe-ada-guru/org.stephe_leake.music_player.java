@@ -23,20 +23,26 @@ import android.content.Context
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 
 class ServiceNotif (
-   private val context                  : Context,
-   private val notificationId           : Int,
-   private val title                    : String,
-   private val showLogPendingIntentInit : PendingIntent,
-   private val cancelPendingIntent      : PendingIntent)
+   private val context              : Context,
+   private val notificationId       : Int,
+   private val title                : String,
+   private val showLogPendingIntent : PendingIntent,
+   private val cancelPendingIntent  : PendingIntent)
 {
    var notifMem : Notification = NotificationCompat.Builder(context, utils.notificationChannelId).build()
 
    var statusText   : String = ""
    var contentText  : String = "..."
+
+   init
+   {
+      Log.d(utils.logTag, "ServiceNotif: constructor (init block) is COMPLETE.")
+   }
 
    fun getNotif() : Notification
    {
@@ -75,7 +81,7 @@ class ServiceNotif (
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    fun done(msg : String)
    {
-      statusText = "done " + statusText
+      statusText = "done $statusText"
       contentText = msg
       updateInternal()
    }

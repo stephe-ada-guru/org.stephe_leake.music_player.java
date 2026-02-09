@@ -25,6 +25,9 @@
   <item type="id" name="menu_clean_playlist" />
   <item type="id" name="menu_close" />
   <item type="id" name="menu_copy" />
+  <item type="id" name="menu_db_init" />
+  <item type="id" name="menu_db_resume_init" />
+  <item type="id" name="menu_db_sync" />
   <item type="id" name="menu_liner_notes" />
   <item type="id" name="menu_new_playlist" />
   <item type="id" name="menu_preferences" />
