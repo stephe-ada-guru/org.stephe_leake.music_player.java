@@ -39,11 +39,6 @@ class ServiceNotif (
    var statusText   : String = ""
    var contentText  : String = "..."
 
-   init
-   {
-      Log.d(utils.logTag, "ServiceNotif: constructor (init block) is COMPLETE.")
-   }
-
    fun getNotif() : Notification
    {
       return notifMem

@@ -5,6 +5,8 @@ work branches:
 ../org.stephe_leake.music_player.work_1/notes.text : sync db
 work_2 :
 
+(dvc-state-multiple '((xgit . ".") (xgit . "../smm.work_1")))
+
 (dvc-propagate-one "../org.stephe_leake.music_player" "../org.stephe_leake.music_player.work_1")
 
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
@@ -12,12 +14,14 @@ work_2 :
  current work
 implement db sync
     ~/Projects/smm.work_1/notes.text
+    resume init done
 
-    syncUtils.kt toJSON: FIXME: Song.* can be null
+    test modify
+    test conflict modify
+    test delete
 
-    init db running
-        progress shows as nn/100; should also show overall progress; chunk count?
-            or don't show chunks to user
+deleted should be null, not default
+    rerun modify (when ready to switch)
 
 old books app port: 16#9001#
     can't use that for music!

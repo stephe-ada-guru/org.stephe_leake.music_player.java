@@ -18,8 +18,6 @@
 
 package org.stephe_leake.music_player_2
 
-import android.util.Log
-
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -88,7 +86,6 @@ class syncUtils
 
           outputStream.write(headerBuffer.array())
           outputStream.write(bytes)
-          //Log.d(utils.logTag, "sync sent '${headerBuffer.array()}' '$item'") // FIXME: delete; debugging
        }
 
        fun sendAck(outputStream: OutputStream)
@@ -138,22 +135,25 @@ class syncUtils
                 val dataf = JSONObject()
                 dataf.put("File_Name", song.File_Name)
                 dataf.put("Category", song.Category)
-                if (song.Artist != "") {dataf.put("Artist", song.Artist)}
+                if (!song.Artist.isNullOrEmpty()) {dataf.put("Artist", song.Artist)}
                 dataf.put("Album_Artist", song.Album_Artist)
-                if (song.Composer != "") {dataf.put("Composer", song.Composer)}
-                if (song.Album != "") {dataf.put("Album", song.Album)}
-                if (song.Year != Song.No_Year) {dataf.put("Year", song.Year)}
+                if (!song.Composer.isNullOrEmpty()) {dataf.put("Composer", song.Composer)}
+                if (!song.Album.isNullOrEmpty()) {dataf.put("Album", song.Album)}
+                if (song.Year != null) if (song.Year != Song.No_Year) {dataf.put("Year", song.Year)}
                 dataf.put("Title", song.Title)
-                if (song.Track != Song.No_Track) {dataf.put("Track", song.Track)}
-                if (song.Last_Downloaded != Song.Default_Time_String) 
+                if (song.Track != null) if (song.Track != Song.No_Track){dataf.put("Track", song.Track)}
+                if (song.Last_Downloaded != null) if (song.Last_Downloaded != Song.Default_Time_String)
                    {dataf.put("Last_Downloaded", song.Last_Downloaded)}
-                if (song.Prev_Downloaded != Song.Default_Time_String)
+                if (song.Prev_Downloaded != null) if (song.Prev_Downloaded != Song.Default_Time_String)
                    {dataf.put("Prev_Downloaded", song.Prev_Downloaded)}
-                if (song.Play_Before != Song.Null_ID) {dataf.put("Play_Before", song.Play_Before)}
-                if (song.Play_After != Song.Null_ID) {dataf.put("Play_After", song.Play_After)}
+                if (song.Play_Before != null) if (song.Play_Before != Song.Null_ID)
+                   {dataf.put("Play_Before", song.Play_Before)}
+                if (song.Play_After != null) if (song.Play_After != Song.Null_ID)
+                   {dataf.put("Play_After", song.Play_After)}
                 
                 result.put("ID", song.ID)
-                if (song.Modified != Song.Default_Time_String) {result.put("Modified", song.Modified)}
+                if (song.Modified != Song.Default_Time_String)
+                   {result.put("Modified", song.Modified)}
                 result.put("Data", dataf)
              }
           return result

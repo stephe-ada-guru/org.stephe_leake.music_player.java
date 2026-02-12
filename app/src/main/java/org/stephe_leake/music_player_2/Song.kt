@@ -82,9 +82,9 @@ data class Song(
          if (!msg.has("Data"))
             {
                return Song(
-                  ID = msg.getInt("ID"),
+                  ID              = msg.getInt("ID"),
                   Modified        = if (msg.has("Modified")) msg.getString("Modified") else Default_Time_String,
-                  Deleted = msg.getString("Deleted"),
+                  Deleted         = msg.getString("Deleted"),
                   File_Name       = "",
                   Category        = "",
                   Artist          = null,

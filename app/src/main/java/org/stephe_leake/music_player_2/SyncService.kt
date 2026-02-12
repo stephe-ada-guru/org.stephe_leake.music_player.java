@@ -109,8 +109,6 @@ class SyncService : Service()
                {
                   val operation = Operations.valueOf(msg.getString("Operation"))
                   
-                  Log.d(utils.logTag, "syncDB op: $operation ")
-                  
                   when (operation)
                   {
                      Operations.QUIT ->
