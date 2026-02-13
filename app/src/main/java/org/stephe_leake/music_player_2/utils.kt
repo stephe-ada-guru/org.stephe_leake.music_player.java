@@ -20,7 +20,6 @@ package org.stephe_leake.music_player_2
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.ContentUris
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
@@ -29,7 +28,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
-import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -51,6 +49,7 @@ private object PlaylistCountsPreferenceKeys
 
    fun index(name : String) : Preferences.Key<Int> {return intPreferencesKey("$name-index")}
    fun pos(name : String) : Preferences.Key<Long> {return longPreferencesKey("$name-pos")}
+   fun limit(name : String) : Preferences.Key<Int> {return intPreferencesKey("$name-limit")}
 }
       
 data class PlaylistCounts(
@@ -65,12 +64,17 @@ class utils
       const val millisPerMinute : Long = 60 * 1000
       const val millisPerHour   : Long = 60 * millisPerMinute
 
+      const val playlistNoLimit : Int = Int.MAX_VALUE
+      const val limitDontSave   : Int = -1
+      const val posDontSave     : Long = -1L
+
       const val notificationChannelId : String = "Stephe's Music notifications"
       
       //  Notification ids; all with null tag
       const val notif_download_id : Int = 1
 
       const val EXTRA_PLAYLIST_CATEGORY  : String = "PLAYLIST_CATEGORY"
+      const val EXTRA_PLAYLIST_LIMIT     : String = "PLAYLIST_LIMIT"
       const val DOWNLOAD_COMMAND         : String = "download_command" // Update existing or create new playlist
       const val COMMAND_CANCEL_DOWNLOAD  : String = "org.stephe_leake.stephes_music.cancel_download"
 
@@ -164,16 +168,44 @@ class utils
          Log.d(logTag, "readPlaylistCounts '$category' $result")
          return result
       }
-      
-      suspend fun savePlaylistCounts(context: Context, category : String, index : Int, pos : Long)
-      // Does not save 'category'. If pos = -1, don't save that.
+
+      suspend fun readPlaylistLimit(context: Context, category : String) : Int
+      // Returns limitDontSave if never set
       {
-         Log.d(logTag, "savePlaylistCounts '$category' $index $pos")
+         var result = limitDontSave
+         
+         val preferences = context.playlistPrefsState.data.firstOrNull()
+         if (preferences == null)
+            {
+               // Never set
+            }
+         else
+            {
+               val temp : Int? = preferences[PlaylistCountsPreferenceKeys.limit(category)]
+               if (temp == null)
+                  {
+                     // Never set
+                  }
+               else
+                  {
+                      result = preferences[PlaylistCountsPreferenceKeys.limit(category)] ?: limitDontSave
+                  }
+            }
+         return result
+      }
+   
+      suspend fun savePlaylistCounts(context: Context, category : String, index : Int, pos : Long, limit : Int)
+      // Does not save 'category'. If pos or limit =
+      // *DontSave, don't save those.
+      {
+         Log.d(logTag, " savePlaylistCounts '$category' $index $pos $limit")
          context.playlistPrefsState.edit {
             preferences ->
                preferences[PlaylistCountsPreferenceKeys.index(category)] = index
-            if (pos != -1L)
-               preferences[PlaylistCountsPreferenceKeys.pos(category)] = pos}
+            if (pos != posDontSave)
+               preferences[PlaylistCountsPreferenceKeys.pos(category)] = pos
+            if (limit != limitDontSave)
+               preferences[PlaylistCountsPreferenceKeys.limit(category)] = limit}
       }
 
       // This is used by DownloadService and ViewModel to get the

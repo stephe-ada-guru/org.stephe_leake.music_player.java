@@ -158,11 +158,12 @@ class DownloadUtils
          val url = "http://" + serverIP + ":/app/smm/get_new_songs_list?" +
          "API=2" + 
          "&category=" + category +
-         "&count=" + count.toString() +
-         "&new_count=" + newCount.toString() +
+         if (count == utils.playlistNoLimit) {""} else
+         {"&count=" + count.toString() +
+          "&new_count=" + newCount.toString()
+         } +
          "&over_select_ratio=" + overSelectRatio.toString() +
-         "&record_downloaded=" + if (category == "instrumental" || category == "vocal")
-         "true" else "false" +
+         "&record_downloaded=" + if (category == "instrumental" || category == "vocal") "true" else "false" +
          (if (-1 == randomSeed) "" else "&seed=$randomSeed")
 
          val request : Request = Request.Builder().url(url).build()

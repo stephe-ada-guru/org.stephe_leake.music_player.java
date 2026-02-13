@@ -10,15 +10,13 @@ work_2 : play song from search
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
-instrumental count gets stored in vocal
-    switch playlists: onClick calls playlistToPlayer (new_category, savestate = true)
-    calls utils.savePlaylistCounts with current category, counts
-    calls viewModel.writeName(category)
-    calls utils.readPlaylistCounts
-    calls mediaController.clearMediaItems => calls updateDisplay first?
-        gemini says it can
-        so call clearMediaItems before call writeName.
+per-playlist limit
+    allow "no_limit" on best, protest
+    sort of there. adding to playlistpicker
 
+search page:
+    collapse/expand albums
+    click on artist to search that artist
 
 
 implement db sync

@@ -45,6 +45,7 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.TextView
 import androidx.activity.viewModels
@@ -183,9 +184,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          {
             utils.savePlaylistCounts(
                this@MainActivity,
-               viewModel.playlistName.value,
-               mediaController!!.currentMediaItemIndex,
-               mediaController!!.currentPosition)
+               category = viewModel.playlistName.value,
+               index    = mediaController!!.currentMediaItemIndex,
+               pos      = mediaController!!.currentPosition,
+               limit    = utils.limitDontSave)
          }
       
       // This can trigger onMediaItemTransition, which saves counts
@@ -868,7 +870,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                      val category = FilenameUtils.getBaseName(filename)
                      lifecycleScope.launch {
                         DownloadUtils.cleanPlaylist(this@MainActivity, category)
-                        utils.savePlaylistCounts(this@MainActivity, category, index = 0, pos = -1)
+                        utils.savePlaylistCounts(this@MainActivity, category, index = 0,
+                                                 pos = utils.posDontSave, limit = utils.limitDontSave)
                         if (viewModel.playlistName.value == category)
                            // See comment at ReloadPlaylist.
                            playlistToPlayer(
@@ -920,16 +923,40 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                      val builder: AlertDialog.Builder = AlertDialog.Builder(this)
                      builder.setTitle("new playlist category")
                      
-                     val input = EditText(this)
-                     builder.setView(input)
+                     val dialog = layoutInflater.inflate(R.layout.dialog_new_playlist, null)
+                     val categoryInput = dialog.findViewById<EditText>(R.id.new_playlist_category)
+                     val noLimit = dialog.findViewById<CheckBox>(R.id.new_playlist_no_limit)
+                     val limitInput = dialog.findViewById<EditText>(R.id.new_playlist_limit)
+
+                     val defaultLimit = prefs.getString(getString(R.string.song_count_max_key), "50") ?: "50"
+                     limitInput.setText(defaultLimit)
+
+                     noLimit.setOnCheckedChangeListener {_, isChecked -> limitInput.visibility =
+                                                            if (isChecked) View.GONE else View.VISIBLE}
+
+                     builder.setView(dialog)
                      
                      builder.setPositiveButton ("OK")
                      {_, _ ->
+                         val category = categoryInput.text.toString()
 
-                         newPlaylistIntent = Intent (utils.DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
-                         .putExtra(utils.EXTRA_PLAYLIST_CATEGORY, input.text.toString())
-                      this.startService(newPlaylistIntent)
-                     } 
+                      if (category.isNotEmpty())
+                         {
+                            val songLimit = if (noLimit.isChecked)
+                            {
+                              utils.playlistNoLimit
+                            }
+                            else
+                               {
+                                  limitInput.text.toString().toIntOrNull() ?: defaultLimit.toInt()
+                               }
+
+                            newPlaylistIntent = Intent (utils.DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
+                               .putExtra(utils.EXTRA_PLAYLIST_CATEGORY, category)
+                               .putExtra(utils.EXTRA_PLAYLIST_LIMIT, songLimit)
+                            this.startService(newPlaylistIntent)
+                         }
+                     }
 
                      builder.setNegativeButton ("Cancel")
                      {dialog, _ ->
@@ -951,7 +978,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                // lifecycleScope is ok here; the user has just clicked
                // on an item in MainActivity UI.
                lifecycleScope.launch {
-                  utils.savePlaylistCounts(this@MainActivity, viewModel.playlistName.value, 0, 0)
+                  utils.savePlaylistCounts(this@MainActivity, viewModel.playlistName.value, 0, 0,
+                                           limit = utils.limitDontSave)
                   // See comment at ReloadPlaylist
                   playlistToPlayer(
                      viewModel.playlistName.value,
@@ -992,7 +1020,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
                try {
                   startActivity(intent)
-               } catch (e: ActivityNotFoundException) {
+               } catch (_: ActivityNotFoundException) {
                   utils.errorLog("Spotify is not installed.")
                }
             }

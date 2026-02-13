@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <EditText
+        android:id="@+id/new_playlist_category"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Playlist category"
+        android:inputType="text" />
+
+    <CheckBox
+        android:id="@+id/new_playlist_no_limit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="No song count limit" />
+
+    <EditText
+        android:id="@+id/new_playlist_limit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Song count limit"
+        android:inputType="text" />
+
+</LinearLayout>
