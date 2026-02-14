@@ -43,10 +43,13 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.annotation.OptIn
@@ -76,6 +79,8 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import androidx.media3.ui.PlayerView
 import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.viewpager2.widget.ViewPager2
 
 import kotlinx.coroutines.guava.await
@@ -91,6 +96,42 @@ import org.apache.commons.io.FilenameUtils
 
 import android.view.View.GONE
 import android.view.View.VISIBLE
+
+data class PlaylistInfo(val name: String, val limit: Int)
+
+private class PlaylistAdapter(
+    private val playlists: List<PlaylistInfo>,
+    private val onClick: (PlaylistInfo) -> Unit) : RecyclerView.Adapter<PlaylistAdapter.PlaylistViewHolder>()
+{
+   class PlaylistViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+   {
+      val nameView: TextView = itemView.findViewById(R.id.item_playlist_name)
+      val limitView: TextView = itemView.findViewById(R.id.item_playlist_limit)
+   }
+
+   override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaylistViewHolder
+   {
+      val view = LayoutInflater.from(parent.context)
+         .inflate(R.layout.item_playlist, parent, false)
+      return PlaylistViewHolder(view)
+   }
+
+   override fun onBindViewHolder(holder: PlaylistViewHolder, position: Int)
+   {
+      val playlistInfo = playlists[position]
+      holder.nameView.text = playlistInfo.name.removeSuffix(".m3u")
+
+      holder.limitView.text =
+         when (playlistInfo.limit) {
+         utils.playlistNoLimit -> "no limit"
+         utils.limitDontSave -> "not set"
+         else -> playlistInfo.limit.toString()}
+         
+      holder.itemView.setOnClickListener { onClick(playlistInfo) }
+   }
+
+   override fun getItemCount() = playlists.size
+}
 
 class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener
 {
@@ -293,28 +334,99 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
    private fun showPlaylistPickerDialog(onPlaylistSelected: (String) -> Unit)
    {
-      val playlistDir = File (utils.globalDirectory)
-      
+      val playlistDir = File (utils.globalDirectory)  
       val playlistFilter = FilenameFilter{ _, name -> name.endsWith(".m3u", ignoreCase = true) }
-      val playlists = playlistDir.list(playlistFilter)
+      val playlistFiles = playlistDir.list(playlistFilter)
       val builder = AlertDialog.Builder(this)
 
-      if (playlists == null || playlists.isEmpty())
+      if (playlistFiles.isNullOrEmpty())
          {
             builder.setTitle("no playlists found")
                .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss()}
+               .show()
+            return
          }
-      else
-         {
-            builder.setTitle("Select a Playlist")
-               .setItems(playlists) {dialog, which -> onPlaylistSelected(playlists[which])
-                                     dialog.dismiss()}
-               .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss()}
+
+      // This must happen inside a coroutine as readPlaylistLimit is a suspend function
+      lifecycleScope.launch {
+         val playlistInfos = playlistFiles.map { filename ->
+            val category = filename.removeSuffix(".m3u")
+            PlaylistInfo(filename, utils.readPlaylistLimit(this@MainActivity, category))}
+
+         val dialogView = layoutInflater.inflate(R.layout.dialog_select_playlist, null)
+         builder.setView(dialogView)
+         val dialog = builder.create()
+
+         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.select_playlist_playlists)
+         val changeLimit = dialogView.findViewById<CheckBox>(R.id.select_playlist_change_limit)
+         val editControlsLayout = dialogView.findViewById<LinearLayout>(R.id.select_playlist_edit_controls)
+         val editingPlaylist = dialogView.findViewById<TextView>(R.id.select_playlist_editing_playlist)
+         val noLimit = dialogView.findViewById<CheckBox>(R.id.select_playlist_no_limit)
+         val limitInput = dialogView.findViewById<EditText>(R.id.select_playlist_new_limit)
+         val okButton = dialogView.findViewById<Button>(R.id.select_playlist_ok_edit)
+         val cancelButton = dialogView.findViewById<Button>(R.id.select_playlist_cancel_edit)
+
+         var selectedPlaylistForEdit: PlaylistInfo? = null
+
+         changeLimit.setOnCheckedChangeListener { _, isChecked ->
+            editControlsLayout.visibility = if (isChecked) View.VISIBLE else View.GONE}
+         
+         noLimit.setOnCheckedChangeListener { _, isChecked ->
+            limitInput.visibility = if (isChecked) View.GONE else View.VISIBLE}
+
+         // --- Adapter and Click Logic ---
+         recyclerView.layoutManager = LinearLayoutManager(this@MainActivity)
+         recyclerView.adapter = PlaylistAdapter(playlistInfos) { selectedPlaylist ->
+           if (changeLimit.isChecked) {
+              // EDIT MODE: User wants to change the limit. Show the controls.
+              selectedPlaylistForEdit = selectedPlaylist
+              editControlsLayout.visibility = View.VISIBLE
+              editingPlaylist.text = "Editing: ${selectedPlaylist.name.removeSuffix(".m3u")}"
+              if (selectedPlaylist.limit == utils.playlistNoLimit) {
+                 noLimit.isChecked = true
+                 limitInput.visibility = View.GONE
+              } else {
+                 noLimit.isChecked = false
+                 limitInput.visibility = View.VISIBLE
+                 limitInput.setText(selectedPlaylist.limit.toString())
+              }
+           } else {
+              // SELECT MODE: Immediately select the playlist and close the dialog.
+              onPlaylistSelected(selectedPlaylist.name)
+              dialog.dismiss()
+           }
+         }// adapter
+         
+         okButton.setOnClickListener {
+            selectedPlaylistForEdit?.let { playlistToEdit ->
+               val newLimit = if (noLimit.isChecked) {
+                  utils.playlistNoLimit
+               } else {
+                  val prefs = PreferenceManager.getDefaultSharedPreferences(this@MainActivity)
+                  val defaultLimit = prefs.getString(getString(R.string.song_count_max_key), "50")?.toIntOrNull() ?: 50
+                  limitInput.text.toString().toIntOrNull() ?: defaultLimit
+               }
+            
+            val category = playlistToEdit.name.removeSuffix(".m3u")
+            lifecycleScope.launch {
+               val current = utils.readPlaylistCounts(this@MainActivity, category)
+               utils.savePlaylistCounts(this@MainActivity, category, current.index, current.pos, newLimit)
+            }
+            
+            onPlaylistSelected(playlistToEdit.name)
+            dialog.dismiss()
+            }
+         } // Ok listener
+
+         cancelButton.setOnClickListener {
+            // Just hide the edit controls and go back to selection mode
+            editControlsLayout.visibility = View.GONE
+            selectedPlaylistForEdit = null
          }
-      
-      val dialog = builder.create()
-      dialog.show()
-   }
+
+         dialog.show()
+      } // launch
+   } // showPlaylistPickerDialog
 
    val imageExtensions = arrayOf("jpg", "jpeg", "png", "webp", "bmp")
 
