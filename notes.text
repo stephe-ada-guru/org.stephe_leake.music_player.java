@@ -10,10 +10,6 @@ work_2 : play song from search
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
-per-playlist limit
-    allow "no_limit" on best, protest
-    sort of there. adding to playlistpicker
-
 search page:
     collapse/expand albums
     click on artist to search that artist
