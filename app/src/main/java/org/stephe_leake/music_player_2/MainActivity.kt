@@ -84,7 +84,6 @@ import java.io.BufferedWriter
 import java.io.File
 import java.io.FilenameFilter
 import java.io.FileWriter
-import java.nio.ByteOrder
 
 import kotlinx.coroutines.launch
 
@@ -1039,6 +1038,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                            this.applicationContext.packageName + ".provider",
                            File(utils.errorLogFileName())),
                         "text/plain"))
+            }
+
+         R.id.menu_show_sync_log ->
+            {
+               startActivity(utils.showLogIntent(this@MainActivity, syncUtils.syncLogFileName()))
             }
 
          R.id.menu_update_playlist ->

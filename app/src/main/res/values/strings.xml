@@ -62,17 +62,13 @@
   <string name="menu_share">Share</string>
   <string name="menu_show_playlist">Show playlist</string>
   <string name="menu_show_download_log">Show download log</string>
+  <string name="menu_show_sync_log">Show sync log</string>
   <string name="menu_show_error_log">Show error log</string>
   <string name="menu_update_playlist">Update playlist</string>
 
 
   <!-- preference ; alphabetical after activity name-->
   <string name="preferences_activity_name">&quot;Stephe's Music Player Preferences&quot;</string>
-
-  <string name="log_level_key">log_level</string>
-  <string name="log_level_title">Log Level</string>
-  <string name="log_level_summary">Verbose or Info messages in download log (always includes Error) </string>
-  <string name="log_level_dialog_title">Download Log level</string>
 
   <string name="prev_threshold_key">prev_threshold</string>
   <string name="prev_threshold_default">5000</string>

@@ -32,6 +32,18 @@ class syncUtils
  {
     companion object
     {
+       const val syncLogFileBaseName = "sync_log"
+
+       fun syncLogFileName() : String
+       {
+          return utils.logFileName(syncLogFileBaseName)
+       }
+
+       fun log(msg : String)
+       {
+          utils.log(msg, syncLogFileBaseName)
+       }
+
        fun readInt(inputStream: InputStream): Int
        {
           val bytes     = ByteArray(4)

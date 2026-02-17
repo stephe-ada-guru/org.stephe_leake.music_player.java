@@ -104,8 +104,8 @@ data class Song(
                val dataf: JSONObject = msg.getJSONObject("Data")
                return Song(
                   ID              = msg.getInt("ID"),
-                  Modified        = if (msg.has("Modified")) msg.getString("Modified") else Default_Time_String,
-                  Deleted         = if (msg.has("Deleted")) msg.getString("Deleted") else Default_Time_String, 
+                  Modified        = msg.getString("Modified"),
+                  Deleted         = null, 
                   File_Name       = dataf.getString("File_Name"), 
                   Category        = dataf.getString("Category"),
                   Artist          = if (dataf.has("Artist")) dataf.getString("Artist") else null,

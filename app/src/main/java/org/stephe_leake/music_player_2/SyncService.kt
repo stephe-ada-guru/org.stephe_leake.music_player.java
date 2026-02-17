@@ -168,7 +168,8 @@ class SyncService : Service()
                         }
 
                      Operations.INSERT ->
-                        {  
+                        {
+                           syncUtils.log(msg.toString())
                            try
                            {
                               dao.insertSong(Song.fromJSON(msg.getJSONObject("Value")))
@@ -180,6 +181,7 @@ class SyncService : Service()
                         } 
                      Operations.UPDATE ->
                         {
+                           syncUtils.log(msg.toString())
                            val value = msg.getJSONObject("Value")
                            
                            // value format given by smm-database.adb Get_JSON
@@ -218,6 +220,7 @@ class SyncService : Service()
                      
                      Operations.RENUMBER ->
                         {
+                           syncUtils.log(msg.toString())
                            // Match smm-database_remote-disk.adb Apply Renumber
                            val oldId = msg.getInt("Old_ID")
                            val newId = msg.getInt("New_ID")
