@@ -98,7 +98,8 @@ class MainViewModel(private val application : Application, private val songDao: 
                try
                {
                   saveStateMutex.withLock {
-                     utils.savePlaylistCounts((application as Context), category, index, pos)
+                     utils.savePlaylistCounts((application as Context), category, index, pos,
+                     limit = utils.limitDontSave)
                   }
                }
                catch (e: Exception)

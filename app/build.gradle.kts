@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.fragment.ktx) 
     implementation(libs.androidx.preference.ktx)
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation(libs.androidx.viewpager2)
 
     // Room Database - Using KSP

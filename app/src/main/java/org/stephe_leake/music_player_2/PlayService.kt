@@ -53,12 +53,12 @@ class PlayService : MediaSessionService()
       if (::player.isInitialized)
          {
             player.release()
-            // Can't set player null
          }
 
-      mediaSession.release()
-      // can't set mediaSession null
-      
+      if (::mediaSession.isInitialized)
+         {
+            mediaSession.release()
+         }
       super.onDestroy()
    }
 

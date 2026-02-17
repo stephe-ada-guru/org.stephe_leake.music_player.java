@@ -24,7 +24,6 @@ import android.app.Service
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
-import android.content.res.Resources
 import android.os.IBinder
 import android.util.Log
 import androidx.annotation.RequiresPermission
@@ -63,7 +62,7 @@ class DownloadService : Service()
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-   private suspend fun updatePlaylist(category : String)
+   private suspend fun updatePlaylist(category : String, limit : Int)
    {
       Log.d(utils.logTag, "updatePlaylist '$category'")
       val res                = resources
@@ -97,8 +96,13 @@ class DownloadService : Service()
       try
       {
          val songsRemaining  : Int   = if (playlistFile.exists()) {countSongsRemaining(category)} else 0
-         val songCountMax    : Int   = Integer.decode(songCountMaxStr!!)
-         val songCountThresh : Int   = Integer.decode(songCountThreshStr!!)
+         val savedLimit      : Int   = utils.readPlaylistLimit(this, category)
+         val songCountMax    : Int   = if (limit == utils.limitDontSave)
+         {if (savedLimit == utils.limitDontSave)
+          {Integer.parseInt(songCountMaxStr!!)}
+          else savedLimit}
+         else limit
+         val songCountThresh : Int   = Integer.parseInt(songCountThreshStr!!)
          val overSelectRatio : Float = overSelectRatioStr!!.toFloat()
 
          if (songsRemaining < songCountMax - songCountThresh)
@@ -122,7 +126,7 @@ class DownloadService : Service()
                      playlistFile.createNewFile()
                   }
 
-               utils.savePlaylistCounts(this, category, index = 0, pos = -1L)
+               utils.savePlaylistCounts(this, category, index = 0, pos = utils.posDontSave, limit = songCountMax)
                
                newSongs = DownloadUtils.getNewSongsList(
                   serverIP, category, songCount, newSongCount, overSelectRatio, -1)
@@ -237,13 +241,15 @@ class DownloadService : Service()
       else if (intent.action == utils.DOWNLOAD_COMMAND)
          {
             try {
-               val category = intent.getStringExtra(utils.EXTRA_PLAYLIST_CATEGORY)!!
-               serviceScope.launch {
-                  notif.initialize()
-                  updatePlaylist(category)
-               }
+                  val category = intent.getStringExtra(utils.EXTRA_PLAYLIST_CATEGORY)!!
+                  val limit = intent.getIntExtra(utils.EXTRA_PLAYLIST_LIMIT, utils.limitDontSave) 
+                  
+                  serviceScope.launch {
+                     notif.initialize(category)
+                     updatePlaylist(category, limit)
+                  }
 
-               return START_NOT_STICKY
+                  return START_NOT_STICKY
             }
             catch (e: Exception)
             {

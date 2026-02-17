@@ -12,6 +12,11 @@ work_2 :
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
+search page:
+    collapse/expand albums
+    click on artist to search that artist
+
+
 implement db sync
     ~/Projects/smm.work_1/notes.text
     resume init done
