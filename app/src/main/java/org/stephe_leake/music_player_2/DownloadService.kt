@@ -137,6 +137,7 @@ class DownloadService : Service()
                      return
                   }
 
+               // FIXME: add error count from downloaded songs, send notes
                notif.update(if (newSongs.strings.size == 0) "" else "$newSongs.strings.size")
 
                // Add all songs to playlist, log any missing songs
@@ -245,7 +246,7 @@ class DownloadService : Service()
                   val limit = intent.getIntExtra(utils.EXTRA_PLAYLIST_LIMIT, utils.limitDontSave) 
                   
                   serviceScope.launch {
-                     notif.initialize(category)
+                     notif.initialize()
                      updatePlaylist(category, limit)
                   }
 

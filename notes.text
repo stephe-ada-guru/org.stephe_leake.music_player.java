@@ -21,9 +21,12 @@ implement db sync
     ~/Projects/smm.work_1/notes.text
     resume init done
 
-    test modify
-    test conflict modify
-    test delete
+    test sync_db:
+        - no changes; works
+        modify one category on laptop
+        modify one category on tablet
+        modify same category on laptop and tablet (conflict)
+        delete one song on laptop
 
 deleted should be null, not default
     rerun modify (when ready to switch)

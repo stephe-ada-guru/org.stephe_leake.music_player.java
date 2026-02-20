@@ -29,6 +29,7 @@ import android.database.sqlite.SQLiteConstraintException
 import android.os.IBinder
 import android.util.Log
 import androidx.annotation.RequiresPermission
+import androidx.datastore.preferences.core.edit
 import androidx.preference.PreferenceManager
 
 import java.net.Socket
@@ -36,6 +37,7 @@ import java.net.Socket
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 import org.json.JSONException
@@ -78,7 +80,31 @@ class SyncService : Service()
             when (intentAction)
             {
                utils.SYNC_DB_COMMAND ->
-                  msg.put("ACTION", "SYNC_INCREMENTAL")
+                  {
+                     var lastSyncId : Int? = null
+                     var lastSyncTime : String? = null
+                     val prefs = this@SyncService.playlistPrefsState.data.firstOrNull()
+                     if (prefs == null)
+                        {
+                           // Never set
+                           lastSyncId = Song.Null_ID
+                           lastSyncTime = Song.Default_Time_String
+                        }
+                     else
+                        {
+                           lastSyncId = prefs[PlaylistCountsPreferenceKeys.syncIdKey]
+                           lastSyncTime = prefs[PlaylistCountsPreferenceKeys.syncTimeKey]
+                           if ((lastSyncId == null) or (lastSyncTime == null))
+                              {
+                                 // Never set
+                                 lastSyncId = Song.Null_ID
+                                 lastSyncTime = Song.Default_Time_String
+                              }
+                       }
+                     msg.put("ACTION", "SYNC_INCREMENTAL")
+                     msg.put("SYNC_ID", lastSyncId)
+                     msg.put("SYNC_TIME", lastSyncTime)
+                  }
                
                utils.RESUME_INIT_DB_COMMAND ->
                   {
@@ -250,22 +276,33 @@ class SyncService : Service()
                }
                catch (e: JSONException)
                {
-                  val errMsg = "'${msg.toString()}: error: " + e.message?:"" 
+                  val errMsg = "${msg}: error: " + (e.message ?: "")
                   notif.error(errMsg)
+                  syncUtils.log(msg.toString())
                   syncUtils.sendError(outputStream, errMsg)
                   done = true
                }
                catch (e: java.net.ProtocolException)
                {
                   notif.error(e.message?:"")
+                  syncUtils.log(msg.toString())
                   done = true
                }
                catch (e: java.net.SocketException)
                {
                   notif.error("remote closed socket: " + (e.message?:""))
+                  syncUtils.log(msg.toString())
                   done = true
                }
             } // while
+
+         if (intentAction == utils.SYNC_DB_COMMAND)
+            {
+               this@SyncService.playlistPrefsState.edit {
+                  prefs ->
+                     prefs[PlaylistCountsPreferenceKeys.syncIdKey] = dao.getLastId()
+                  prefs[PlaylistCountsPreferenceKeys.syncTimeKey] = Song.getTime()}
+            }
       }
       catch (e: Exception)
       {
@@ -311,7 +348,7 @@ class SyncService : Service()
          showLogPendingIntent = PendingIntent.getActivity
          (this.applicationContext,
           utils.showSyncLogIntentId,
-          utils.showLogIntent(this, utils.logFileName("sync")),
+          utils.showLogIntent(this, syncUtils.syncLogFileName()),
           PendingIntent.FLAG_IMMUTABLE),
 
          cancelPendingIntent = PendingIntent.getBroadcast

@@ -30,9 +30,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 
 import java.io.File
 import java.io.FileWriter
@@ -42,16 +39,6 @@ import java.util.Locale
 
 import kotlinx.coroutines.flow.firstOrNull
 
-private object PlaylistCountsPreferenceKeys
-{
-   // NAME is shared with mainViewModel, but only mainViewModel writes to it.
-   val NAME  = stringPreferencesKey("name")
-
-   fun index(name : String) : Preferences.Key<Int> {return intPreferencesKey("$name-index")}
-   fun pos(name : String) : Preferences.Key<Long> {return longPreferencesKey("$name-pos")}
-   fun limit(name : String) : Preferences.Key<Int> {return intPreferencesKey("$name-limit")}
-}
-      
 data class PlaylistCounts(
    val index: Int = 0, // Current song in playlist, 0 indexed (same as mediaController)
    val pos: Long = 0L  // Current position in song (milliseconds)
@@ -277,8 +264,6 @@ class utils
       }
       
       fun log(msg : String, logFileBaseName : String)
-      // errors go in utils.errorLogFileBaseName, download messages in
-      // DownloadUtils.downloadLogFileBaseName
       {
          Log.d(logTag, msg)
 

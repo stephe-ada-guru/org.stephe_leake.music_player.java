@@ -24,6 +24,9 @@ import android.app.Application
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -66,4 +69,17 @@ const val PLAYLIST_PREFERENCES_NAME = "playlist_prefs"
 val Context.playlistPrefsState : DataStore<Preferences> by preferencesDataStore(
    name = PLAYLIST_PREFERENCES_NAME)
 
+object PlaylistCountsPreferenceKeys
+{
+   // NAME is shared with mainViewModel, but only mainViewModel writes to it.
+   val NAME  = stringPreferencesKey("name")
+
+   fun index(name : String) : Preferences.Key<Int> {return intPreferencesKey("$name-index")}
+   fun pos(name : String) : Preferences.Key<Long> {return longPreferencesKey("$name-pos")}
+   fun limit(name : String) : Preferences.Key<Int> {return intPreferencesKey("$name-limit")}
+
+   val syncIdKey = intPreferencesKey("last_sync_id")
+   val syncTimeKey = stringPreferencesKey("last_sync_time")
+}
+      
 // end of file
