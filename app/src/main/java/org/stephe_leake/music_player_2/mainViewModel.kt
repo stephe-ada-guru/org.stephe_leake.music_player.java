@@ -168,7 +168,6 @@ class MainViewModel(private val application : Application, private val songDao: 
          try
          {
             // This did _not_ report a corrupt db. Sigh
-            Log.d(utils.logTag, "mainViewModel.getCategory '$albumArtist' '$album' '$title'")
             val song = songDao.getSong(albumArtist, album, title)
             _currentCategory.value = song?.Category
             Log.d(utils.logTag, " ... '${_currentCategory.value}'")

@@ -68,6 +68,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -1014,6 +1015,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          R.id.menu_db_sync ->
             {
                this.startService(Intent(utils.SYNC_DB_COMMAND, null, this, SyncService::class.java))
+            }
+
+         R.id.menu_db_sync_edit_state ->
+            {
+               startActivity(Intent(this, SyncStateActivity::class.java))
             }
 
          R.id.menu_db_init ->

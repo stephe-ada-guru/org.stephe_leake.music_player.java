@@ -117,12 +117,13 @@ interface SongDao
 
    @Query("""
           SELECT * FROM Song WHERE
-          Artist LIKE '%' || :query || '%' OR
-          Album LIKE '%' || :query || '%' OR
-          Album_Artist LIKE '%' || :query || '%' OR
-          Composer LIKE '%' || :query || '%' OR
-          Title LIKE '%' || :query || '%' OR
-          Category LIKE '%' || :query || '%'
+          Deleted IS NULL AND
+          (Artist LIKE '%' || :query || '%' OR
+           Album LIKE '%' || :query || '%' OR
+           Album_Artist LIKE '%' || :query || '%' OR
+           Composer LIKE '%' || :query || '%' OR
+           Title LIKE '%' || :query || '%' OR
+           Category LIKE '%' || :query || '%')
           ORDER BY Album_Artist, Album, Title ASC
           """)
    // No 'suspend' here because it returns a Flow, which means Room
@@ -131,6 +132,7 @@ interface SongDao
 
    @Query("""
           SELECT * FROM Song WHERE
+          Deleted IS NULL AND
           (:title = '' OR Title LIKE '%' || :title || '%') AND
           (:artist = '' OR Artist LIKE '%' || :artist || '%') AND
           (:album = '' OR Album LIKE '%' || :album || '%') AND

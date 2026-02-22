@@ -44,6 +44,11 @@
           android:label="@string/search_name">
       </activity>
 
+      <activity
+          android:name=".SyncStateActivity"
+          android:label="Edit Sync State (Debug)"
+          android:exported="false" />
+
       <service
           android:name=".DownloadService"
           android:foregroundServiceType="dataSync"

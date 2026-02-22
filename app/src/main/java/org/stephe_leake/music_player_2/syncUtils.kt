@@ -132,51 +132,5 @@ class syncUtils
           catch (_: JSONException) {}
           catch (_: IOException) {}
        }
-
-       fun toJSON(song: Song) : JSONObject
-       // Same format as smm-database.adb Get_JSON
-       {
-          val result = JSONObject()
-          if (song.Deleted != "")
-             {
-                result.put("ID", song.ID)
-                result.put("Deleted", song.Deleted)
-             }
-          else
-             {
-                val dataf = JSONObject()
-                dataf.put("File_Name", song.File_Name)
-                dataf.put("Category", song.Category)
-                if (!song.Artist.isNullOrEmpty()) {dataf.put("Artist", song.Artist)}
-                dataf.put("Album_Artist", song.Album_Artist)
-                if (!song.Composer.isNullOrEmpty()) {dataf.put("Composer", song.Composer)}
-                if (!song.Album.isNullOrEmpty()) {dataf.put("Album", song.Album)}
-                if (song.Year != null) if (song.Year != Song.No_Year) {dataf.put("Year", song.Year)}
-                dataf.put("Title", song.Title)
-                if (song.Track != null) if (song.Track != Song.No_Track){dataf.put("Track", song.Track)}
-                if (song.Last_Downloaded != null) if (song.Last_Downloaded != Song.Default_Time_String)
-                   {dataf.put("Last_Downloaded", song.Last_Downloaded)}
-                if (song.Prev_Downloaded != null) if (song.Prev_Downloaded != Song.Default_Time_String)
-                   {dataf.put("Prev_Downloaded", song.Prev_Downloaded)}
-                if (song.Play_Before != null) if (song.Play_Before != Song.Null_ID)
-                   {dataf.put("Play_Before", song.Play_Before)}
-                if (song.Play_After != null) if (song.Play_After != Song.Null_ID)
-                   {dataf.put("Play_After", song.Play_After)}
-                
-                result.put("ID", song.ID)
-                if (song.Modified != Song.Default_Time_String)
-                   {result.put("Modified", song.Modified)}
-                result.put("Data", dataf)
-             }
-          return result
-       }
-
-       fun toJSON(list: List<Int>): JSONArray
-       // Same format as smm.ads To_JSON
-       {
-          val result = JSONArray()
-          for (id in list) {result.put(id)}
-          return result
-       }
     }
 }

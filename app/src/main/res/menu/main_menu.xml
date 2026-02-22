@@ -66,6 +66,9 @@
       android:id="@id/menu_db_resume_init"
       android:title="@string/menu_db_resume_init"/>
   <item
+      android:id="@id/menu_db_sync_edit_state"
+      android:title="@string/menu_db_sync_edit_state"/>
+  <item
       android:id="@id/menu_new_playlist"
       android:title="@string/menu_new_playlist"/>
 </menu>

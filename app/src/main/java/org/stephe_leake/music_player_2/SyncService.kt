@@ -56,6 +56,7 @@ class SyncService : Service()
    private suspend fun syncDB(serverIP: String, serverPort: Int, intentAction : String)
    {
       var conflictCount = 0
+      var errorCount = 0
       val dao: SongDao = (application as MusicPlayerApplication).db.songDao()
       
       // Connect to the sync server on the laptop, do what it says.
@@ -149,9 +150,12 @@ class SyncService : Service()
                            val id = msg.getInt("ID")
                            val song = dao.getSong(id)
                            if (song == null)
-                              syncUtils.sendError(outputStream, "invalid ID: $id")
+                              {
+                                 errorCount++
+                                 syncUtils.sendError(outputStream, "invalid ID: $id")
+                              }
                            else
-                              syncUtils.sendData(outputStream, syncUtils.toJSON(song))
+                              syncUtils.sendData(outputStream, Song.toJSON(song))
                         }
 
                      Operations.GET_LAST_ID ->
@@ -165,21 +169,21 @@ class SyncService : Service()
                         {
                            val result = JSONObject()
                            result.put("List",
-                                      syncUtils.toJSON(dao.getModified(msg.getInt("ID"), msg.getString("Modified"))))
+                                      Song.toJSON(dao.getModified(msg.getInt("ID"), msg.getString("Modified"))))
                            syncUtils.sendData(outputStream, result)
                         }
 
                      Operations.GET_NEW ->
                         {
                            val result = JSONObject()
-                           result.put("List", syncUtils.toJSON(dao.getNew(msg.getInt("ID"), msg.getInt("Max_Count"))))
+                           result.put("List", Song.toJSON(dao.getNew(msg.getInt("ID"), msg.getInt("Max_Count"))))
                            syncUtils.sendData(outputStream, result)
                         }
 
                      Operations.CONFLICT ->
                         {
                            conflictCount++ // So user knows there was a conflict
-                           utils.errorLog(msg.toString())
+                           syncUtils.log(msg.toString())
                            // So user can refer to the details later to resolve the conflict
 
                            syncUtils.sendAck(outputStream)
@@ -254,6 +258,7 @@ class SyncService : Service()
 
                            if (oldValue == null)
                               {
+                                 errorCount++
                                  syncUtils.sendError(outputStream, "$oldId not found")
                               }
                            else
@@ -266,7 +271,7 @@ class SyncService : Service()
                                          (newValue.Play_After != Song.Null_ID))
                                  {
                                     conflictCount++ // not really a conflict, but close enough
-                                    utils.errorLog("$newId renumbered with play_before/_after set")
+                                    syncUtils.log("$newId renumbered with play_before/_after set")
                                  }
                                  
                                  syncUtils.sendAck(outputStream)
@@ -277,6 +282,7 @@ class SyncService : Service()
                catch (e: JSONException)
                {
                   val errMsg = "${msg}: error: " + (e.message ?: "")
+                  errorCount++
                   notif.error(errMsg)
                   syncUtils.log(msg.toString())
                   syncUtils.sendError(outputStream, errMsg)
@@ -284,19 +290,21 @@ class SyncService : Service()
                }
                catch (e: java.net.ProtocolException)
                {
+                  errorCount++
                   notif.error(e.message?:"")
                   syncUtils.log(msg.toString())
                   done = true
                }
                catch (e: java.net.SocketException)
                {
+                  errorCount++
                   notif.error("remote closed socket: " + (e.message?:""))
                   syncUtils.log(msg.toString())
                   done = true
                }
             } // while
 
-         if (intentAction == utils.SYNC_DB_COMMAND)
+         if (intentAction == utils.SYNC_DB_COMMAND && conflictCount == 0 && errorCount == 0)
             {
                this@SyncService.playlistPrefsState.edit {
                   prefs ->
@@ -309,6 +317,7 @@ class SyncService : Service()
          // server not found, connection reset, etc.
          Log.e(utils.logTag, "SyncService Error: ${e.message}", e)
          notif.error("error: ${e.message}")
+         syncUtils.log(e.message ?: "")
          // Any conflicts found this round will be found again in the
          // next sync round.
       }

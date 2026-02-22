@@ -19,17 +19,8 @@ search page:
 
 implement db sync
     ~/Projects/smm.work_1/notes.text
-    resume init done
-
-    test sync_db:
-        - no changes; works
-        modify one category on laptop
-        modify one category on tablet
-        modify same category on laptop and tablet (conflict)
-        delete one song on laptop
-
-deleted should be null, not default
-    rerun modify (when ready to switch)
+    propagate to main
+    rerun modify
 
 old books app port: 16#9001#
     can't use that for music!

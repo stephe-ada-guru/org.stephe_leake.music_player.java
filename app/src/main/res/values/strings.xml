@@ -49,6 +49,7 @@
   <string name="menu_clean_playlist">Clean playlist</string>
   <string name="menu_copy">Copy</string>
   <string name="menu_db_sync">Sync database</string>
+  <string name="menu_db_sync_edit_state">Sync database edit state</string>
   <string name="menu_db_init">Init database</string>
   <string name="menu_db_resume_init">Resume init database</string>
   <string name="menu_jump_to_song">Jump to song</string>
