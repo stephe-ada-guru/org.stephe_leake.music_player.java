@@ -23,7 +23,6 @@ import android.content.Context
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 
@@ -64,6 +63,7 @@ class ServiceNotif (
          .setContentIntent(showLogPendingIntent)
          .setContentTitle(title + statusText)
          .setContentText(contentText)
+         .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
          .setPriority(NotificationCompat.PRIORITY_DEFAULT) // make sure it shows!
          .setOngoing(true)
          .setSmallIcon(R.mipmap.download_icon) // shown in status bar

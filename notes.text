@@ -26,6 +26,10 @@ old books app port: 16#9001#
     can't use that for music!
 
 edit category on main view
+    delete "category" button
+    or button open text input.
+
+"other" button open text input
 
  decisions
 standard notification doesn't display album
