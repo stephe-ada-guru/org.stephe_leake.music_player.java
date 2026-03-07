@@ -38,37 +38,59 @@
   <item
       android:id="@id/menu_copy"
       android:title="@string/menu_copy"/>
+
   <item
-      android:id="@id/menu_clean_playlist"
-      android:title="@string/menu_clean_playlist"/>
+      android:id="@id/menu_group_playlist"
+      android:title="@string/menu_group_playlist">
+    <menu>
+      <item
+          android:id="@id/menu_new_playlist"
+          android:title="@string/menu_new_playlist"/>
+      <item
+          android:id="@id/menu_show_playlist"
+          android:title="@string/menu_show_playlist"/>
+      <item
+          android:id="@id/menu_clean_playlist"
+          android:title="@string/menu_clean_playlist"/>
+      <item
+          android:id="@id/menu_reset_playlist"
+          android:title="@string/menu_reset_playlist"/>
+    </menu>
+  </item>
+
   <item
-      android:id="@id/menu_reset_playlist"
-      android:title="@string/menu_reset_playlist"/>
+      android:id="@id/menu_group_logs"
+      android:title="@string/menu_group_logs">
+    <menu>
+      <item
+          android:id="@id/menu_show_download_log"
+          android:title="@string/menu_show_download_log"/>
+      <item
+          android:id="@id/menu_show_error_log"
+          android:title="@string/menu_show_error_log"/>
+      <item
+          android:id="@id/menu_show_sync_log"
+          android:title="@string/menu_show_sync_log"/>
+    </menu>
+  </item>
+
   <item
-      android:id="@id/menu_show_playlist"
-      android:title="@string/menu_show_playlist"/>
-  <item
-      android:id="@id/menu_show_download_log"
-      android:title="@string/menu_show_download_log"/>
-  <item
-      android:id="@id/menu_show_error_log"
-      android:title="@string/menu_show_error_log"/>
-  <item
-      android:id="@id/menu_show_sync_log"
-      android:title="@string/menu_show_sync_log"/>
-  <item
-      android:id="@id/menu_preferences"
-      android:title="@string/menu_preferences"/>
-  <item
-      android:id="@id/menu_db_init"
-      android:title="@string/menu_db_init"/>
-  <item
-      android:id="@id/menu_db_resume_init"
-      android:title="@string/menu_db_resume_init"/>
-  <item
-      android:id="@id/menu_db_sync_edit_state"
-      android:title="@string/menu_db_sync_edit_state"/>
-  <item
-      android:id="@id/menu_new_playlist"
-      android:title="@string/menu_new_playlist"/>
+      android:id="@id/menu_group_setup"
+      android:title="@string/menu_group_setup">
+    <menu>
+      <item
+          android:id="@id/menu_preferences"
+          android:title="@string/menu_preferences"/>
+      <item
+          android:id="@id/menu_db_init"
+          android:title="@string/menu_db_init"/>
+      <item
+          android:id="@id/menu_db_resume_init"
+          android:title="@string/menu_db_resume_init"/>
+      <item
+          android:id="@id/menu_db_sync_edit_state"
+          android:title="@string/menu_db_sync_edit_state"/>
+    </menu>
+  </item>
+
 </menu>

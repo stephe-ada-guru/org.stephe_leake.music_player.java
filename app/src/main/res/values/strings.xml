@@ -46,6 +46,10 @@
   <string name="note_want_more">Want More</string>
 
   <!-- menu -->
+  <string name="menu_group_playlist">Manage playlists</string>
+  <string name="menu_group_logs">Show logs</string>
+  <string name="menu_group_setup">Set up database, preferences</string>
+
   <string name="menu_clean_playlist">Clean playlist</string>
   <string name="menu_copy">Copy</string>
   <string name="menu_db_sync">Sync database</string>

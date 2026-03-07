@@ -22,6 +22,10 @@
   <item type="id" name="main_toolbar"/>
   <item type="id" name="main_pref_frag"/>
 
+  <item type="id" name="menu_group_playlist" />
+  <item type="id" name="menu_group_logs" />
+  <item type="id" name="menu_group_setup" />
+
   <item type="id" name="menu_clean_playlist" />
   <item type="id" name="menu_close" />
   <item type="id" name="menu_copy" />
