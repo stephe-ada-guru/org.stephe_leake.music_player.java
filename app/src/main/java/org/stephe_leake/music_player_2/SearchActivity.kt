@@ -34,8 +34,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -192,7 +190,7 @@ fun AlbumGroup(albumInfo: AlbumInfo, songs: List<Song>) {
       elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
    ) {
       Column(modifier = Modifier.padding(8.dp)) {
-         AlbumHeader(albumInfo, directory = File(utils.songFileName(songs.first().File_Name!!)).parent!!)
+         AlbumHeader(albumInfo, directory = File(utils.songFileName(songs.first().File_Name)).parent!!)
          Spacer(modifier = Modifier.height(8.dp))
          HorizontalDivider()
          Spacer(modifier = Modifier.height(8.dp))
@@ -235,7 +233,7 @@ fun AlbumHeader(albumInfo: AlbumInfo, directory: String)
 
       // Not displaying album art images here; no room on phone screen.
       
-      val liner_notes = directory + "/liner_notes.pdf"
+      val liner_notes = "$directory/liner_notes.pdf"
       val context = LocalContext.current
       if (File(liner_notes).exists())
          Icon(
@@ -282,7 +280,7 @@ fun SongRow(
                         (
                            context,
                            context.packageName + ".provider",
-                           File(utils.songFileName(song.File_Name!!))
+                           File(utils.songFileName(song.File_Name))
                         ),
                         "audio/*"
                      )
@@ -320,7 +318,7 @@ fun SongRow(
       )
       
       Text(
-         text = song.Title ?: "",
+         text = song.Title,
          modifier = Modifier
              .weight(2f)
              .background(darkBackground)
@@ -330,7 +328,7 @@ fun SongRow(
       )
 
       EditableText(
-         initialValue = song.Category ?: "",
+         initialValue = song.Category,
          onSave = {category -> viewModel.updateSong(song.copy(Category = category))},  
          modifier = Modifier
              .weight(1.5f)
@@ -340,7 +338,7 @@ fun SongRow(
    } // end Row 1
 
    if (isExpanded)
-      Row {Text(text = song.File_Name ?: "", maxLines = maxLines)}
+      Row {Text(text = song.File_Name, maxLines = maxLines)}
 
 } // end SongRow
 
@@ -354,44 +352,43 @@ fun EditableText(
     var text by remember { mutableStateOf(initialValue) }
 
     if (isEditing) {
-        // --- Edit Mode ---
-        Row(
-            modifier = modifier,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Text input field
-            OutlinedTextField(
+       // --- Edit Mode (Floating Dialog) ---
+       AlertDialog(
+          onDismissRequest = { isEditing = false },
+          title = { Text("Edit Category") },
+          text = {
+             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
                 singleLine = true
-            )
-            // Save button
-            IconButton(onClick = {
-                onSave(text)
-                isEditing = false
-            }) {
-                Icon(Icons.Default.Check, contentDescription = "Save")
-            }
-            // Cancel button
-            IconButton(onClick = {
-                // Reset text to its original value and exit edit mode
-                text = initialValue
-                isEditing = false
-            }) {
-                Icon(Icons.Default.Close, contentDescription = "Cancel")
-            }
-        }
-    } else {
-        // --- Display Mode ---
-        Text(
-            text = initialValue.ifEmpty { "[empty]" }, // Show placeholder for empty text
-            modifier = modifier
-                .fillMaxWidth()
-                .clickable { isEditing = true } // Click to enter edit mode
-                .padding(vertical = 16.dp) // Add padding to make it easier to click
-        )
+             )
+          },
+          confirmButton = {
+             TextButton(onClick = {
+                           onSave(text)
+                           isEditing = false
+             }) {Text("Save")}
+          },
+          dismissButton = {
+             TextButton(onClick = {
+                           text = initialValue
+                           isEditing = false
+             }) {Text("Cancel")}
+          }
+       )
     }
+    
+    // --- Display Mode ---
+    Text(
+       text = initialValue.ifEmpty { "[empty]" }, // Show placeholder for empty text
+       modifier = modifier
+          .fillMaxWidth()
+          .clickable { isEditing = true } // Click to enter edit mode
+          .padding(vertical = 16.dp), // Add padding to make it easier to click
+       maxLines = 1,
+       overflow = TextOverflow.Ellipsis
+    )
 } // end EditableText
 
 // end of file

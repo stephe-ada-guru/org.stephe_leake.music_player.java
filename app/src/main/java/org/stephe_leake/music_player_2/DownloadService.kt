@@ -137,8 +137,7 @@ class DownloadService : Service()
                      return
                   }
 
-               // FIXME: add error count from downloaded songs, send notes
-               notif.update(if (newSongs.strings.size == 0) "" else "$newSongs.strings.size")
+               notif.update(if (newSongs.strings.isEmpty()) "" else "$newSongs.strings.size")
 
                // Add all songs to playlist, log any missing songs
                // (should all be on phone already, but this handles
@@ -158,9 +157,12 @@ class DownloadService : Service()
                      return
                   }
 
-               notif.done("")
-               DownloadUtils.log("$category : update done\n\n")
-
+               // Count of songs not found locally
+               val missing = newSongs.strings.size - status.count
+               val msg = if (missing>0) "$missing songs not found locally" else ""
+               
+               notif.done(msg)
+               DownloadUtils.log("$category : update done\n$msg\n")
             }
          else
             {
