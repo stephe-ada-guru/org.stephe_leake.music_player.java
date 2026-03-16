@@ -12,6 +12,31 @@ work_2 :
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
+switch to vocal saves wrong count.
+      playlistView.setOnClickListener() calls showPlaylistPickerDialog, which then calls playlisttoplayer on return
+
+messages:
+playlistToPlayer 'instrumental' play=false saveState=false   ;;; switch to app
+onMediaItemTransition 3
+savePlaylistName 'instrumental'
+onMediaItemTransition 3
+readPlaylistCounts 'instrumental' PlaylistCounts(index=6, pos=226414)
+onMediaItemTransition 3
+onMediaItemTransition 2
+updateDisplay saveState=true
+updateDisplay saveState=false
+ savePlaylistCounts 'instrumental' 6 226414 -1
+onMediaItemTransition 2
+updateDisplay saveState=true
+ savePlaylistCounts 'vocal' 6 226414 -1              ;;; _before_ calling playlisttoplayer!?
+ ... 'instrumental'
+ ... 'instrumental'
+ ... 'instrumental'
+playlistToPlayer 'vocal' play=true saveState=true
+
+    to find where erroneous saveplaylistcounts came from, added call stack to log message
+        also deleted mutex in mainViewModel.savePlaylistCounts.
+
 search page:
     collapse/expand albums
     click on artist to search that artist

@@ -410,6 +410,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             
             val category = playlistToEdit.name.removeSuffix(".m3u")
             lifecycleScope.launch {
+               Log.d(utils.logTag, "showPlaylistPickerDialog edit limit '$category' $newLimit")
                val current = utils.readPlaylistCounts(this@MainActivity, category)
                utils.savePlaylistCounts(this@MainActivity, category, current.index, current.pos, newLimit)
             }

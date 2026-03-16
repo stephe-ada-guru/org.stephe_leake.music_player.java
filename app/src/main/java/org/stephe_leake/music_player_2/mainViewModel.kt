@@ -84,9 +84,6 @@ class MainViewModel(private val application : Application, private val songDao: 
    // it.
    var controllerFuture: ListenableFuture<MediaController>? = null
 
-   // We need a mutex to serialize savePlaylistCounts calls
-   private val saveStateMutex = Mutex()
-
    // We need this here to use viewModelScope; see comment in
    // MainActivity.kt updateDisplay where this is called.
    fun savePlaylistCounts(index : Int, pos : Long)
@@ -97,10 +94,8 @@ class MainViewModel(private val application : Application, private val songDao: 
             viewModelScope.launch {
                try
                {
-                  saveStateMutex.withLock {
-                     utils.savePlaylistCounts((application as Context), category, index, pos,
-                     limit = utils.limitDontSave)
-                  }
+                  utils.savePlaylistCounts((application as Context), category, index, pos,
+                                            limit = utils.limitDontSave)
                }
                catch (e: Exception)
                {
@@ -170,7 +165,6 @@ class MainViewModel(private val application : Application, private val songDao: 
             // This did _not_ report a corrupt db. Sigh
             val song = songDao.getSong(albumArtist, album, title)
             _currentCategory.value = song?.Category
-            Log.d(utils.logTag, " ... '${_currentCategory.value}'")
          }
          catch (e: Exception)
          {

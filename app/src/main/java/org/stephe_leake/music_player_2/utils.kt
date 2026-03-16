@@ -193,7 +193,14 @@ class utils
       // Does not save 'category'. If pos or limit =
       // *DontSave, don't save those.
       {
-         Log.d(logTag, " savePlaylistCounts '$category' $index $pos $limit")
+         val stack = Throwable().stackTrace
+         // stack[1] is savePlaylistCounts itself
+         // stack[2], [3], [4] are the callers we want
+         val callers = stack.drop(1).take(3).joinToString(" <- ") { 
+            "${it.className.substringAfterLast('.')}.${it.methodName}:${it.lineNumber}"}
+
+         Log.d(logTag, " savePlaylistCounts '$category' $index $pos $limit | callers: $callers")
+
          context.playlistPrefsState.edit {
             preferences ->
                preferences[PlaylistCountsPreferenceKeys.index(category)] = index
