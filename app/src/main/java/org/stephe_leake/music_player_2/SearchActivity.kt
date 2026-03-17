@@ -272,7 +272,6 @@ fun SongRow(
             .padding(horizontal = 8.dp)
             .background(lightBackground)
             .clickable {
-               Log.d(utils.logTag, "SearchActivity PlaySong")
                val browserIntent = Intent(Intent.ACTION_VIEW)
                   .apply {
                      setDataAndType(

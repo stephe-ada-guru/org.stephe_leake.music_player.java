@@ -60,14 +60,14 @@ class SyncService : Service()
       val dao: SongDao = (application as MusicPlayerApplication).db.songDao()
       
       // Connect to the sync server on the laptop, do what it says.
-      Log.d(utils.logTag, "syncDB: start")
+      utils.debugLog("syncDB: start")
 
       var clientSocket: Socket? = null
       try {
          // We don't loop here; one sync session per user start sync
-         Log.d(utils.logTag, "SyncService: Connecting to $serverIP:$serverPort...")
+         utils.debugLog("SyncService: Connecting to $serverIP:$serverPort...")
          clientSocket = Socket(serverIP, serverPort)
-         Log.d(utils.logTag, "SyncService: Connected.")
+         utils.debugLog("SyncService: Connected.")
 
          val inputStream = clientSocket.getInputStream() 
          val outputStream = clientSocket.getOutputStream() 
@@ -327,7 +327,7 @@ class SyncService : Service()
          try
          {
             clientSocket?.close()
-            Log.d(utils.logTag, "SyncService: Socket closed.")
+            utils.debugLog("SyncService: Socket closed.")
          }
          catch (e: Exception)
          {

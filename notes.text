@@ -36,6 +36,7 @@ playlistToPlayer 'vocal' play=true saveState=true
 
     to find where erroneous saveplaylistcounts came from, added call stack to log message
         also deleted mutex in mainViewModel.savePlaylistCounts.
+        also used new utils.debugLog, so debug trace is local.
 
 search page:
     collapse/expand albums

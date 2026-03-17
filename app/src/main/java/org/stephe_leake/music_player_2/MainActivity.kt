@@ -219,7 +219,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    private suspend fun playlistToPlayer(category : String, play : Boolean, saveState : Boolean)
    // Start playing playlist utils.globalDirectory/<category>.m3u
    {
-      Log.d(utils.logTag, "playlistToPlayer '$category' play=$play saveState=$saveState")
+      utils.debugLog("playlistToPlayer '$category' play=$play saveState=$saveState")
       
       // First save current state, if valid
       if (saveState && viewModel.playlistName.value != "" && category != viewModel.playlistName.value)
@@ -410,7 +410,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             
             val category = playlistToEdit.name.removeSuffix(".m3u")
             lifecycleScope.launch {
-               Log.d(utils.logTag, "showPlaylistPickerDialog edit limit '$category' $newLimit")
+               utils.debugLog("showPlaylistPickerDialog edit limit '$category' $newLimit")
                val current = utils.readPlaylistCounts(this@MainActivity, category)
                utils.savePlaylistCounts(this@MainActivity, category, current.index, current.pos, newLimit)
             }
@@ -543,7 +543,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       @OptIn(UnstableApi::class)
       fun updateDisplay(saveState : Boolean)
       {
-         Log.d(utils.logTag, "updateDisplay saveState=$saveState")
+         utils.debugLog("updateDisplay saveState=$saveState")
 
          val count = mediaController!!.mediaItemCount
          val index = mediaController!!.currentMediaItemIndex
@@ -645,7 +645,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       {
          super.onMediaItemTransition(mediaItem, reason)
 
-         Log.d(utils.logTag, "onMediaItemTransition $reason")
+         utils.debugLog("onMediaItemTransition $reason")
          
          if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED)
             {
@@ -847,7 +847,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                   event: AppEvent ->
                      when (event) {
                         is AppEvent.ReloadPlaylist -> {
-                           Log.d (utils.logTag, "MainActivity received AppEvent.ReloadPlaylist")
                            if (mediaController != null)
                               {
                                  // We only get this when the playlist

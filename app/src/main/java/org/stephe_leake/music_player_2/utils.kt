@@ -106,6 +106,7 @@ class utils
 
       const val logFileExt : String = ".txt"
 
+      const val debugLogFileBaseName: String = "debug_log"
       const val errorLogFileBaseName: String = "error_log"
 
       fun playlistFileName(category: String) : String 
@@ -160,7 +161,7 @@ class utils
                         pos = preferences[PlaylistCountsPreferenceKeys.pos(category)] ?: 0)
                   }
             }
-         Log.d(logTag, "readPlaylistCounts '$category' $result")
+         debugLog("readPlaylistCounts '$category' $result")
          return result
       }
 
@@ -199,7 +200,7 @@ class utils
          val callers = stack.drop(1).take(3).joinToString(" <- ") { 
             "${it.className.substringAfterLast('.')}.${it.methodName}:${it.lineNumber}"}
 
-         Log.d(logTag, " savePlaylistCounts '$category' $index $pos $limit | callers: $callers")
+         debugLog("savePlaylistCounts '$category' $index $pos $limit | callers: $callers")
 
          context.playlistPrefsState.edit {
             preferences ->
@@ -218,7 +219,7 @@ class utils
          val preferences = context.playlistPrefsState.data.firstOrNull()
          if (preferences == null)
             {
-               Log.d(logTag, "playlist state prefs null")
+               utils.debugLog("readPlaylistName: playlist state prefs null")
                return ""
             }
          else
@@ -227,12 +228,12 @@ class utils
                if (temp == null)
                   {
                      // Never set
-                     Log.d(logTag, "playlist state prefs never set")
+                     utils.debugLog("readPlaylistName: playlist state prefs never set")
                      return ""
                   }
                else
                   {
-                     Log.d(logTag, "playlist name read '$temp'")
+                     utils.debugLog("readPlaylistName: playlist name read '$temp'")
                      return temp
                   }
             }
@@ -294,6 +295,12 @@ class utils
          writer.close()
       }
 
+      fun debugLog(msg: String)
+      {
+         // debugging stuff
+         log(msg, debugLogFileBaseName)
+      }
+
       fun errorLog(context : Context?, msg : String, e : Throwable)
       {
          // programmer errors (possibly due to Android bugs :)
@@ -306,9 +313,6 @@ class utils
       {
          // programmer errors (possibly due to Android bugs :)
          log(msg, errorLogFileBaseName)
-
-         // This can crash due to lack of resources; happens when run on new device.
-         // Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
       }
 
       fun alertLog(context : Context, msg : String)

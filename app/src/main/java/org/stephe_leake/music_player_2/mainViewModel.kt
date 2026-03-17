@@ -109,7 +109,7 @@ class MainViewModel(private val application : Application, private val songDao: 
    {
       try
       {
-         Log.d(utils.logTag, "savePlaylistName '$name'")
+         utils.debugLog("mainViewModel.writeName '$name'")
          (application as Context).playlistPrefsState.edit {
             preferences ->
                preferences[PlaylistNamePreferenceKeys.NAME] = name}
