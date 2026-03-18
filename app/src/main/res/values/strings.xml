@@ -67,6 +67,7 @@
   <string name="menu_share">Share</string>
   <string name="menu_show_playlist">Show playlist</string>
   <string name="menu_show_download_log">Show download log</string>
+  <string name="menu_show_debug_log">Show debug log</string>
   <string name="menu_show_sync_log">Show sync log</string>
   <string name="menu_show_error_log">Show error log</string>
   <string name="menu_update_playlist">Update playlist</string>

@@ -42,6 +42,7 @@
   <item type="id" name="menu_search_spotify" />
   <item type="id" name="menu_show_playlist" />
   <item type="id" name="menu_show_download_log" />
+  <item type="id" name="menu_show_debug_log" />
   <item type="id" name="menu_show_error_log" />
   <item type="id" name="menu_show_sync_log" />
   <item type="id" name="menu_sync_db" />

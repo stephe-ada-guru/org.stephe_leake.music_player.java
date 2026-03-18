@@ -266,6 +266,11 @@ class utils
          return "$globalDirectory/$logFileBaseName$logFileExt"
       }
 
+      fun debugLogFileName() : String
+      {
+         return logFileName(debugLogFileBaseName)
+      }
+      
       fun errorLogFileName() : String
       {
          return logFileName(errorLogFileBaseName)

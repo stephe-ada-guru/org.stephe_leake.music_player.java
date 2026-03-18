@@ -1156,18 +1156,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                }
             }
             
-         R.id.menu_show_playlist ->
-            { 
-              startActivity(
-                 Intent(Intent.ACTION_VIEW)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    .setDataAndType(
-                       FileProvider.getUriForFile(
-                          this,
-                          this@MainActivity.applicationContext.packageName + ".provider",
-                          File(utils.playlistFileName(viewModel.playlistName.value))),
-                       "text/plain"))
+         R.id.menu_show_debug_log ->
+            {
+               startActivity(utils.showLogIntent(this@MainActivity, utils.debugLogFileName()))
             }
 
          R.id.menu_show_download_log ->
@@ -1187,6 +1178,20 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                            this.applicationContext.packageName + ".provider",
                            File(utils.errorLogFileName())),
                         "text/plain"))
+            }
+
+         R.id.menu_show_playlist ->
+            { 
+              startActivity(
+                 Intent(Intent.ACTION_VIEW)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    .setDataAndType(
+                       FileProvider.getUriForFile(
+                          this,
+                          this@MainActivity.applicationContext.packageName + ".provider",
+                          File(utils.playlistFileName(viewModel.playlistName.value))),
+                       "text/plain"))
             }
 
          R.id.menu_show_sync_log ->
