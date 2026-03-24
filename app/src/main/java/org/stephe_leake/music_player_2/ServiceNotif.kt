@@ -55,6 +55,11 @@ class ServiceNotif (
    // Permission checked and requested in MainActivity
    private fun updateInternal()
    {
+      val wrappableText = contentText
+         .replace("/", "/\u200B")
+         .replace(".", ".\u200B")
+         .replace("_", "_\u200B")
+      
       val cancelAction = NotificationCompat.Action.Builder(
          R.drawable.cancel, "cancel", cancelPendingIntent).build()
       
@@ -63,7 +68,7 @@ class ServiceNotif (
          .setContentIntent(showLogPendingIntent)
          .setContentTitle(title + statusText)
          .setContentText(contentText)
-         .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
+         .setStyle(NotificationCompat.BigTextStyle().bigText(wrappableText))
          .setPriority(NotificationCompat.PRIORITY_DEFAULT) // make sure it shows!
          .setOngoing(true)
          .setSmallIcon(R.mipmap.download_icon) // shown in status bar

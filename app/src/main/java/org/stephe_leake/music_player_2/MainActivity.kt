@@ -40,11 +40,12 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.provider.Settings
+import android.speech.RecognizerIntent
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -52,6 +53,7 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
@@ -80,9 +82,11 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import androidx.media3.ui.PlayerView
 import androidx.preference.PreferenceManager
-import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 import kotlinx.coroutines.guava.await
 
@@ -690,9 +694,19 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       
    } // playerListener
 
-   fun onClickNote(v : View)
+   val voiceLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+      result ->
+         if (result.resultCode == RESULT_OK) {
+            val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0)
+            if (spokenText != null)
+               {      utils.debugLog("voice button: '$spokenText'")
+                      writeNote(spokenText)
+               }
+         }
+   }
+
+   fun writeNote(msg : String)
    {
-      val buttonText = (((v as Button).text as String).replace('\n', ' '))
       val controller = mediaController!!
       val index = controller.currentMediaItemIndex
 
@@ -703,10 +717,15 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             val writer = BufferedWriter(FileWriter(noteFileName, true)) // append
             val absSongFile = metaData.extras!!.getString("Song_File")!!
             val relSongFile = absSongFile.substring(utils.globalDirectory.length + 1) // no leading /
-            writer.write("\"${relSongFile}\" $buttonText")
+            writer.write("\"${relSongFile}\" $msg")
             writer.newLine()
             writer.close()
          }
+   }
+   
+   fun onClickNote(v : View)
+   {
+      writeNote((v as Button).text as String)
    }
    
    private fun getTextViewTextScale() : Float
@@ -779,6 +798,16 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       slideshow = findViewById(R.id.image_slideshow)
       imageSlideshowAdapter = ImageSlideshowAdapter(emptyList())
       slideshow.adapter = imageSlideshowAdapter
+
+      val voiceButton : FloatingActionButton = this.findViewById(R.id.voice)
+      voiceButton.setOnClickListener()
+      {
+         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+         }
+         voiceLauncher.launch(intent)
+      }
 
       // Wait for viewModel flows. 
       lifecycleScope.launch {

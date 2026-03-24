@@ -129,6 +129,7 @@
   <string name="text_scale_title">text scale</string>
   <string name="text_scale_summary">relative size of text</string>
   <string name="text_scale_dialog_title">set text scale</string>
+  <string name="voice">voice control</string>
 
   <!-- Do not translate, but may be locale-dependent. -->
 

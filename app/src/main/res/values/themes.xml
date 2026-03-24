@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-  <style name="Theme.StephesMusicPlayer2" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+  <style name="Theme.StephesMusicPlayer2" parent="Theme.Material3.DayNight.NoActionBar" />
 
-  <style name="Widget.App.Button.TextButton" parent="Widget.MaterialComponents.Button.TextButton">
+  <style name="Widget.App.Button.TextButton" parent="Widget.Material3.Button.TextButton">
     <!-- This sets the ripple color to a semi-transparent white for good contrast -->
     <item name="android:textColor">@color/button_text_color</item>
     <item name="rippleColor">#33FFFFFF</item>

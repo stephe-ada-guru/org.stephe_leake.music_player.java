@@ -1,3 +1,4 @@
+// libs.* are defined in ../gradle/libs.versions.toml
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
