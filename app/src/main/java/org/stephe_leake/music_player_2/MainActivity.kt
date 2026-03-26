@@ -898,6 +898,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       }
 
       checkPermission()
+
+      if (this@MainActivity.intent != null)
+         handleIntent(this@MainActivity.intent) // onCreate is called once; onStart every time app becomes visible.
    } // onCreate
 
    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?)
@@ -908,7 +911,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
            }
     }
    
-   // @OptIn(UnstableApi::class)
    override fun onStart()
    {
       super.onStart()
@@ -927,11 +929,26 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          mediaController!!.addListener(playerListener)
          
          val playerView = findViewById<PlayerView>(R.id.player_view)
-         playerView.setPlayer(mediaController)
+          playerView.player = mediaController
          
          viewModel.setMediaControllerReady(true)
       }   
    } // onStart
+
+   override fun onNewIntent(intent: Intent)
+   {
+      super.onNewIntent(intent)
+      setIntent(intent) // Important: updates the intent for the activity
+      handleIntent(intent)
+   }
+
+   private fun handleIntent(intent: Intent)
+   {
+      if (intent.action == utils.SYNC_DB_COMMAND)
+      {
+         this.startService(Intent(utils.SYNC_DB_COMMAND, null, this, SyncService::class.java))
+      }
+   }
 
    override fun onResume()
    {

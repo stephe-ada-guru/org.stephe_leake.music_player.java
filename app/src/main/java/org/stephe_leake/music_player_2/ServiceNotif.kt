@@ -55,6 +55,8 @@ class ServiceNotif (
    // Permission checked and requested in MainActivity
    private fun updateInternal()
    {
+      utils.debugLog("ServiceNotif: $contentText")
+      
       val wrappableText = contentText
          .replace("/", "/\u200B")
          .replace(".", ".\u200B")
