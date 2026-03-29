@@ -55,9 +55,14 @@ class ServiceNotif (
    // Permission checked and requested in MainActivity
    private fun updateInternal()
    {
-      utils.debugLog("ServiceNotif: $contentText")
+      utils.debugLog("ServiceNotif: $statusText $contentText")
       
-      val wrappableText = contentText
+      val wrappableContentText = contentText
+         .replace("/", "/\u200B")
+         .replace(".", ".\u200B")
+         .replace("_", "_\u200B")
+
+      val wrappableStatusText = statusText
          .replace("/", "/\u200B")
          .replace(".", ".\u200B")
          .replace("_", "_\u200B")
@@ -70,7 +75,7 @@ class ServiceNotif (
          .setContentIntent(showLogPendingIntent)
          .setContentTitle(title + statusText)
          .setContentText(contentText)
-         .setStyle(NotificationCompat.BigTextStyle().bigText(wrappableText))
+         .setStyle(NotificationCompat.BigTextStyle().bigText(wrappableContentText + wrappableStatusText))
          .setPriority(NotificationCompat.PRIORITY_DEFAULT) // make sure it shows!
          .setOngoing(true)
          .setSmallIcon(R.mipmap.download_icon) // shown in status bar
