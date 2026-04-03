@@ -55,7 +55,7 @@ class ServiceNotif (
    // Permission checked and requested in MainActivity
    private fun updateInternal()
    {
-      utils.debugLog("ServiceNotif: $statusText $contentText")
+      utils.debugLog("ServiceNotif: '$statusText' '$contentText'")
       
       val wrappableContentText = contentText
          .replace("/", "/\u200B")
@@ -88,7 +88,7 @@ class ServiceNotif (
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    fun done(msg : String)
    {
-      statusText = "done $statusText"
+      statusText = "done"
       contentText = msg
       updateInternal()
    }
@@ -105,6 +105,7 @@ class ServiceNotif (
    fun update(progress : String)
    {
       statusText = progress
+      contentText = ""
       updateInternal()
    }
 

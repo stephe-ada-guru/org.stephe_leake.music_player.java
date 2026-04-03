@@ -21,12 +21,16 @@ package org.stephe_leake.music_player_2
 import android.Manifest
 import android.app.PendingIntent
 import android.app.Service
+import android.content.ComponentName
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.os.IBinder
 import android.util.Log
 import androidx.annotation.RequiresPermission
+import androidx.concurrent.futures.await
+import androidx.media3.session.MediaBrowser
+import androidx.media3.session.SessionToken
 import androidx.preference.PreferenceManager
 
 import java.io.File
@@ -61,6 +65,23 @@ class DownloadService : Service()
       return total - counts.index
    }
 
+   private suspend fun getCurrentPosition(): Long
+   {
+      val sessionToken = SessionToken(this, ComponentName(this, PlayService::class.java))
+      val browserFuture = MediaBrowser.Builder(this, sessionToken).buildAsync()
+      
+      return try {
+         val browser = browserFuture.await() 
+         val pos = browser.currentPosition
+         browser.release()
+         pos
+      } catch (e: Exception)
+      {
+         utils.errorLog("DownloadService: Failed to get position: $e")
+         utils.posDontSave
+      }
+   }
+   
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    private suspend fun updatePlaylist(category : String, limit : Int)
    {
@@ -126,8 +147,6 @@ class DownloadService : Service()
                      playlistFile.createNewFile()
                   }
 
-               utils.savePlaylistCounts(this, category, index = 0, pos = utils.posDontSave, limit = songCountMax)
-               
                newSongs = DownloadUtils.getNewSongsList(
                   serverIP, category, songCount, newSongCount, overSelectRatio, -1)
 
@@ -147,10 +166,15 @@ class DownloadService : Service()
                if (utils.readPlaylistName(this) == category)
                   {
                      // Restart playlist to show song position, count
+                     utils.savePlaylistCounts(
+                        this, category, index = 0, pos = getCurrentPosition(), limit = songCountMax)
                      Log.d(utils.logTag, "DownloadService.updatePlaylist send ReloadPlaylist")
                      serviceScope.launch {AppEventBus.emitEvent(AppEvent.ReloadPlaylist)}
                   }
+               else
+                  utils.savePlaylistCounts(this, category, index = 0, pos = utils.posDontSave, limit = songCountMax)
                
+
                if (status.status != ProcessStatus.Success)
                   {
                      notif.error("check local/get songs from server failed")

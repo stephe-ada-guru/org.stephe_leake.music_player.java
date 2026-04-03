@@ -38,6 +38,11 @@ playlistToPlayer 'vocal' play=true saveState=true
         also deleted mutex in mainViewModel.savePlaylistCounts.
         also used new utils.debugLog, so debug trace is local.
 
+reload playlist after update loses pos in song
+    fix implemented; testing.
+
+add synced lyrics
+
 search page:
     collapse/expand albums
     click on artist to search that artist
