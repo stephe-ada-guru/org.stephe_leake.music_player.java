@@ -42,6 +42,13 @@ reload playlist after update loses pos in song
     fix implemented; testing.
 
 add synced lyrics
+    see gemini; implement LRC
+    use lrcgenerator.com in parallel with VLC to generate .lrc file
+    test embedding in .mp3 metadata SYLT
+    could also add unsynced lyrics in USLT
+        test accessing those in Android app
+
+    use claude to process .pdfs, add to .mp3?
 
 search page:
     collapse/expand albums

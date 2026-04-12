@@ -174,7 +174,6 @@ class DownloadService : Service()
                else
                   utils.savePlaylistCounts(this, category, index = 0, pos = utils.posDontSave, limit = songCountMax)
                
-
                if (status.status != ProcessStatus.Success)
                   {
                      notif.error("check local/get songs from server failed")
