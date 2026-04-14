@@ -102,6 +102,10 @@ import org.apache.commons.io.FilenameUtils
 import android.view.View.GONE
 import android.view.View.VISIBLE
 
+val Player.playlistName: String?
+    //  Return the current playlist name from the current mediaItem
+    get() = this.currentMediaItem?.mediaMetadata?.extras?.getString("PlaylistName")
+ 
 data class PlaylistInfo(val name: String, val limit: Int)
 
 private class PlaylistAdapter(
@@ -224,24 +228,25 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
    // Start playing playlist utils.globalDirectory/<category>.m3u
    {
       utils.debugLog("playlistToPlayer '$category' play=$play saveState=$saveState")
-      
+      val currentCategory = mediaController!!.playlistName
+
       // First save current state, if valid
-      if (saveState && viewModel.playlistName.value != "" && category != viewModel.playlistName.value)
+      if (saveState && currentCategory != null && category != currentCategory)
          {
             utils.savePlaylistCounts(
                this@MainActivity,
-               category = viewModel.playlistName.value,
+               category = currentCategory,
                index    = mediaController!!.currentMediaItemIndex,
                pos      = mediaController!!.currentPosition,
                limit    = utils.limitDontSave)
          }
       
-      // This can trigger onMediaItemTransition, which saves counts
-      // for the current playlist. So call viewModel.writeName after
-      // this. IMPROVEME: add flag "clearing" to disable save state?
       mediaController!!.clearMediaItems()
 
-      viewModel.writeName(category)     
+      // We use viewModel for this because we need a coroutine. We do
+      // this even when category has not changed, because we don't
+      // actually know what's in the DataStore.
+      viewModel.writeName(category)
       
       val absFilename  = utils.playlistFileName(category)
       val playlistFile = File (absFilename)
@@ -297,6 +302,15 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
                extra.putString("Song_File", songFileName)
                extra.putString("Liner_Notes", songFile.parent!! + "/liner_notes.pdf")
+
+               // WORKAROUND: We store the current playlist name in
+               // mediacontroller.mediaItem.metadata.extra, to avoid a
+               // race condition on waking up. We tried always
+               // trusting that mainViewModel.playlistName matches the
+               // playlist stored in mediacontroller, but that can get
+               // out of sync when the app goes to sleep and wakes up
+               // (not clear exactly how that happens).
+               extra.putString("PlaylistName", category)
                
                val metaData = androidx.media3.common.MediaMetadata.Builder()
                // Adding the artwork here makes switching playlists
@@ -563,7 +577,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          // viewModelScope, which can only be accessed from
          // mainViewModel.
          if (saveState)
-            viewModel.savePlaylistCounts(index, pos)
+            viewModel.savePlaylistCounts(mediaController!!.playlistName, index, pos)
 
          val playlistView = utils.findTextViewById(this@MainActivity, R.id.playlist)
          val yearView = utils.findTextViewById(this@MainActivity, R.id.year)
@@ -583,7 +597,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          val albumText = metadata.albumTitle ?: ""
          
          // 'index' is 0 indexed
-         playlistView.text = viewModel.playlistName.value + " " + (index + 1).toString() + "/" + count
+         playlistView.text = mediaController!!.playlistName + " " + (index + 1).toString() + "/" + count
 
          val songFile = File(metadata.extras!!.getString("Song_File")!!)
          val images = getImages(songFile.parent!!)
@@ -604,7 +618,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                // replacement mediaItem.
                //
                // This artwork shows on the lock screen, not in the main UI.
-               // Artwork embedded in the mp3 file is shown in the main UI;
+               // Artwork embedded in the mp3 file is shown in the main UI.
                // All the others are displayed in the slideshow below.
                val newMetadata = androidx.media3.common.MediaMetadata.Builder()
                   .populate(metadata)
@@ -638,6 +652,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             {
                // User paused; save state for later resume.
                viewModel.savePlaylistCounts(
+                  category = mediaController!!.playlistName,
                   index = mediaController!!.currentMediaItemIndex,
                   pos = mediaController!!.currentPosition)
             }
@@ -707,13 +722,13 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
    fun writeNote(msg : String)
    {
-      val controller = mediaController!!
-      val index = controller.currentMediaItemIndex
+      val index = mediaController!!.currentMediaItemIndex
 
-      if (index > 0 && viewModel.playlistName.value != "")
+      if (index > 0 && mediaController!!.playlistName != null)
          {
-            val noteFileName = utils.notesFileName(viewModel.playlistName.value)
-            val metaData = controller.currentMediaItem!!.mediaMetadata
+            val category : String = mediaController!!.playlistName!!
+            val noteFileName = utils.notesFileName(category)
+            val metaData = mediaController!!.currentMediaItem!!.mediaMetadata
             val writer = BufferedWriter(FileWriter(noteFileName, true)) // append
             val absSongFile = metaData.extras!!.getString("Song_File")!!
             val relSongFile = absSongFile.substring(utils.globalDirectory.length + 1) // no leading /
@@ -858,7 +873,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                                     // We don't know the state of the
                                     // media controller playlist;
                                     // restore it from scratch.
-                                    val category : String = viewModel.playlistName.value
+                                    val category : String = viewModel.getPlaylistName()
                                     
                                     if (category.isNotEmpty())
                                        {
@@ -886,7 +901,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                                  // them with the outdated state of
                                  // the current mediaController playlist.
                                  playlistToPlayer(
-                                    viewModel.playlistName.value,
+                                    mediaController!!.playlistName!!,
                                     play = mediaController!!.isPlaying,
                                     saveState = false)
                               }
@@ -1029,10 +1044,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                         DownloadUtils.cleanPlaylist(this@MainActivity, category)
                         utils.savePlaylistCounts(this@MainActivity, category, index = 0,
                                                  pos = utils.posDontSave, limit = utils.limitDontSave)
-                        if (viewModel.playlistName.value == category)
+                        if (mediaController!!.playlistName!! == category)
                            // See comment at ReloadPlaylist.
                            playlistToPlayer(
-                              viewModel.playlistName.value,
+                              mediaController!!.playlistName!!,
                               play = mediaController!!.isPlaying,
                               saveState = false)}
                }
@@ -1155,11 +1170,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                // lifecycleScope is ok here; the user has just clicked
                // on an item in MainActivity UI.
                lifecycleScope.launch {
-                  utils.savePlaylistCounts(this@MainActivity, viewModel.playlistName.value, 0, 0,
+                  utils.savePlaylistCounts(this@MainActivity, mediaController!!.playlistName!!, 0, 0,
                                            limit = utils.limitDontSave)
                   // See comment at ReloadPlaylist
                   playlistToPlayer(
-                     viewModel.playlistName.value,
+                     mediaController!!.playlistName!!,
                      play = mediaController!!.isPlaying,
                      saveState = false)}
             }
@@ -1236,7 +1251,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                        FileProvider.getUriForFile(
                           this,
                           this@MainActivity.applicationContext.packageName + ".provider",
-                          File(utils.playlistFileName(viewModel.playlistName.value))),
+                          File(utils.playlistFileName(mediaController!!.playlistName!!))),
                        "text/plain"))
             }
 

@@ -24,7 +24,6 @@ import androidx.compose.runtime.State
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -34,12 +33,9 @@ import com.google.common.util.concurrent.ListenableFuture
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 private object PlaylistNamePreferenceKeys
 {
@@ -74,11 +70,6 @@ class MainViewModel(private val application : Application, private val songDao: 
       _errorMessage.value = null
    }
    
-   // We need a state flow for the playlist name to resolve a race
-   // condition at startup.
-   private val _playlistName = MutableStateFlow<String>("")
-   val playlistName: StateFlow<String> = _playlistName.asStateFlow()
-
    // The actual MediaController survives when MainActivity is torn
    // down (MainViewModel also survives); preserve the connection to
    // it.
@@ -86,10 +77,9 @@ class MainViewModel(private val application : Application, private val songDao: 
 
    // We need this here to use viewModelScope; see comment in
    // MainActivity.kt updateDisplay where this is called.
-   fun savePlaylistCounts(index : Int, pos : Long)
+   fun savePlaylistCounts(category : String?, index : Int, pos : Long)
    {
-      val category = _playlistName.value
-      if (category.isNotEmpty())  // defensive programming
+      if (category != null && category.isNotEmpty())
          {
             viewModelScope.launch {
                try
@@ -113,7 +103,6 @@ class MainViewModel(private val application : Application, private val songDao: 
          (application as Context).playlistPrefsState.edit {
             preferences ->
                preferences[PlaylistNamePreferenceKeys.NAME] = name}
-         _playlistName.value = name
       }
       catch (e: Exception)
       {
@@ -121,6 +110,12 @@ class MainViewModel(private val application : Application, private val songDao: 
       }
    } // writeName
    
+   // We need a state flow for the playlist name to resolve a race
+   // condition at startup. This is _not_ the definitive value for the
+   // current playlist name; that is stored in each mediaItem.extras
+   // "Category".
+   private val _playlistName = MutableStateFlow("")
+
    private val _isMediaControllerReady = MutableStateFlow(false)
    private val _isPlaylistNameLoaded = MutableStateFlow(false)
 
@@ -132,6 +127,19 @@ class MainViewModel(private val application : Application, private val songDao: 
 
    init {
       loadPlaylistName()
+   }
+
+   fun getPlaylistName() : String
+   // Can only be called after isPlayerReadyToInitialize is true, and
+   // only to get the name just read from the datastore.
+   {
+      val result = _playlistName.value
+
+      // Ensure startup reads from DataStore, not _playlistName
+      _playlistName.value = ""
+      _isPlaylistNameLoaded.value = false
+      
+      return result
    }
    
    private fun loadPlaylistName()
@@ -154,7 +162,9 @@ class MainViewModel(private val application : Application, private val songDao: 
       _isMediaControllerReady.value = isReady
    }
    
-   // Category is updated by an async db fetch
+   // Category is updated by an async db fetch. It contains the
+   // current playlist name and other things; it is _not_ the
+   // definitive source of the current playlist name.
    private val _currentCategory = mutableStateOf<String?>(null)
    val currentCategory: State<String?> = _currentCategory
    
