@@ -113,7 +113,7 @@ class MainViewModel(private val application : Application, private val songDao: 
    // We need a state flow for the playlist name to resolve a race
    // condition at startup. This is _not_ the definitive value for the
    // current playlist name; that is stored in each mediaItem.extras
-   // "Category".
+   // "PlaylistName".
    private val _playlistName = MutableStateFlow("")
 
    private val _isMediaControllerReady = MutableStateFlow(false)

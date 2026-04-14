@@ -303,7 +303,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                extra.putString("Song_File", songFileName)
                extra.putString("Liner_Notes", songFile.parent!! + "/liner_notes.pdf")
 
-               // WORKAROUND: We store the current playlist name in
+               // We store the current playlist name in
                // mediacontroller.mediaItem.metadata.extra, to avoid a
                // race condition on waking up. We tried always
                // trusting that mainViewModel.playlistName matches the
@@ -872,7 +872,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                                  {
                                     // We don't know the state of the
                                     // media controller playlist;
-                                    // restore it from scratch.
+                                    // restore it from scratch. This
+                                    // is the _only_ place that does
+                                    // not use
+                                    // mediaController!!.playlistName.
                                     val category : String = viewModel.getPlaylistName()
                                     
                                     if (category.isNotEmpty())
