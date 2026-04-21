@@ -12,34 +12,14 @@ work_2 :
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
-switch to vocal saves wrong count.
-      playlistView.setOnClickListener() calls showPlaylistPickerDialog, which then calls playlisttoplayer on return
+sync reported 1 conflict, but log file not written
+    because open in Jota?
 
-messages:
-playlistToPlayer 'instrumental' play=false saveState=false   ;;; switch to app
-onMediaItemTransition 3
-savePlaylistName 'instrumental'
-onMediaItemTransition 3
-readPlaylistCounts 'instrumental' PlaylistCounts(index=6, pos=226414)
-onMediaItemTransition 3
-onMediaItemTransition 2
-updateDisplay saveState=true
-updateDisplay saveState=false
- savePlaylistCounts 'instrumental' 6 226414 -1
-onMediaItemTransition 2
-updateDisplay saveState=true
- savePlaylistCounts 'vocal' 6 226414 -1              ;;; _before_ calling playlisttoplayer!?
- ... 'instrumental'
- ... 'instrumental'
- ... 'instrumental'
-playlistToPlayer 'vocal' play=true saveState=true
+improve diff to look at individual fields:
+    we don't have per-field modified date, but some fields will not be edited on remote
+        *_downloaded, file_name
 
-    to find where erroneous saveplaylistcounts came from, added call stack to log message
-        also deleted mutex in mainViewModel.savePlaylistCounts.
-        also used new utils.debugLog, so debug trace is local.
-
-reload playlist after update loses pos in song
-    fix implemented; testing.
+delete debugLog items
 
 add synced lyrics
     see gemini; implement LRC

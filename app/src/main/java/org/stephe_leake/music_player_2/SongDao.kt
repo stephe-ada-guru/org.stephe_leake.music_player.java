@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface SongDao
 {
-    class SongNotFound(msg: String): Exception(msg)
+   class SongNotFound(msg: String): Exception(msg)
    
    @Update // update others where ID = :song.id
    suspend fun updateSong(song: Song)

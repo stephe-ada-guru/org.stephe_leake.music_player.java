@@ -41,6 +41,7 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.provider.Settings
 import android.speech.RecognizerIntent
+import android.text.InputType
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
@@ -48,6 +49,7 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -1095,6 +1097,34 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                this.startService(Intent(utils.RESUME_INIT_DB_COMMAND, null, this, SyncService::class.java))
             }
 
+         R.id.menu_edit_song ->
+            {
+               val builder = AlertDialog.Builder(this)
+               builder.setTitle("Enter Song ID to edit")
+
+               val input = EditText(this)
+               input.inputType = InputType.TYPE_CLASS_NUMBER
+               builder.setView(input)
+
+               builder.setPositiveButton("OK") { _, _ ->
+                  val idString = input.text.toString()
+                  val id = idString.toIntOrNull()
+                  if (id != null) {
+                     val intent = Intent(this, SongEditActivity::class.java)
+                     intent.putExtra("SONG_ID", id)
+                     startActivity(intent)
+                  } else {
+                     utils.alertLog(this, "Invalid ID; please enter a number.")
+                  }
+               }
+               builder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
+
+               val dialog = builder.create()
+               input.requestFocus()
+               dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+               dialog.show()
+            }
+         
          R.id.menu_liner_notes ->
             {
                val metaData = mediaController!!.currentMediaItem!!.mediaMetadata

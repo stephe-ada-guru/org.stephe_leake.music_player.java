@@ -56,6 +56,7 @@
   <string name="menu_db_sync_edit_state">Sync database edit state</string>
   <string name="menu_db_init">Init database</string>
   <string name="menu_db_resume_init">Resume init database</string>
+  <string name="menu_edit_song">Edit song</string>
   <string name="menu_jump_to_song">Jump to song</string>
   <string name="menu_liner_notes">Liner notes</string>
   <string name="menu_new_playlist">Create new playlist</string>

@@ -284,7 +284,6 @@ class utils
          val time      : Long     = System.currentTimeMillis() // local time zone
          val timeStamp : String   = fmt.format(time)
          val logFile   = File(logFileName(logFileBaseName))
-         val writer    = PrintWriter(FileWriter(logFileName(logFileBaseName), true)) // append
          
          if (logFile.exists() && time - logFile.lastModified() > 4 * millisPerHour)
             {
@@ -296,7 +295,10 @@ class utils
                
                logFile.renameTo(oldLogFile)
             }
+         
+         val writer = PrintWriter(FileWriter(logFileName(logFileBaseName), true)) // append
          writer.println(timeStamp + " " + msg)
+         writer.flush()
          writer.close()
       }
 

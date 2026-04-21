@@ -37,19 +37,23 @@
 
       <activity
           android:name=".PrefActivity"
-          android:exported="true"
-          android:label="@string/pref_name">
-      </activity>
+          android:label="@string/pref_name"
+          android:exported="true"/>
 
       <activity
           android:name=".SearchActivity"
-          android:exported="true"
-          android:label="@string/search_name">
-      </activity>
+          android:label="@string/search_name"
+          android:exported="true"/>
 
       <activity
           android:name=".SyncStateActivity"
           android:label="Edit Sync State (Debug)"
+          android:exported="false" />
+
+      <activity
+          android:name=".SongEditActivity"
+          android:label="Edit Song (resolve conflicts)"
+          android:windowSoftInputMode="adjustResize"
           android:exported="false" />
 
       <service

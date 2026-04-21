@@ -60,7 +60,6 @@ class SyncService : Service()
       val dao: SongDao = (application as MusicPlayerApplication).db.songDao()
       
       // Connect to the sync server on the laptop, do what it says.
-      utils.debugLog("syncDB: start")
 
       var clientSocket: Socket? = null
       try {

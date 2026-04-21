@@ -57,7 +57,7 @@ class SearchViewModel(private val songDao: SongDao) : ViewModel()
          private val songDao: SongDao) :
          ViewModelProvider.Factory
       {
-         @Suppress("UNCHECKED_CAST") // FIXME: is is _not_ unchecked!
+         @Suppress("UNCHECKED_CAST") 
          override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
                return SearchViewModel(songDao) as T
