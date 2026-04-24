@@ -12,8 +12,9 @@ work_2 :
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
-sync reported 1 conflict, but log file not written
-    because open in Jota?
+sync/modified time zone mismatch
+    "SYNC_TIME":"2026-04-24 15:21:05"
+    Remote: {"Status":"ACK","Data":{"ID":80,"Modified":"2026-04-24 21:19:47",
 
 improve diff to look at individual fields:
     we don't have per-field modified date, but some fields will not be edited on remote

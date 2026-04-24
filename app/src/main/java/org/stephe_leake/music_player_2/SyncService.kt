@@ -64,9 +64,9 @@ class SyncService : Service()
       var clientSocket: Socket? = null
       try {
          // We don't loop here; one sync session per user start sync
-         utils.debugLog("SyncService: Connecting to $serverIP:$serverPort...")
+         syncUtils.log("SyncService: Connecting to $serverIP:$serverPort...")
          clientSocket = Socket(serverIP, serverPort)
-         utils.debugLog("SyncService: Connected.")
+         syncUtils.log("SyncService: Connected.")
 
          val inputStream = clientSocket.getInputStream() 
          val outputStream = clientSocket.getOutputStream() 
@@ -139,6 +139,7 @@ class SyncService : Service()
                   {
                      Operations.QUIT ->
                         {
+                           syncUtils.log("quit")
                            notif.done(if (conflictCount == 0) "" else "$conflictCount conflicts")
                            done = true
                            syncUtils.sendAck(outputStream)
@@ -305,10 +306,18 @@ class SyncService : Service()
 
          if (intentAction == utils.SYNC_DB_COMMAND && conflictCount == 0 && errorCount == 0)
             {
+               val lastId = dao.getLastId()
+               val syncTime = Song.getTime()
+               
+               syncUtils.log("update sync ID $lastId, time $syncTime")
                this@SyncService.playlistPrefsState.edit {
                   prefs ->
-                     prefs[PlaylistCountsPreferenceKeys.syncIdKey] = dao.getLastId()
-                  prefs[PlaylistCountsPreferenceKeys.syncTimeKey] = Song.getTime()}
+                     prefs[PlaylistCountsPreferenceKeys.syncIdKey] = lastId
+                  prefs[PlaylistCountsPreferenceKeys.syncTimeKey] = syncTime}
+            }
+         else
+            {
+               syncUtils.log("_not_ update sync ID, time; conflicts $conflictCount errors $errorCount")
             }
       }
       catch (e: Exception)
@@ -326,7 +335,7 @@ class SyncService : Service()
          try
          {
             clientSocket?.close()
-            utils.debugLog("SyncService: Socket closed.")
+            syncUtils.log("SyncService: Socket closed.")
          }
          catch (e: Exception)
          {
