@@ -72,7 +72,7 @@ data class Song(
 
       fun getTime(): String
       {
-         val current = LocalDateTime.now()
+         val current = LocalDateTime.now(java.time.ZoneOffset.UTC)
          val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
          return current.format(formatter)
       }
