@@ -713,6 +713,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
    val voiceLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
       result ->
+
+         // We tried starting a voice recorder in the background, but
+         // we can't have two activities accessing the microphone.
          if (result.resultCode == RESULT_OK) {
             val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0)
             if (spokenText != null)

@@ -337,8 +337,10 @@ fun SongRow(
    } // end Row 1
 
    if (isExpanded)
-      Row {Text(text = song.File_Name, maxLines = maxLines)}
-
+      {
+         Row {Text(text = song.File_Name, maxLines = 1)}
+         Row {Text(text = song.Last_Downloaded ?: "", maxLines = 1)}
+      }
 } // end SongRow
 
 @Composable

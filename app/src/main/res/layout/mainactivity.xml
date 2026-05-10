@@ -219,10 +219,6 @@
             android:layout_width="wrap_content"
             android:text="@string/note_category"
             android:onClick="onClickNote"/>
-        <View
-            android:layout_width="1dp"
-            android:layout_height="match_parent"
-            android:background="@android:color/black" /> <!-- vertical separator -->
         <com.google.android.material.button.MaterialButton
             style="@style/Widget.App.Button.TextButton"
             android:id="@+id/note_dont_play"
@@ -230,10 +226,6 @@
             android:layout_width="wrap_content"
             android:text="@string/note_dont_play"
             android:onClick="onClickNote"/>
-        <View
-            android:layout_width="1dp"
-            android:layout_height="match_parent"
-            android:background="@android:color/black" /> <!-- vertical separator -->
         <com.google.android.material.button.MaterialButton
             style="@style/Widget.App.Button.TextButton"
             android:id="@+id/note_play_before"
@@ -259,10 +251,6 @@
             android:layout_width="wrap_content"
             android:text="@string/note_want_more"
             android:onClick="onClickNote"/>
-        <View
-            android:layout_width="1dp"
-            android:layout_height="match_parent"
-            android:background="@android:color/black" /> <!-- vertical separator -->
         <com.google.android.material.button.MaterialButton
             style="@style/Widget.App.Button.TextButton"
             android:id="@+id/note_best_list"
@@ -270,31 +258,9 @@
             android:layout_width="wrap_content"
             android:text="@string/note_best_list"
             android:onClick="onClickNote"/>
-        <View
-            android:layout_width="1dp"
-            android:layout_height="match_parent"
-            android:background="@android:color/black" /> <!-- vertical separator -->
         <com.google.android.material.button.MaterialButton
             style="@style/Widget.App.Button.TextButton"
-            android:id="@+id/note_other"
-            android:layout_height="match_parent"
-            android:layout_width="wrap_content"
-            android:text="@string/note_other"
-            android:onClick="onClickNote"/>
-      </LinearLayout>
-      <LinearLayout
-          style="?android:attr/buttonBarButtonStyle"
-          android:id="@+id/notes_buttons_2"
-          android:layout_width="match_parent"
-          android:layout_height="wrap_content"
-          android:orientation="horizontal"
-          android:layout_gravity="center"
-          android:layout_marginTop="1dip"
-          android:layout_marginBottom="2dip"
-          android:gravity="center">
-        <com.google.android.material.button.MaterialButton
-            style="@style/Widget.App.Button.TextButton"
-            android:id="@+id/note_want_more"
+            android:id="@+id/note_volume"
             android:layout_height="match_parent"
             android:layout_width="wrap_content"
             android:text="@string/note_volume"
