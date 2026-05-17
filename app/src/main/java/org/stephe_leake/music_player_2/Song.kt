@@ -167,5 +167,14 @@ data class Song(
          for (id in list) {result.put(id)}
          return result
       }
+
+      @JvmName("toJSONSongList")
+      fun toJSON(list: List<Song>): JSONArray
+      // Same format as smm-database.adb Get_JSON, for a list of songs
+      {
+         val result = JSONArray()
+         for (song in list) {result.put(toJSON(song))}
+         return result
+      }
    }
 }

@@ -22,11 +22,14 @@ package org.stephe_leake.music_player_2
 enum class Operations(val code: Int)
 {
     // Must be uppercase to match Ada 'Image for valueOf() to work implicitly.
-    // Must match smm-database_remote.ads Operations
+    // 
+    // Names must match smm-database_remote.ads Operations; we send
+    // the names in the JSON interface, not the integer values.
     QUIT(0),
     GET(1),
     GET_LAST_ID(2),
     GET_MODIFIED(3),
+    GET_MODIFIED_WITH_DATA(10),
     GET_NEW(4),
     CONFLICT(5),
     PROGRESS(6),
