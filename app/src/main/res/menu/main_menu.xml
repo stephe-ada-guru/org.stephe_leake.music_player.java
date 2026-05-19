@@ -24,6 +24,9 @@
       android:id="@id/menu_update_playlist"
       android:title="@string/menu_update_playlist"/>
   <item
+      android:id="@id/menu_db_sync"
+      android:title="@string/menu_db_sync"/>
+  <item
       android:id="@id/menu_search"
       android:title="@string/menu_search"/>
   <item
@@ -32,9 +35,6 @@
   <item
       android:id="@id/menu_liner_notes"
       android:title="@string/menu_liner_notes"/>
-  <item
-      android:id="@id/menu_db_sync"
-      android:title="@string/menu_db_sync"/>
   <item
       android:id="@id/menu_copy"
       android:title="@string/menu_copy"/>

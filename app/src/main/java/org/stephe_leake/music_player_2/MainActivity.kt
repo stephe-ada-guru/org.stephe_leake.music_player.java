@@ -108,7 +108,7 @@ val Player.playlistName: String?
     //  Return the current playlist name from the current mediaItem
     get() = this.currentMediaItem?.mediaMetadata?.extras?.getString("PlaylistName")
  
-data class PlaylistInfo(val name: String, val limit: Int)
+data class PlaylistInfo(val name: String, val current: Int, val limit: Int)
 
 private class PlaylistAdapter(
     private val playlists: List<PlaylistInfo>,
@@ -136,7 +136,7 @@ private class PlaylistAdapter(
          when (playlistInfo.limit) {
          utils.playlistNoLimit -> "no limit"
          utils.limitDontSave -> "not set"
-         else -> playlistInfo.limit.toString()}
+         else -> "${playlistInfo.current}/${playlistInfo.limit}"}
          
       holder.itemView.setOnClickListener { onClick(playlistInfo) }
    }
@@ -372,7 +372,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       lifecycleScope.launch {
          val playlistInfos = playlistFiles.map { filename ->
             val category = filename.removeSuffix(".m3u")
-            PlaylistInfo(filename, utils.readPlaylistLimit(this@MainActivity, category))}
+            val counts = utils.readPlaylistCounts(this@MainActivity, category)
+            PlaylistInfo(filename, counts.current, utils.readPlaylistLimit(this@MainActivity, category))}
 
          val dialogView = layoutInflater.inflate(R.layout.dialog_select_playlist, null)
          builder.setView(dialogView)
