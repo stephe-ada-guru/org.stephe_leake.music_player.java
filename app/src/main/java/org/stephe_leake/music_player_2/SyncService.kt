@@ -173,6 +173,14 @@ class SyncService : Service()
                            syncUtils.sendData(outputStream, result)
                         }
 
+                     Operations.GET_MODIFIED_WITH_DATA ->
+                        {
+                           val result = JSONObject()
+                           result.put("List",
+                                      Song.toJSON(dao.getModifiedWithData(msg.getInt("ID"), msg.getString("Modified"))))
+                           syncUtils.sendData(outputStream, result)
+                        }
+
                      Operations.GET_NEW ->
                         {
                            val result = JSONObject()

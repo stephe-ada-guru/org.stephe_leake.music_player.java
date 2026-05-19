@@ -116,6 +116,13 @@ interface SongDao
    suspend fun getModified(id : Int, modified : String) : List<Int>
 
    @Query("""
+          SELECT * FROM Song WHERE ID <= :id
+          AND (Modified > :modified or Deleted > :modified)
+          ORDER BY ID
+          """)
+   suspend fun getModifiedWithData(id : Int, modified : String) : List<Song>
+
+   @Query("""
           SELECT * FROM Song WHERE
           Deleted IS NULL AND
           (Artist LIKE '%' || :query || '%' OR
