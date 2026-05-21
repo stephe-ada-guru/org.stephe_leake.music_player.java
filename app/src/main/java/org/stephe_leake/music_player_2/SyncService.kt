@@ -22,7 +22,6 @@ import android.Manifest
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.os.Build
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
@@ -407,15 +406,9 @@ class SyncService : Service()
              PackageManager.PERMISSION_GRANTED)
       {
          if (syncDone)
-            {
-               // Detach the "done" notification from the foreground service so it
-               // persists in the notification shade after the service stops.
-               if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                  stopForeground(STOP_FOREGROUND_DETACH)
-               else
-                  @Suppress("DEPRECATION")
-                  stopForeground(false)
-            }
+            // Detach the "done" notification from the foreground service so it
+            // persists in the notification shade after the service stops.
+            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
          else
             notif.cancel()
       }
@@ -469,7 +462,9 @@ class SyncService : Service()
                {
                   Log.e(utils.logTag, "SyncService.onStartCommand exception", e)
                }
-               // We don't do stopSelf here; user must respond to notification
+               if (syncDone)
+                  stopSelf()
+               // else: error or cancel; user must dismiss the notification
             }
 
             return START_NOT_STICKY
