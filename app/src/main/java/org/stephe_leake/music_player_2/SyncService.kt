@@ -22,6 +22,7 @@ import android.Manifest
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.os.Build
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
@@ -37,6 +38,7 @@ import java.net.Socket
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
@@ -47,6 +49,9 @@ class SyncService : Service()
 {
    private val serviceScope = CoroutineScope(Dispatchers.IO)
    private lateinit var notif : ServiceNotif
+
+   @Volatile
+   private var syncDone = false
 
    // Note that this is a different instance from DownloadService, so
    // they have different intent filters.
@@ -140,9 +145,17 @@ class SyncService : Service()
                      Operations.QUIT ->
                         {
                            syncUtils.log("quit")
-                           notif.done(if (conflictCount == 0) "" else "$conflictCount conflicts")
+                           syncDone = true
                            done = true
                            syncUtils.sendAck(outputStream)
+
+                           // Delay before updating the notification to avoid Android's
+                           // notification rate limiter dropping the update: Progress.Complete
+                           // sends a PROGRESS message immediately before QUIT, so both
+                           // notif.update() and notif.done() can land within the same
+                           // throttle window.
+                           delay(300L)
+                           notif.done(if (conflictCount == 0) "" else "$conflictCount conflicts")
                         }
                      
                      Operations.GET ->
@@ -224,10 +237,11 @@ class SyncService : Service()
                            
                            // value format given by smm-database.adb Get_JSON
                            if (value.has("Deleted"))
-                              {                              
+                              {
                                  dao.updateSong(
                                     ID = value.getInt("ID"),
                                     Deleted = if (value.has("Deleted")) value.getString("Deleted") else null)
+                                 syncUtils.sendAck(outputStream)
                               }
                            else
                               {
@@ -392,7 +406,18 @@ class SyncService : Service()
       if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
              PackageManager.PERMISSION_GRANTED)
       {
-         notif.cancel()
+         if (syncDone)
+            {
+               // Detach the "done" notification from the foreground service so it
+               // persists in the notification shade after the service stops.
+               if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                  stopForeground(STOP_FOREGROUND_DETACH)
+               else
+                  @Suppress("DEPRECATION")
+                  stopForeground(false)
+            }
+         else
+            notif.cancel()
       }
       unregisterReceiver(broadcastReceiverCommand)
       super.onDestroy()
@@ -434,6 +459,7 @@ class SyncService : Service()
                }
 
             serviceScope.launch {
+               syncDone = false
                try
                {
                   notif.initialize()
