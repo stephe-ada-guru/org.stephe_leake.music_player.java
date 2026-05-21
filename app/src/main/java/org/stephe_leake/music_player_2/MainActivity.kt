@@ -373,7 +373,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          val playlistInfos = playlistFiles.map { filename ->
             val category = filename.removeSuffix(".m3u")
             val counts = utils.readPlaylistCounts(this@MainActivity, category)
-            PlaylistInfo(filename, counts.current, utils.readPlaylistLimit(this@MainActivity, category))}
+            PlaylistInfo(filename, counts.index, utils.readPlaylistLimit(this@MainActivity, category))}
 
          val dialogView = layoutInflater.inflate(R.layout.dialog_select_playlist, null)
          builder.setView(dialogView)

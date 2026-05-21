@@ -8,6 +8,7 @@ work_2 :
 (dvc-state-multiple '((xgit . ".") (xgit . "../smm.work_1")))
 
 (dvc-propagate-one "../org.stephe_leake.music_player" "../org.stephe_leake.music_player.work_1")
+(dvc-propagate-one "../org.stephe_leake.music_player.work_1" "../org.stephe_leake.music_player")
 
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
