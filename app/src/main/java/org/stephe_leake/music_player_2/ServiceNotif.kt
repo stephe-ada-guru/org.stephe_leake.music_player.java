@@ -53,7 +53,7 @@ class ServiceNotif (
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    // Permission checked and requested in MainActivity
-   private fun updateInternal()
+   private fun updateInternal(ongoing: Boolean = true, showCancelAction: Boolean = true)
    {
       val wrappableContentText = contentText
          .replace("/", "/\u200B")
@@ -64,21 +64,27 @@ class ServiceNotif (
          .replace("/", "/\u200B")
          .replace(".", ".\u200B")
          .replace("_", "_\u200B")
-      
-      val cancelAction = NotificationCompat.Action.Builder(
-         R.drawable.cancel, "cancel", cancelPendingIntent).build()
-      
-      val notifMem = NotificationCompat.Builder(context, utils.notificationChannelId)
-         .addAction(cancelAction)
+
+      val builder = NotificationCompat.Builder(context, utils.notificationChannelId)
+
+      if (showCancelAction)
+         {
+            val cancelAction = NotificationCompat.Action.Builder(
+               R.drawable.cancel, "cancel", cancelPendingIntent).build()
+            builder.addAction(cancelAction)
+         }
+
+      builder
          .setContentIntent(showLogPendingIntent)
          .setContentTitle(title)
          .setContentText(contentText)
          .setStyle(NotificationCompat.BigTextStyle().bigText(wrappableStatusText + wrappableContentText))
          .setPriority(NotificationCompat.PRIORITY_DEFAULT) // make sure it shows!
-         .setOngoing(true)
+         .setOngoing(ongoing)
          .setSmallIcon(R.mipmap.download_icon) // shown in status bar
-         .build()
-      
+
+      notifMem = builder.build()
+
       val notifManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
       notifManager.notify(notificationId, notifMem)
    }
@@ -88,7 +94,7 @@ class ServiceNotif (
    {
       statusText = "done"
       contentText = msg
-      updateInternal()
+      updateInternal(ongoing = false, showCancelAction = false)
    }
 
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
