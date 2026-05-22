@@ -29,6 +29,7 @@ import android.database.sqlite.SQLiteConstraintException
 import android.os.IBinder
 import android.util.Log
 import androidx.annotation.RequiresPermission
+import androidx.core.app.ServiceCompat
 import androidx.datastore.preferences.core.edit
 import androidx.preference.PreferenceManager
 
@@ -402,16 +403,6 @@ class SyncService : Service()
    override fun onDestroy()
    {
       serviceScope.cancel()
-      if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
-             PackageManager.PERMISSION_GRANTED)
-      {
-         if (syncDone)
-            // Detach the "done" notification from the foreground service so it
-            // persists in the notification shade after the service stops.
-            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
-         else
-            notif.cancel()
-      }
       unregisterReceiver(broadcastReceiverCommand)
       super.onDestroy()
    }
@@ -463,7 +454,12 @@ class SyncService : Service()
                   Log.e(utils.logTag, "SyncService.onStartCommand exception", e)
                }
                if (syncDone)
-                  stopSelf()
+                  {
+                     // Detach the "done" notification before stopping so it persists
+                     // in the notification shade after the service is destroyed.
+                     ServiceCompat.stopForeground(this@SyncService, ServiceCompat.STOP_FOREGROUND_DETACH)
+                     stopSelf()
+                  }
                // else: error or cancel; user must dismiss the notification
             }
 

@@ -136,7 +136,7 @@ private class PlaylistAdapter(
          when (playlistInfo.limit) {
          utils.playlistNoLimit -> "no limit"
          utils.limitDontSave -> "not set"
-         else -> "${playlistInfo.current}/${playlistInfo.limit}"}
+         else -> "${playlistInfo.current+1}/${playlistInfo.limit}"}
          
       holder.itemView.setOnClickListener { onClick(playlistInfo) }
    }
