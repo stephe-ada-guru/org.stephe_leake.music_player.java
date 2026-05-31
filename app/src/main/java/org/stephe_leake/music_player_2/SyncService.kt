@@ -57,6 +57,39 @@ class SyncService : Service()
    // they have different intent filters.
    private val broadcastReceiverCommand : MPBroadcastReceiver = MPBroadcastReceiver()
 
+   private suspend fun updateOne(dao: SongDao, value: JSONObject)
+   {   
+      // value format given by smm-database.adb Get_JSON
+      if (value.has("Deleted"))
+         {
+            dao.updateSong(
+               ID = value.getInt("ID"),
+               Deleted = if (value.has("Deleted")) value.getString("Deleted") else null)
+         }
+      else
+         {
+            val dataf: JSONObject = value.getJSONObject("Data")
+            dao.updateSong(
+               ID = value.getInt("ID"),
+               Modified        = if (value.has("Modified")) value.getString("Modified") else null,
+               File_Name       = dataf.getString("File_Name"), 
+               Category        = dataf.getString("Category"),
+               Artist          = if (dataf.has("Artist")) dataf.getString("Artist") else null,
+               Album_Artist    = dataf.getString("Album_Artist"),
+               Composer        = if (dataf.has("Composer")) dataf.getString("Composer") else null,
+               Album           = if (dataf.has("Album")) dataf.getString("Album") else null,
+               Year            = if (dataf.has("Year")) dataf.getInt("Year") else null,
+               Title           = dataf.getString("Title"),
+               Track           = if (dataf.has("Track")) dataf.getInt("Track") else null,
+               Last_Downloaded = if (dataf.has("Last_Downloaded"))
+               dataf.getString("Last_Downloaded") else null, 
+               Prev_Downloaded = if (dataf.has("Prev_Downloaded"))
+               dataf.getString("Prev_Downloaded") else null,
+               Play_Before     = if (dataf.has("Play_Before")) dataf.getInt("Play_Before") else null,
+               Play_After      = if (dataf.has("Play_After")) dataf.getInt("Play_After") else null)
+         }
+   }
+   
    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
    private suspend fun syncDB(serverIP: String, serverPort: Int, intentAction : String)
    {
@@ -220,7 +253,6 @@ class SyncService : Service()
 
                      Operations.INSERT ->
                         {
-                           syncUtils.log(msg.toString())
                            try
                            {
                               dao.insertSong(Song.fromJSON(msg.getJSONObject("Value")))
@@ -229,45 +261,35 @@ class SyncService : Service()
                               // This happens when resuming init; some records are repeated. Just ignore.
                            }
                            syncUtils.sendAck(outputStream)
-                        } 
+                        }
+                     
+                     Operations.INSERT_BATCH ->
+                        {
+                           val values = msg.getJSONArray("Value")
+                           try
+                           {
+                              for (i in 0 until values.length())
+                                 dao.insertSong(Song.fromJSON(values.getJSONObject(i)))
+                           } catch (_: SQLiteConstraintException)
+                           {
+                              // This happens when resuming init; some records are repeated. Just ignore.
+                           }
+                           syncUtils.sendAck(outputStream)
+                        }
+                     
                      Operations.UPDATE ->
                         {
-                           syncUtils.log(msg.toString())
-                           val value = msg.getJSONObject("Value")
+                           updateOne (dao, msg.getJSONObject("Value"));            
+                           syncUtils.sendAck(outputStream)
+                        }
+                     
+                     Operations.UPDATE_BATCH ->
+                        {
+                           val values = msg.getJSONArray("Value")
+                           for (i in 0 until values.length())
+                              updateOne(dao, values.getJSONObject(i))
                            
-                           // value format given by smm-database.adb Get_JSON
-                           if (value.has("Deleted"))
-                              {
-                                 dao.updateSong(
-                                    ID = value.getInt("ID"),
-                                    Deleted = if (value.has("Deleted")) value.getString("Deleted") else null)
-                                 syncUtils.sendAck(outputStream)
-                              }
-                           else
-                              {
-                                 val dataf: JSONObject = value.getJSONObject("Data")
-                                 dao.updateSong(
-                                    ID = value.getInt("ID"),
-                                    Modified        = if (value.has("Modified")) value.getString("Modified") else null,
-                                    File_Name       = dataf.getString("File_Name"), 
-                                    Category        = dataf.getString("Category"),
-                                    Artist          = if (dataf.has("Artist")) dataf.getString("Artist") else null,
-                                    Album_Artist    = dataf.getString("Album_Artist"),
-                                    Composer        = if (dataf.has("Composer")) dataf.getString("Composer") else null,
-                                    Album           = if (dataf.has("Album")) dataf.getString("Album") else null,
-                                    Year            = if (dataf.has("Year")) dataf.getInt("Year") else null,
-                                    Title           = dataf.getString("Title"),
-                                    Track           = if (dataf.has("Track")) dataf.getInt("Track") else null,
-                                    Last_Downloaded = if (dataf.has("Last_Downloaded"))
-                                    dataf.getString("Last_Downloaded") else null, 
-                                       Prev_Downloaded = if (dataf.has("Prev_Downloaded"))
-                                       dataf.getString("Prev_Downloaded") else null,
-                                    Play_Before     = if (dataf.has("Play_Before")) dataf.getInt("Play_Before")
-                                      else null,
-                                    Play_After      = if (dataf.has("Play_After")) dataf.getInt("Play_After") else null)
-                                 
-                                 syncUtils.sendAck(outputStream)
-                              }
+                           syncUtils.sendAck(outputStream)
                         }
                      
                      Operations.RENUMBER ->

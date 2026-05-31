@@ -19,40 +19,21 @@
 
 package org.stephe_leake.music_player_2
 
-enum class Operations(val code: Int)
+enum class Operations
 {
-    // Must be uppercase to match Ada 'Image for valueOf() to work implicitly.
-    // 
-    // Names must match smm-database_remote.ads Operations; we send
-    // the names in the JSON interface, not the integer values.
-    QUIT(0),
-    GET(1),
-    GET_LAST_ID(2),
-    GET_MODIFIED(3),
-    GET_MODIFIED_WITH_DATA(10),
-    GET_NEW(4),
-    CONFLICT(5),
-    PROGRESS(6),
-    INSERT(7),
-    UPDATE(8),
-    RENUMBER(9);
-
-    companion object {
-        // Create a map for fast, safe lookups by integer code.
-        // This is more efficient and safer than a switch statement.
-        private val map = entries.associateBy(Operations::code)
-
-        /**
-         * Converts an integer code to its corresponding Operations enum constant.
-         * @param code The integer code to look up.
-         * @return The matching Operations enum.
-         * @throws IllegalArgumentException if the code is invalid.
-         */
-        fun toOperations(code: Int): Operations =
-            map[code] ?: throw IllegalArgumentException("Invalid operation code: $code")
-
-         // public static Operations valueOf(String i); implicit, same case as declaration
-
-         // public static Operations[] values(); implicit, for iteration
-    }
+    // Must be uppercase to match Ada 'Image for valueOf() to work.
+    // Names must match smm-database_remote.ads Operations.
+    QUIT,
+    GET,
+    GET_LAST_ID,
+    GET_MODIFIED,
+    GET_MODIFIED_WITH_DATA,
+    GET_NEW,
+    CONFLICT,
+    PROGRESS,
+    INSERT,
+    INSERT_BATCH,
+    UPDATE,
+    UPDATE_BATCH,
+    RENUMBER
 }
