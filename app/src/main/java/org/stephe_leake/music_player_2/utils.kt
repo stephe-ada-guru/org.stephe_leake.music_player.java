@@ -71,10 +71,11 @@ class utils
       const val COMMAND_CANCEL_SYNC_DB   : String = "org.stephe_leake.stephes_music.cancel_sync_db"
       const val STOP_SERVICE_COMMAND     : String = "org.stephe_leake.stephes_music.stop_service"
 
-      const val showDownloadLogIntentId : Int = 6
-      const val cancelDownloadIntentId  : Int = 8
-      const val showSyncLogIntentId     : Int = 9
-      const val cancelSyncIntentId      : Int = 10
+      const val showDownloadLogIntentId  : Int = 6
+      const val cancelDownloadIntentId   : Int = 8
+      const val showSyncLogIntentId      : Int = 9
+      const val cancelSyncIntentId       : Int = 10
+      const val showSyncProgressIntentId : Int = 11
 
       const val logTag : String =
          // Must be shorter than 23 chars

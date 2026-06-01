@@ -116,8 +116,8 @@ class ServiceNotif (
    fun cancel()
    {
       (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-         .cancel(utils.notif_sync_id)
+         .cancel(notificationId)
       showLogPendingIntent.cancel()
-      cancelPendingIntent.cancel() // FIXME: not needed since that is what triggered cancel?
+      cancelPendingIntent.cancel()
    }
 }

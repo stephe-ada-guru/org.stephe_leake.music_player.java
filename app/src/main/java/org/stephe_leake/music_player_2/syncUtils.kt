@@ -44,22 +44,31 @@ class syncUtils
           utils.log(msg, syncLogFileBaseName)
        }
 
+       fun readFully(inputStream: InputStream, buf: ByteArray)
+       // Fill buf completely, looping over partial TCP reads.
+       {
+          var offset = 0
+          while (offset < buf.size) {
+             val n = inputStream.read(buf, offset, buf.size - offset)
+             if (n < 0)
+                throw java.net.SocketException(
+                   "unexpected end of stream after $offset bytes (expected ${buf.size})")
+             offset += n
+          }
+       }
+
        fun readInt(inputStream: InputStream): Int
        {
-          val bytes     = ByteArray(4)
-          val bytesRead = inputStream.read(bytes)
-          if (bytesRead < 4)
-             throw java.net.SocketException("expected 4 byte integer, got $bytesRead bytes")
-
+          val bytes = ByteArray(4)
+          readFully(inputStream, bytes)
           val byteBuffer = ByteBuffer.wrap(bytes)
           byteBuffer.order(ByteOrder.BIG_ENDIAN) // network order
-          
-          return byteBuffer.getInt()   
+          return byteBuffer.getInt()
        }
 
        fun readString(inputStream: InputStream): String
        // Read a string from inputStream, in Ada stream format; [first, last, <chars>]
-       // first, last are 4 byte integers little endian
+       // first, last are 4 byte integers big endian
        // chars are UTF-8
        {
           val first  = readInt(inputStream)
@@ -68,12 +77,9 @@ class syncUtils
 
           if (length < 1)
              throw java.net.ProtocolException("expected positive string length, got $length")
-          
-          val result = ByteArray(length)
-          val bytesRead = inputStream.read(result)
-          if (bytesRead < length)
-             throw java.net.SocketException("expected $length byte string, got $bytesRead bytes")
 
+          val result = ByteArray(length)
+          readFully(inputStream, result)
           return String(result)
        }
 

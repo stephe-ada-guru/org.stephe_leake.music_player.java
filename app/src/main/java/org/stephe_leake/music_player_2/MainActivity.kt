@@ -966,12 +966,18 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       handleIntent(intent)
    }
 
+   private fun startSync(command: String)
+   {
+      this.startService(Intent(command, null, this, SyncService::class.java))
+      startActivity(Intent(this, SyncProgressActivity::class.java).apply {
+         flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+      })
+   }
+
    private fun handleIntent(intent: Intent)
    {
       if (intent.action == utils.SYNC_DB_COMMAND)
-      {
-         this.startService(Intent(utils.SYNC_DB_COMMAND, null, this, SyncService::class.java))
-      }
+         startSync(utils.SYNC_DB_COMMAND)
    }
 
    override fun onResume()
@@ -1082,24 +1088,16 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             }
 
          R.id.menu_db_sync ->
-            {
-               this.startService(Intent(utils.SYNC_DB_COMMAND, null, this, SyncService::class.java))
-            }
+            startSync(utils.SYNC_DB_COMMAND)
 
          R.id.menu_db_sync_edit_state ->
-            {
-               startActivity(Intent(this, SyncStateActivity::class.java))
-            }
+            startActivity(Intent(this, SyncStateActivity::class.java))
 
          R.id.menu_db_init ->
-            {
-               this.startService(Intent(utils.INIT_DB_COMMAND, null, this, SyncService::class.java))
-            }
+            startSync(utils.INIT_DB_COMMAND)
 
          R.id.menu_db_resume_init ->
-            {
-               this.startService(Intent(utils.RESUME_INIT_DB_COMMAND, null, this, SyncService::class.java))
-            }
+            startSync(utils.RESUME_INIT_DB_COMMAND)
 
          R.id.menu_edit_song ->
             {

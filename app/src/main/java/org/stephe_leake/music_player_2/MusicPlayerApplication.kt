@@ -30,7 +30,10 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class MusicPlayerApplication : Application() {
    val db by lazy { SongDatabase.getDatabase(this) }
@@ -82,4 +85,17 @@ object PlaylistCountsPreferenceKeys
    val syncTimeKey = stringPreferencesKey("last_sync_time")
 }
       
+sealed class SyncStatus {
+   data object Idle : SyncStatus()
+   data class Progress(val label: String) : SyncStatus()
+   data class Done(val msg: String) : SyncStatus()
+   data class Error(val msg: String) : SyncStatus()
+}
+
+object SyncStatusBus {
+   private val _status = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
+   val status: StateFlow<SyncStatus> = _status.asStateFlow()
+   fun emit(s: SyncStatus) { _status.value = s }
+}
+
 // end of file

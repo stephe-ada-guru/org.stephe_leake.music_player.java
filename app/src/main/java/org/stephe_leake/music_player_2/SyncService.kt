@@ -19,6 +19,7 @@
 package org.stephe_leake.music_player_2
 
 import android.Manifest
+import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
@@ -29,6 +30,7 @@ import android.database.sqlite.SQLiteConstraintException
 import android.os.IBinder
 import android.util.Log
 import androidx.annotation.RequiresPermission
+import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.datastore.preferences.core.edit
 import androidx.preference.PreferenceManager
@@ -38,7 +40,6 @@ import java.net.Socket
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
@@ -48,7 +49,6 @@ import org.json.JSONObject
 class SyncService : Service()
 {
    private val serviceScope = CoroutineScope(Dispatchers.IO)
-   private lateinit var notif : ServiceNotif
 
    @Volatile
    private var syncDone = false
@@ -181,14 +181,8 @@ class SyncService : Service()
                            syncDone = true
                            done = true
                            syncUtils.sendAck(outputStream)
-
-                           // Delay before updating the notification to avoid Android's
-                           // notification rate limiter dropping the update: Progress.Complete
-                           // sends a PROGRESS message immediately before QUIT, so both
-                           // notif.update() and notif.done() can land within the same
-                           // throttle window.
-                           delay(300L)
-                           notif.done(if (conflictCount == 0) "" else "$conflictCount conflicts")
+                           SyncStatusBus.emit(SyncStatus.Done(if (conflictCount == 0) ""
+                                                              else "$conflictCount conflicts"))
                         }
                      
                      Operations.GET ->
@@ -246,8 +240,8 @@ class SyncService : Service()
                      Operations.PROGRESS ->
                         {
                            val result = msg.getString("Label") + " " +
-                           msg.getString("Current") + "/" + msg.getString("Max")
-                           notif.update(result)
+                              msg.getString("Current") + "/" + msg.getString("Max")
+                           SyncStatusBus.emit(SyncStatus.Progress(result))
                            syncUtils.sendAck(outputStream)
                         }
 
@@ -327,23 +321,24 @@ class SyncService : Service()
                {
                   val errMsg = "${msg}: error: " + (e.message ?: "")
                   errorCount++
-                  notif.error(errMsg)
-                  syncUtils.log(msg.toString())
+                  SyncStatusBus.emit(SyncStatus.Error(errMsg))
+                  syncUtils.log(errMsg.toString())
                   syncUtils.sendError(outputStream, errMsg)
                   done = true
                }
                catch (e: java.net.ProtocolException)
                {
                   errorCount++
-                  notif.error(e.message?:"")
-                  syncUtils.log(msg.toString())
+                  SyncStatusBus.emit(SyncStatus.Error(e.message ?: ""))
+                  syncUtils.log("ProtocolException: ${e.message ?: ""}")
                   done = true
                }
                catch (e: java.net.SocketException)
                {
+                  val emsg = "remote closed socket: ${e.message ?: ""}"
                   errorCount++
-                  notif.error("remote closed socket: " + (e.message?:""))
-                  syncUtils.log(msg.toString())
+                  SyncStatusBus.emit(SyncStatus.Error(emsg))
+                  syncUtils.log(emsg)
                   done = true
                }
             } // while
@@ -367,9 +362,9 @@ class SyncService : Service()
       catch (e: Exception)
       {
          // server not found, connection reset, etc.
-         Log.e(utils.logTag, "SyncService Error: ${e.message}", e)
-         notif.error("error: ${e.message}")
-         syncUtils.log(e.message ?: "")
+         val emsg = "SyncService Error: ${e.message ?: ""}"
+         SyncStatusBus.emit(SyncStatus.Error(emsg))
+         syncUtils.log(emsg)
          // Any conflicts found this round will be found again in the
          // next sync round.
       }
@@ -394,6 +389,23 @@ class SyncService : Service()
       return null
    }
 
+   private fun buildForegroundNotif(): Notification
+   {
+      // A background service requires a notification
+      val tapIntent = Intent(this, SyncProgressActivity::class.java).apply {
+         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+      }
+      val tapPI = PendingIntent.getActivity(
+         this, utils.showSyncProgressIntentId, tapIntent, PendingIntent.FLAG_IMMUTABLE)
+      return NotificationCompat.Builder(this, utils.notificationChannelId)
+         .setContentTitle("Synchronizing music dbs")
+         .setContentText("Tap to view progress")
+         .setSmallIcon(R.mipmap.download_icon)
+         .setOngoing(true)
+         .setContentIntent(tapPI)
+         .build()
+   }
+
    override fun onCreate()
    {
       super.onCreate()
@@ -402,29 +414,14 @@ class SyncService : Service()
       filter.addAction(utils.SYNC_DB_COMMAND)
       registerReceiver(broadcastReceiverCommand, filter, RECEIVER_NOT_EXPORTED)
 
-      notif = ServiceNotif(
-         context = this,
-         notificationId = utils.notif_sync_id,
-         title = "Synchronizing music dbs ",
-         showLogPendingIntent = PendingIntent.getActivity
-         (this.applicationContext,
-          utils.showSyncLogIntentId,
-          utils.showLogIntent(this, syncUtils.syncLogFileName()),
-          PendingIntent.FLAG_IMMUTABLE),
-
-         cancelPendingIntent = PendingIntent.getBroadcast
-         (this.applicationContext,
-          utils.cancelSyncIntentId,
-          Intent(this, MPBroadcastReceiver::class.java).apply{action = utils.COMMAND_CANCEL_SYNC_DB},
-          PendingIntent.FLAG_IMMUTABLE))
-
-      startForeground (utils.notif_sync_id, notif.getNotif(),
-                       ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+      startForeground(utils.notif_sync_id, buildForegroundNotif(),
+                      ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
    }
 
    override fun onDestroy()
    {
       serviceScope.cancel()
+      ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
       unregisterReceiver(broadcastReceiverCommand)
       super.onDestroy()
    }
@@ -458,17 +455,15 @@ class SyncService : Service()
             
             if (serverIP.isNullOrEmpty() || serverPort == 0)
                {
-                  Log.e(utils.logTag, "SyncService.onStartCommand Server IP: $serverIP, port: $serverPort")
-                  notif.error("Server IP or port preference not set")
-                  // We don't call stopSelf here; the user must dismiss the notification.
+                  SyncStatusBus.emit(SyncStatus.Error("Server IP or port preference not set"))
                   return START_NOT_STICKY
                }
 
+            SyncStatusBus.emit(SyncStatus.Progress("Connecting to $serverIP:$serverPort..."))
             serviceScope.launch {
                syncDone = false
                try
                {
-                  notif.initialize()
                   syncDB(serverIP, serverPort, intent.action!!)
                }
                catch (e: Exception)
@@ -476,13 +471,8 @@ class SyncService : Service()
                   Log.e(utils.logTag, "SyncService.onStartCommand exception", e)
                }
                if (syncDone)
-                  {
-                     // Detach the "done" notification before stopping so it persists
-                     // in the notification shade after the service is destroyed.
-                     ServiceCompat.stopForeground(this@SyncService, ServiceCompat.STOP_FOREGROUND_DETACH)
-                     stopSelf()
-                  }
-               // else: error or cancel; user must dismiss the notification
+                  stopSelf()
+               // else: error or cancel; activity shows result until user dismisses
             }
 
             return START_NOT_STICKY

@@ -46,6 +46,12 @@
           android:exported="true"/>
 
       <activity
+          android:name=".SyncProgressActivity"
+          android:label="Sync DB Progress"
+          android:launchMode="singleTop"
+          android:exported="false" />
+
+      <activity
           android:name=".SyncStateActivity"
           android:label="Edit Sync State (Debug)"
           android:exported="false" />
