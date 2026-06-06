@@ -95,6 +95,18 @@
   <string name="server_Port_summary">Server Port for db sync</string>
   <string name="server_Port_dialog_title">Server Port</string>
 
+  <string name="progress_compute_interval_key">progress_compute</string>
+  <string name="progress_compute_interval_default">100</string>
+  <string name="progress_compute_interval_title">Progress compute interval</string>
+  <string name="progress_compute_interval_summary">Progress compute interval</string>
+  <string name="progress_compute_interval_dialog_title">compute interval</string>
+
+  <string name="progress_apply_interval_key">progress_apply</string>
+  <string name="progress_apply_interval_default">100</string>
+  <string name="progress_apply_interval_title">Progress apply interval</string>
+  <string name="progress_apply_interval_summary">Progress apply interval</string>
+  <string name="progress_apply_interval_dialog_title">apply interval</string>
+
   <string name="min_image_size_key">min_image_size</string>
   <string name="min_image_size_default">40000</string>
   <string name="min_image_size_title">Minimum image size</string>

@@ -13,14 +13,6 @@ work_2 :
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
-sync notif doesn't update often enough?
-    Makes me think it's stuck.
-    add message count?
-
-improve diff to look at individual fields:
-    we don't have per-field modified date, but some fields will not be edited on remote
-        *_downloaded, file_name
-
 delete debugLog items
 
 add synced lyrics
@@ -36,16 +28,8 @@ search page:
     collapse/expand albums
     click on artist to search that artist
 
-
-implement db sync
-    ~/Projects/smm.work_1/notes.text
-    propagate to main
-    rerun modify
-
 edit category on main view
     delete "category" button
-
-"other" button open text input
 
  decisions
 standard notification doesn't display album

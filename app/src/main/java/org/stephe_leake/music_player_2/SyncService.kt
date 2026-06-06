@@ -109,11 +109,19 @@ class SyncService : Service()
          val inputStream = clientSocket.getInputStream() 
          val outputStream = clientSocket.getOutputStream() 
 
-         try {
-            val msg = JSONObject()
-            msg.put("ROLE", "COMPUTE")
-            msg.put("DISPLAY_PROGRESS", "TRUE")
+         val res        = resources
+         val prefs      = PreferenceManager.getDefaultSharedPreferences(this)
+         val computeInterval = prefs.getInt(res.getString(R.string.progress_compute_interval_key), 100)
+         val applyInterval = prefs.getInt(res.getString(R.string.progress_apply_interval_key), 100)
+         val progressPrefs = JSONObject()
+         progressPrefs.put ("Compute_Changes_Interval", computeInterval)
+         progressPrefs.put ("Apply_Changes_Interval", applyInterval)
             
+         val msg = JSONObject()
+         msg.put("ROLE", "COMPUTE")
+         msg.put("DISPLAY_PROGRESS", progressPrefs)
+            
+         try {
             // Action values must match Ada Books.Database_Remote Actions enums.
             when (intentAction)
             {

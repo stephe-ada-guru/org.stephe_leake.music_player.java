@@ -40,6 +40,22 @@ write to the Free Software Foundation, 51 Franklin Street, Suite
         app:dialogTitle="@string/server_Port_dialog_title" />
 
     <androidx.preference.EditTextPreference
+        app:key="@string/progress_compute_interval_key"
+        app:defaultValue="0"
+        android:numeric="integer"
+        app:title="@string/progress_compute_interval_title"
+        app:summary="@string/progress_compute_interval_summary"
+        app:dialogTitle="@string/progress_compute_interval_dialog_title" />
+
+    <androidx.preference.EditTextPreference
+        app:key="@string/progress_apply_interval_key"
+        app:defaultValue="0"
+        android:numeric="integer"
+        app:title="@string/progress_apply_interval_title"
+        app:summary="@string/progress_apply_interval_summary"
+        app:dialogTitle="@string/progress_apply_interval_dialog_title" />
+
+    <androidx.preference.EditTextPreference
         app:key="@string/min_image_size_key"
         app:defaultValue="@string/min_image_size_default"
         android:numeric="integer"
