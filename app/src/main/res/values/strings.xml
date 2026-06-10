@@ -37,7 +37,7 @@
   <string name="null_playlist">(click to select a playlist)</string>
 
   <!-- note buttons -->
-  <string name="note_best_list">Best List</string>
+  <string name="note_best_list">Best</string>
   <string name="note_category">Category</string>
   <string name="note_dont_play">Don\'t Play</string>
   <string name="note_play_before">Play Before</string>

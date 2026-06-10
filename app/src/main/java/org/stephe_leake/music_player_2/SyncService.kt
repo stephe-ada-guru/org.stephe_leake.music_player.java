@@ -111,8 +111,12 @@ class SyncService : Service()
 
          val res        = resources
          val prefs      = PreferenceManager.getDefaultSharedPreferences(this)
-         val computeInterval = prefs.getInt(res.getString(R.string.progress_compute_interval_key), 100)
-         val applyInterval = prefs.getInt(res.getString(R.string.progress_apply_interval_key), 100)
+         val computeInterval = runCatching {
+            Integer.decode(prefs.getString(res.getString(R.string.progress_compute_interval_key), "100")!!) }
+            .getOrDefault(100)
+         val applyInterval   = runCatching {
+            Integer.decode(prefs.getString(res.getString(R.string.progress_apply_interval_key),   "100")!!) }
+            .getOrDefault(100)
          val progressPrefs = JSONObject()
          progressPrefs.put ("Compute_Changes_Interval", computeInterval)
          progressPrefs.put ("Apply_Changes_Interval", applyInterval)

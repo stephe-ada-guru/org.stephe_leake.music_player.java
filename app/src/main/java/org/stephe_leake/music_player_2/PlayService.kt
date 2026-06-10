@@ -20,6 +20,8 @@ package org.stephe_leake.music_player_2
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
@@ -30,10 +32,13 @@ class PlayService : MediaSessionService()
 {
    private lateinit var mediaSession: MediaSession
    private lateinit var player: ExoPlayer
+   private lateinit var audioManager: AudioManager
+   private lateinit var audioFocusRequest: AudioFocusRequest
+   private var pausedByFocusLoss = false
 
    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
       mediaSession
-   
+
    ///// Lifecycle
 
    override fun onCreate()
@@ -45,9 +50,50 @@ class PlayService : MediaSessionService()
          .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
          .build()
 
-      val player = ExoPlayer.Builder(this)
-         .setAudioAttributes(audioAttributes, /* handleAudioFocus = */ true)
+      // By default ExoPlayer processes
+      // AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK by reducing volume; I find
+      // that I still focus on the music, and miss the announcement
+      // (for example, from my fitness app about being in the wrong
+      // heart rate zone). So we handle audio focus events directly,
+      // and always pause.
+      player = ExoPlayer.Builder(this)
+         .setAudioAttributes(audioAttributes, /* handleAudioFocus = */ false)
          .build()
+
+      audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+
+      audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+         .setAudioAttributes(
+            android.media.AudioAttributes.Builder()
+               .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+               .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+               .build())
+         .setOnAudioFocusChangeListener { focusChange ->
+            when (focusChange) {
+               AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK,
+               AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                  if (player.isPlaying) {
+                     pausedByFocusLoss = true
+                     player.pause()
+                  }
+               }
+               AudioManager.AUDIOFOCUS_LOSS -> {
+                  // Some other app has grabbed focus long-term; don't
+                  // resume here when that app exits.
+                  pausedByFocusLoss = false
+                  player.pause()
+               }
+               AudioManager.AUDIOFOCUS_GAIN -> {
+                  if (pausedByFocusLoss) {
+                     pausedByFocusLoss = false
+                     player.play()
+                  }
+               }
+            }
+         }
+         .build()
+
+      audioManager.requestAudioFocus(audioFocusRequest)
 
       mediaSession = MediaSession.Builder(this, player)
          .setSessionActivity(
@@ -70,6 +116,12 @@ class PlayService : MediaSessionService()
          {
             mediaSession.release()
          }
+
+      if (::audioFocusRequest.isInitialized)
+         {
+            audioManager.abandonAudioFocusRequest(audioFocusRequest)
+         }
+
       super.onDestroy()
    }
 
