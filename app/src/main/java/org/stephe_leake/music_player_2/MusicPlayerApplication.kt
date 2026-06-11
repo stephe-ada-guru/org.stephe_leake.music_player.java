@@ -98,4 +98,17 @@ object SyncStatusBus {
    fun emit(s: SyncStatus) { _status.value = s }
 }
 
+sealed class DownloadStatus {
+   data object Idle : DownloadStatus()
+   data class Progress(val label: String) : DownloadStatus()
+   data class Done(val msg: String) : DownloadStatus()
+   data class Error(val msg: String) : DownloadStatus()
+}
+
+object DownloadStatusBus {
+   private val _status = MutableStateFlow<DownloadStatus>(DownloadStatus.Idle)
+   val status: StateFlow<DownloadStatus> = _status.asStateFlow()
+   fun emit(s: DownloadStatus) { _status.value = s }
+}
+
 // end of file

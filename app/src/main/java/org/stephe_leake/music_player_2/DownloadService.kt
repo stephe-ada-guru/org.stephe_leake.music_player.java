@@ -19,6 +19,7 @@
 package org.stephe_leake.music_player_2
 
 import android.Manifest
+import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.ComponentName
@@ -27,7 +28,8 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.os.IBinder
 import android.util.Log
-import androidx.annotation.RequiresPermission
+import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import androidx.concurrent.futures.await
 import androidx.media3.session.MediaBrowser
 import androidx.media3.session.SessionToken
@@ -46,22 +48,21 @@ import org.apache.commons.io.FilenameUtils
 class DownloadService : Service()
 {
    private val serviceScope = CoroutineScope(Dispatchers.IO)
-    
+
    private val broadcastReceiverCommand : MPBroadcastReceiver = MPBroadcastReceiver()
-   private lateinit var notif           : ServiceNotif
-   
+
    ////////// private methods (alphabetical order)
 
    suspend fun countSongsRemaining(category : String) : Int
    // Number of unplayed songs in 'category' playlist file
    {
-      val counts = utils.readPlaylistCounts(this, category) 
+      val counts = utils.readPlaylistCounts(this, category)
       var total = 0
 
       val playlistFile = File(utils.playlistFileName(category))
 
       playlistFile.forEachLine{total += 1}
-      
+
       return total - counts.index
    }
 
@@ -69,9 +70,9 @@ class DownloadService : Service()
    {
       val sessionToken = SessionToken(this, ComponentName(this, PlayService::class.java))
       val browserFuture = MediaBrowser.Builder(this, sessionToken).buildAsync()
-      
+
       return try {
-         val browser = browserFuture.await() 
+         val browser = browserFuture.await()
          val pos = browser.currentPosition
          browser.release()
          pos
@@ -81,8 +82,7 @@ class DownloadService : Service()
          utils.posDontSave
       }
    }
-   
-   @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+
    private suspend fun updatePlaylist(category : String, limit : Int)
    {
       Log.d(utils.logTag, "updatePlaylist '$category'")
@@ -104,10 +104,10 @@ class DownloadService : Service()
       val serverIP        = prefs.getString (res.getString(R.string.server_IP_key), null)
       val playlistFile    = File(utils.playlistFileName(category))
       val playlistDirFile = File(FilenameUtils.getPath(playlistFile.path))
-  
+
       if (serverIP == null || serverIP == "")
          {
-            notif.error("Server IP preference not set")
+            DownloadStatusBus.emit(DownloadStatus.Error("Server IP preference not set"))
             return
          }
 
@@ -128,7 +128,7 @@ class DownloadService : Service()
 
          if (songsRemaining < songCountMax - songCountThresh)
             {
-               var newSongs          : StatusStrings 
+               var newSongs          : StatusStrings
                val songCount         : Int   = songCountMax - songsRemaining
                val newSongCountFloat : Float = songCount * newSongFractionStr!!.toFloat()
                val newSongCount      : Int   = newSongCountFloat.toInt()
@@ -136,7 +136,7 @@ class DownloadService : Service()
                if (playlistFile.exists())
                   {
                      DownloadUtils.cleanPlaylist(this, category)
-               
+
                      DownloadUtils.sendNotes(serverIP, category)
                      // sendNotes already reported any error; don't
                      // need to abort update for this.
@@ -152,11 +152,11 @@ class DownloadService : Service()
 
                if (newSongs.status != ProcessStatus.Success)
                   {
-                     notif.error("get song list from server failed")
+                     DownloadStatusBus.emit(DownloadStatus.Error("get song list from server failed"))
                      return
                   }
 
-               notif.update(if (newSongs.strings.isEmpty()) "" else "$newSongs.strings.size")
+               DownloadStatusBus.emit(DownloadStatus.Progress("${newSongs.strings.size} songs"))
 
                // Add all songs to playlist, log any missing songs
                // (should all be on phone already, but this handles
@@ -173,30 +173,29 @@ class DownloadService : Service()
                   }
                else
                   utils.savePlaylistCounts(this, category, index = 0, pos = utils.posDontSave, limit = songCountMax)
-               
+
                if (status.status != ProcessStatus.Success)
                   {
-                     notif.error("check local/get songs from server failed")
+                     DownloadStatusBus.emit(DownloadStatus.Error("check local/get songs from server failed"))
                      return
                   }
 
                // Count of songs not found locally
                val missing = newSongs.strings.size - status.count
                val msg = if (missing>0) "$missing songs not found locally" else ""
-               
-               notif.done(msg)
+
+               DownloadStatusBus.emit(DownloadStatus.Done(msg))
                DownloadUtils.log("$category : update done\n$msg\n")
             }
          else
             {
-               notif.done("no update needed")
+               DownloadStatusBus.emit(DownloadStatus.Done("no update needed"))
                DownloadUtils.log("$category : no update needed\n\n")
             }
       }
       catch (e : IOException)
       {
-         // something is screwed up
-         notif.error("error: ${e.toString()}")
+         DownloadStatusBus.emit(DownloadStatus.Error("error: ${e.toString()}"))
       }
    }
 
@@ -204,6 +203,22 @@ class DownloadService : Service()
    override fun onBind(intent: Intent): IBinder?
    {
       return null
+   }
+
+   private fun buildForegroundNotif(): Notification
+   {
+      val tapIntent = Intent(this, DownloadProgressActivity::class.java).apply {
+         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+      }
+      val tapPI = PendingIntent.getActivity(
+         this, utils.showDownloadProgressIntentId, tapIntent, PendingIntent.FLAG_IMMUTABLE)
+      return NotificationCompat.Builder(this, utils.notificationChannelId)
+         .setContentTitle("Updating playlist")
+         .setContentText("Tap to view progress")
+         .setSmallIcon(R.mipmap.download_icon)
+         .setOngoing(true)
+         .setContentIntent(tapPI)
+         .build()
    }
 
    override fun onCreate()
@@ -214,39 +229,19 @@ class DownloadService : Service()
       filter.addAction(utils.DOWNLOAD_COMMAND)
       registerReceiver(broadcastReceiverCommand, filter, RECEIVER_NOT_EXPORTED)
 
-      notif = ServiceNotif(
-         context = this,
-         notificationId = utils.notif_download_id,
-         title = "Downloading playlist ",
-         showLogPendingIntent = PendingIntent.getActivity
-         (this.applicationContext,
-          utils.showDownloadLogIntentId,
-          utils.showLogIntent(this, DownloadUtils.downloadLogFileName()),
-          PendingIntent.FLAG_IMMUTABLE),
-
-         cancelPendingIntent = PendingIntent.getBroadcast
-         (this.applicationContext,
-          utils.cancelDownloadIntentId,
-          Intent(this, MPBroadcastReceiver::class.java).apply{action = utils.COMMAND_CANCEL_DOWNLOAD},
-          PendingIntent.FLAG_IMMUTABLE))
-
-      startForeground (utils.notif_download_id, notif.getNotif(),
-                       android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+      startForeground(utils.notif_download_id, buildForegroundNotif(),
+                      android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
    }
 
    override fun onDestroy()
    {
       Log.d(utils.logTag, "DownloadService destroyed")
       serviceScope.cancel()
-      if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
-             android.content.pm.PackageManager.PERMISSION_GRANTED)
-      {
-         notif.cancel()
-      }
+      ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
       unregisterReceiver(broadcastReceiverCommand)
       super.onDestroy()
    }
-   
+
    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int
    {
       if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
@@ -257,7 +252,7 @@ class DownloadService : Service()
          // this permission to use this app.
          return START_NOT_STICKY
       }
-      
+
       if (intent == null)
          {
             // intent is null if the service is restarted by Android
@@ -268,11 +263,12 @@ class DownloadService : Service()
          {
             try {
                   val category = intent.getStringExtra(utils.EXTRA_PLAYLIST_CATEGORY)!!
-                  val limit = intent.getIntExtra(utils.EXTRA_PLAYLIST_LIMIT, utils.limitDontSave) 
-                  
+                  val limit = intent.getIntExtra(utils.EXTRA_PLAYLIST_LIMIT, utils.limitDontSave)
+
                   serviceScope.launch {
-                     notif.initialize()
+                     DownloadStatusBus.emit(DownloadStatus.Idle)
                      updatePlaylist(category, limit)
+                     stopSelf()
                   }
 
                   return START_NOT_STICKY

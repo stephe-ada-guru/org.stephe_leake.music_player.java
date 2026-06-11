@@ -1309,8 +1309,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                            updatePlaylistIntent = Intent (
                               utils.DOWNLOAD_COMMAND, null, this, DownloadService::class.java)
                            .putExtra(utils.EXTRA_PLAYLIST_CATEGORY, FilenameUtils.getBaseName(filename))
-                        
+
                         this.startService(updatePlaylistIntent)
+                        startActivity(Intent(this, DownloadProgressActivity::class.java).apply {
+                           flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                        })
                      }
                   }
             }

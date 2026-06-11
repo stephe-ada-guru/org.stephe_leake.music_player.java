@@ -52,6 +52,12 @@
           android:exported="false" />
 
       <activity
+          android:name=".DownloadProgressActivity"
+          android:label="Update Playlist Progress"
+          android:launchMode="singleTop"
+          android:exported="false" />
+
+      <activity
           android:name=".SyncStateActivity"
           android:label="Edit Sync State (Debug)"
           android:exported="false" />
