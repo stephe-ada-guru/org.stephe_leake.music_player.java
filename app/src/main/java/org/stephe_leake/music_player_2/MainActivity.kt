@@ -720,8 +720,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          if (result.resultCode == RESULT_OK) {
             val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0)
             if (spokenText != null)
-               {      utils.debugLog("voice button: '$spokenText'")
-                      writeNote(spokenText)
+               {
+                  utils.debugLog("voice button: '$spokenText'")
+                  utils.alertLog(this@MainActivity, "voice button: '$spokenText'")
+                  writeNote(spokenText)
                }
          }
    }

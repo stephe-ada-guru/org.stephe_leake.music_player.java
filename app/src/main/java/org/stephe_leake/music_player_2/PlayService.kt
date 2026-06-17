@@ -34,7 +34,7 @@ class PlayService : MediaSessionService()
    private lateinit var player: ExoPlayer
    private lateinit var audioManager: AudioManager
    private lateinit var audioFocusRequest: AudioFocusRequest
-   private var pausedByFocusLoss = false
+   private lateinit var audioFocusHandler: AudioFocusHandler
 
    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
       mediaSession
@@ -62,35 +62,20 @@ class PlayService : MediaSessionService()
 
       audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
 
+      audioFocusHandler = AudioFocusHandler(object : PlayerControl {
+         override val isPlaying get() = player.isPlaying
+         override fun pause() = player.pause()
+         override fun play() = player.play()
+      })
+
       audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
          .setAudioAttributes(
             android.media.AudioAttributes.Builder()
                .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
                .build())
-         .setOnAudioFocusChangeListener { focusChange ->
-            when (focusChange) {
-               AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK,
-               AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                  if (player.isPlaying) {
-                     pausedByFocusLoss = true
-                     player.pause()
-                  }
-               }
-               AudioManager.AUDIOFOCUS_LOSS -> {
-                  // Some other app has grabbed focus long-term; don't
-                  // resume here when that app exits.
-                  pausedByFocusLoss = false
-                  player.pause()
-               }
-               AudioManager.AUDIOFOCUS_GAIN -> {
-                  if (pausedByFocusLoss) {
-                     pausedByFocusLoss = false
-                     player.play()
-                  }
-               }
-            }
-         }
+         .setWillPauseWhenDucked(true)  // disable auto-duck; deliver callback so we can pause instead
+         .setOnAudioFocusChangeListener { focusChange -> audioFocusHandler.onFocusChange(focusChange) }
          .build()
 
       audioManager.requestAudioFocus(audioFocusRequest)

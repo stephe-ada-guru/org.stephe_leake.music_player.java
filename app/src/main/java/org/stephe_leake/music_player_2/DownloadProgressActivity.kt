@@ -39,6 +39,7 @@ class DownloadProgressActivity : AppCompatActivity()
       val cancelButton  = findViewById<Button>(R.id.download_cancel_button)
       val showLogButton = findViewById<Button>(R.id.download_show_log_button)
       val dismissButton = findViewById<Button>(R.id.download_dismiss_button)
+      val syncDbButton  = findViewById<Button>(R.id.download_sync_db_button)
 
       cancelButton.setOnClickListener {
          sendBroadcast(Intent(this, MPBroadcastReceiver::class.java).apply {
@@ -52,6 +53,13 @@ class DownloadProgressActivity : AppCompatActivity()
 
       dismissButton.setOnClickListener { finish() }
 
+      syncDbButton.setOnClickListener {
+         startService(Intent(utils.SYNC_DB_COMMAND, null, this, SyncService::class.java))
+         startActivity(Intent(this, SyncProgressActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+         })
+      }
+
       lifecycleScope.launch {
          DownloadStatusBus.status.collectLatest { status ->
             when (status)
@@ -61,24 +69,28 @@ class DownloadProgressActivity : AppCompatActivity()
                      statusView.text = "Starting..."
                      cancelButton.visibility = View.VISIBLE
                      dismissButton.visibility = View.GONE
+                     syncDbButton.visibility  = View.GONE
                   }
                is DownloadStatus.Progress ->
                   {
                      statusView.text = status.label
                      cancelButton.visibility = View.VISIBLE
                      dismissButton.visibility = View.GONE
+                     syncDbButton.visibility  = View.GONE
                   }
                is DownloadStatus.Done ->
                   {
                      statusView.text = if (status.msg.isEmpty()) "Done" else "Done: ${status.msg}"
                      cancelButton.visibility = View.GONE
                      dismissButton.visibility = View.VISIBLE
+                     syncDbButton.visibility  = View.VISIBLE
                   }
                is DownloadStatus.Error ->
                   {
                      statusView.text = status.msg
                      cancelButton.visibility = View.GONE
                      dismissButton.visibility = View.VISIBLE
+                     syncDbButton.visibility  = View.GONE
                   }
             }
          }

@@ -34,6 +34,13 @@
         android:text="Dismiss" />
 
     <Button
+        android:id="@+id/download_sync_db_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:text="Sync DB" />
+
+    <Button
         android:id="@+id/download_show_log_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

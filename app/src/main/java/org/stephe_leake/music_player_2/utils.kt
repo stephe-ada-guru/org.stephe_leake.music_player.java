@@ -321,7 +321,6 @@ class utils
          // Messages containing info user needs time to read; requires explicit dismissal.
          //
          // Cannot be called from a service
-         Log.i(logTag, msg)
          AlertDialog.Builder(context).setMessage(msg).setPositiveButton(R.string.Ok, null).show()
       }
 
