@@ -45,9 +45,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -108,14 +112,21 @@ fun SearchScreen(viewModel: SearchViewModel)
 @Composable
 fun GeneralSearchTab(onSearch: (String) -> Unit) {
     var query by remember { mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val doSearch = {
+        keyboardController?.hide()
+        onSearch(query)
+    }
     Row(modifier = Modifier.padding(8.dp)) {
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
             label = { Text("Search...") },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+            keyboardActions = KeyboardActions(onGo = { doSearch() })
         )
-        Button(onClick = { onSearch(query) }, modifier = Modifier.padding(start = 8.dp)) {
+        Button(onClick = { doSearch() }, modifier = Modifier.padding(start = 8.dp)) {
             Text("Go")
         }
     }
@@ -125,6 +136,9 @@ fun GeneralSearchTab(onSearch: (String) -> Unit) {
 fun DetailedSearchTab(onSearch: (DetailedInfo) -> Unit)
 {
    var query by remember { mutableStateOf(DetailedInfo()) }
+   val keyboardController = LocalSoftwareKeyboardController.current
+   val goOptions = KeyboardOptions(imeAction = ImeAction.Go)
+   val goActions = KeyboardActions(onGo = { keyboardController?.hide(); onSearch(query) })
    Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -132,24 +146,29 @@ fun DetailedSearchTab(onSearch: (DetailedInfo) -> Unit)
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(0.dp)
    ) {
-      SearchField(value = query.title, onValueChange = { query = query.copy(title = it) }, label = "Title")
-      SearchField(value = query.artist, onValueChange = { query = query.copy(artist = it) }, label = "Artist")
-      SearchField(value = query.album, onValueChange = { query = query.copy(album = it) }, label = "Album")
-      SearchField(value = query.albumArtist, onValueChange = { query = query.copy(albumArtist = it) }, label = "Album Artist")
-      SearchField(value = query.composer, onValueChange = { query = query.copy(composer = it) }, label = "Composer")
-      SearchField(value = query.category, onValueChange = { query = query.copy(category = it) }, label = "Category")
+      SearchField(value = query.title, onValueChange = { query = query.copy(title = it) }, label = "Title", keyboardOptions = goOptions, keyboardActions = goActions)
+      SearchField(value = query.artist, onValueChange = { query = query.copy(artist = it) }, label = "Artist", keyboardOptions = goOptions, keyboardActions = goActions)
+      SearchField(value = query.album, onValueChange = { query = query.copy(album = it) }, label = "Album", keyboardOptions = goOptions, keyboardActions = goActions)
+      SearchField(value = query.albumArtist, onValueChange = { query = query.copy(albumArtist = it) }, label = "Album Artist", keyboardOptions = goOptions, keyboardActions = goActions)
+      SearchField(value = query.composer, onValueChange = { query = query.copy(composer = it) }, label = "Composer", keyboardOptions = goOptions, keyboardActions = goActions)
+      SearchField(value = query.category, onValueChange = { query = query.copy(category = it) }, label = "Category", keyboardOptions = goOptions, keyboardActions = goActions)
 
       HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-      Button(onClick = { onSearch(query) }, modifier = Modifier.padding(start = 8.dp)) {
+      Button(onClick = { keyboardController?.hide(); onSearch(query) }, modifier = Modifier.padding(start = 8.dp)) {
          Text("Go")
       }
    }
 }
 
 @Composable
-private fun SearchField(label: String, value: String, onValueChange: (String) -> Unit)
-{
+private fun SearchField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default
+) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -161,7 +180,9 @@ private fun SearchField(label: String, value: String, onValueChange: (String) ->
          // user's text. Apparently there is no way to say "use less
          // padding". Sigh.
            .height(56.dp),
-        singleLine = true
+        singleLine = true,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions
     )
 }
 
