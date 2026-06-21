@@ -163,16 +163,10 @@ class DownloadService : Service()
                // new music).
                val status = DownloadUtils.getSongs(newSongs.strings, category)
 
-               if (utils.readPlaylistName(this) == category)
-                  {
-                     // Restart playlist to show song position, count
-                     utils.savePlaylistCounts(
-                        this, category, index = 0, pos = getCurrentPosition(), limit = songCountMax)
-                     Log.d(utils.logTag, "DownloadService.updatePlaylist send ReloadPlaylist")
-                     serviceScope.launch {AppEventBus.emitEvent(AppEvent.ReloadPlaylist)}
-                  }
-               else
-                  utils.savePlaylistCounts(this, category, index = 0, pos = utils.posDontSave, limit = songCountMax)
+               utils.savePlaylistCounts(
+                  this, category, index = 0,
+                  pos = if (utils.readPlaylistName(this) == category) getCurrentPosition() else utils.posDontSave,
+                  limit = songCountMax)
 
                if (status.status != ProcessStatus.Success)
                   {
@@ -184,12 +178,12 @@ class DownloadService : Service()
                val missing = newSongs.strings.size - status.count
                val msg = if (missing>0) "$missing songs not found locally" else ""
 
-               DownloadStatusBus.emit(DownloadStatus.Done(msg))
+               DownloadStatusBus.emit(DownloadStatus.Done(category, msg))
                DownloadUtils.log("$category : update done\n$msg\n")
             }
          else
             {
-               DownloadStatusBus.emit(DownloadStatus.Done("no update needed"))
+               DownloadStatusBus.emit(DownloadStatus.Done(null, "no update needed"))
                DownloadUtils.log("$category : no update needed\n\n")
             }
       }

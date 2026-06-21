@@ -101,7 +101,7 @@ object SyncStatusBus {
 sealed class DownloadStatus {
    data object Idle : DownloadStatus()
    data class Progress(val label: String) : DownloadStatus()
-   data class Done(val msg: String) : DownloadStatus()
+   data class Done(val category: String?, val msg: String) : DownloadStatus()
    data class Error(val msg: String) : DownloadStatus()
 }
 

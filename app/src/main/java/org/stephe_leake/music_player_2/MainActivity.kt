@@ -906,7 +906,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                               {
                                  // We only get this when the playlist
                                  // file corresponding to
-                                 // viewModel.playlistName.value has
+                                 // utils.readPlaylistName has
                                  // been edited, and the correct
                                  // counts saved. So don't overwrite
                                  // them with the outdated state of
@@ -990,6 +990,28 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
       playerView.onResume()
       if (imageSlideshowAdapter.itemCount > 1)
          startSlideshowTimer()
+
+      // If a playlist update completed while we were in the background
+      // (showing DownloadProgressActivity), reload the player now.
+      // DownloadStatusBus is a StateFlow so the Done state is still visible here.
+      val downloadStatus = DownloadStatusBus.status.value
+      if (downloadStatus is DownloadStatus.Done)
+         {
+            DownloadStatusBus.emit(DownloadStatus.Idle)
+            if (mediaController != null && downloadStatus.category != null)
+               {
+                  lifecycleScope.launch {
+                     if (utils.readPlaylistName(this@MainActivity) == downloadStatus.category)
+                        {
+                           Log.d(utils.logTag, "MainActivity.onResume: reloading playlist after download")
+                           playlistToPlayer(
+                              downloadStatus.category,
+                              play = mediaController!!.isPlaying,
+                              saveState = false)
+                        }
+                  }
+               }
+         }
    }
    
    override fun onPause()
