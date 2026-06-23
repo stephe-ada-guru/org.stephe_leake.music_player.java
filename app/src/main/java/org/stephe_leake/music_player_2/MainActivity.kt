@@ -1276,6 +1276,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                }
             }
             
+         R.id.menu_show_crash_log ->
+            {
+               startActivity(utils.showLogIntent(this@MainActivity, utils.crashLogFileName()))
+            }
+
          R.id.menu_show_debug_log ->
             {
                startActivity(utils.showLogIntent(this@MainActivity, utils.debugLogFileName()))

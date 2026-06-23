@@ -270,26 +270,28 @@ class utils
          return logFileName(errorLogFileBaseName)
       }
       
+      private fun rotateLogIfStale(logFileBaseName: String)
+      // Rename `logFileBaseName` -> `logFileBaseName`_1 if the file is older than 4 hours.
+      {
+         val logFile = File(logFileName(logFileBaseName))
+         val time    = System.currentTimeMillis()
+         if (logFile.exists() && time - logFile.lastModified() > 4 * millisPerHour)
+            {
+               val oldLogFile = File(globalDirectory + "/" + logFileBaseName + "_1" + logFileExt)
+               if (oldLogFile.exists()) {oldLogFile.delete()}
+               logFile.renameTo(oldLogFile)
+            }
+      }
+
       fun log(msg : String, logFileBaseName : String)
       {
          Log.d(logTag, msg)
 
          val fmt       = SimpleDateFormat("yyyy-MM-dd HH:mm:ss : ", Locale.US)
-         val time      : Long     = System.currentTimeMillis() // local time zone
-         val timeStamp : String   = fmt.format(time)
-         val logFile   = File(logFileName(logFileBaseName))
-         
-         if (logFile.exists() && time - logFile.lastModified() > 4 * millisPerHour)
-            {
-               val oldLogFileName : String = globalDirectory + "/" + logFileBaseName + "_1" + logFileExt
-               val oldLogFile     = File(oldLogFileName)
-               
-               if (oldLogFile.exists())
-                  {oldLogFile.delete()}
-               
-               logFile.renameTo(oldLogFile)
-            }
-         
+         val timeStamp : String   = fmt.format(System.currentTimeMillis())
+
+         rotateLogIfStale(logFileBaseName)
+
          val writer = PrintWriter(FileWriter(logFileName(logFileBaseName), true)) // append
          writer.println(timeStamp + " " + msg)
          writer.flush()
@@ -314,6 +316,46 @@ class utils
       {
          // programmer errors (possibly due to Android bugs :)
          log(msg, errorLogFileBaseName)
+      }
+
+      const val crashLogFileBaseName: String = "crash_log"
+
+      fun crashLogFileName() : String
+      {
+         return logFileName(crashLogFileBaseName)
+      }
+      
+      fun crashLog(thread: Thread, e: Throwable)
+      {
+         try {
+            val fmt       = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            val timestamp = fmt.format(System.currentTimeMillis())
+
+            rotateLogIfStale(crashLogFileBaseName)
+
+            val writer    = PrintWriter(FileWriter(logFileName(crashLogFileBaseName), true))
+
+            writer.println("===== CRASH $timestamp on thread '${thread.name}' =====")
+            e.printStackTrace(writer)
+
+            // Dump the last 60 seconds of logcat into the same file so
+            // we have context for what was happening before the crash.
+            writer.println("----- logcat (last 60s) -----")
+            writer.flush()
+            try {
+               val proc   = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-t", "60"))
+               proc.inputStream.bufferedReader().forEachLine { writer.println(it) }
+               proc.waitFor()
+            } catch (_: Exception) {
+               writer.println("(logcat capture failed)")
+            }
+
+            writer.println("===== END CRASH =====")
+            writer.flush()
+            writer.close()
+         } catch (_: Exception) {
+            // If logging itself fails there is nothing we can do.
+         }
       }
 
       fun alertLog(context : Context, msg : String)

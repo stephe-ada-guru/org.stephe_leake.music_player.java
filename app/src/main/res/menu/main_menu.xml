@@ -69,6 +69,9 @@
           android:id="@id/menu_show_download_log"
           android:title="@string/menu_show_download_log"/>
       <item
+          android:id="@id/menu_show_crash_log"
+          android:title="@string/menu_show_crash_log"/>
+      <item
           android:id="@id/menu_show_debug_log"
           android:title="@string/menu_show_debug_log"/>
       <item

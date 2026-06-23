@@ -18,6 +18,7 @@
 
 package org.stephe_leake.music_player_2
 
+import android.app.ForegroundServiceStartNotAllowedException
 import android.app.PendingIntent
 import android.content.Intent
 import android.media.AudioFocusRequest
@@ -88,6 +89,21 @@ class PlayService : MediaSessionService()
                Intent(this, MainActivity::class.java),
                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)!!)
          .build()
+   }
+
+   //  WORKAROUND: Media3 sometimes tries to call
+   //  startForegroundService when the player state changes, which
+   //  causes Android 12+ to throw
+   //  ForegroundServiceStartNotAllowedException. This catches that
+   //  exception.
+   override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean)
+   {
+      try {
+         super.onUpdateNotification(session, startInForegroundRequired)
+      } catch (e: ForegroundServiceStartNotAllowedException) {
+         // Player state changed while app was in the background; the service
+         // is already running so no action is needed.
+      }
    }
 
    override fun onDestroy()
