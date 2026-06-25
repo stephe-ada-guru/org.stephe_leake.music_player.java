@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "org.stephe_leake.music_player_2"
-    compileSdk = 34 // Use the latest STABLE SDK as of Oct 2025. 
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "org.stephe_leake.music_player_2"
@@ -36,9 +36,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_9
         targetCompatibility = JavaVersion.VERSION_1_9
     }
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_9.toString()
-    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -47,6 +44,12 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_9)
     }
 }
 
