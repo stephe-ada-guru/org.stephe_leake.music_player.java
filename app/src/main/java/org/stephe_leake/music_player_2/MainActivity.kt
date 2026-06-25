@@ -75,9 +75,12 @@ import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.media3.common.C
+import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.Timeline
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
@@ -101,6 +104,8 @@ import kotlinx.coroutines.launch
 
 import org.apache.commons.io.FilenameUtils
 
+import android.media.MediaMetadataRetriever
+import android.media.MediaScannerConnection
 import android.view.View.GONE
 import android.view.View.VISIBLE
 
@@ -142,6 +147,28 @@ private class PlaylistAdapter(
    }
 
    override fun getItemCount() = playlists.size
+}
+
+// PlayerView's internal ComponentListener.onTracksChanged calls
+// Timeline.getIndexOfPeriod, which RemotableTimeline (used by
+// MediaController) doesn't support and throws. Wrap the controller in a
+// ForwardingPlayer that returns a safe Timeline to prevent the crash.
+@OptIn(UnstableApi::class)
+private class SafePlayer(player: Player) : ForwardingPlayer(player)
+{
+   override fun getCurrentTimeline(): Timeline = SafeTimeline(wrappedPlayer.currentTimeline)
+
+   private class SafeTimeline(private val inner: Timeline) : Timeline()
+   {
+      override fun getWindowCount() = inner.windowCount
+      override fun getWindow(windowIndex: Int, window: Window, defaultPositionProjectionUs: Long): Window =
+         inner.getWindow(windowIndex, window, defaultPositionProjectionUs)
+      override fun getPeriodCount() = inner.periodCount
+      override fun getPeriod(periodIndex: Int, period: Period, setIds: Boolean): Period =
+         inner.getPeriod(periodIndex, period, setIds)
+      override fun getIndexOfPeriod(uid: Any): Int = C.INDEX_UNSET
+      override fun getUidOfPeriod(periodIndex: Int): Any = periodIndex
+   }
 }
 
 class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener
@@ -284,7 +311,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          if (cursor == null || !cursor.moveToFirst())
             {
                // not found. Also checked in DownloadUtils.getSongs, but it might get deleted.
-               utils.errorLog("not found '$filename'")
+               utils.errorLog("not found '$filename' (try menu Media Scanner)")
             }
          else
             {
@@ -608,7 +635,29 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          imageSlideshowAdapter.updateImages(images)
 
          if (images.isEmpty())
-            slideshow.visibility = GONE
+            {
+               slideshow.visibility = GONE
+
+               // No folder images; try artwork embedded in the file.
+               val retriever = MediaMetadataRetriever()
+               try {
+                  retriever.setDataSource(songFile.absolutePath)
+                  val embeddedArt = retriever.embeddedPicture
+                  if (embeddedArt != null)
+                     {
+                        val newMetadata = androidx.media3.common.MediaMetadata.Builder()
+                           .populate(metadata)
+                           .setArtworkData(embeddedArt, androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+                           .build()
+                        val newItem = mediaController!!.currentMediaItem!!.buildUpon()
+                           .setMediaMetadata(newMetadata)
+                           .build()
+                        mediaController!!.replaceMediaItem(index, newItem)
+                     }
+               } finally {
+                  retriever.release()
+               }
+            }
          else
             {
                slideshow.visibility = VISIBLE
@@ -620,15 +669,18 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                // metadata is _not_ a reference, so we need to build a
                // replacement mediaItem.
                //
-               // This artwork shows on the lock screen, not in the main UI.
-               // Artwork embedded in the mp3 file is shown in the main UI.
-               // All the others are displayed in the slideshow below.
-               val newMetadata = androidx.media3.common.MediaMetadata.Builder()
+               // PlayerView.use_artwork requires artworkData (bytes);
+               // artworkUri is only used for the lock-screen
+               // notification. PlayerView can only display one image;
+               // the other images are shown in the slideshow below.
+               val artworkBytes = try { File(images.first().path!!).readBytes() } catch (_: Exception) { null }
+               val newMetadataBuilder = androidx.media3.common.MediaMetadata.Builder()
                   .populate(metadata)
                   .setArtworkUri(images.first())
-                  .build()
+               if (artworkBytes != null)
+                  newMetadataBuilder.setArtworkData(artworkBytes, androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER)
                val newItem = mediaController!!.currentMediaItem!!.buildUpon()
-                  .setMediaMetadata(newMetadata)
+                  .setMediaMetadata(newMetadataBuilder.build())
                   .build()
                mediaController!!.replaceMediaItem(index, newItem)
             }
@@ -937,6 +989,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
            }
     }
    
+   @OptIn(UnstableApi::class)
    override fun onStart()
    {
       super.onStart()
@@ -955,7 +1008,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
          mediaController!!.addListener(playerListener)
          
          val playerView = findViewById<PlayerView>(R.id.player_view)
-          playerView.player = mediaController
+          playerView.player = SafePlayer(mediaController!!)
          
          viewModel.setMediaControllerReady(true)
       }   
@@ -1122,6 +1175,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
          R.id.menu_db_resume_init ->
             startSync(utils.RESUME_INIT_DB_COMMAND)
+
+         R.id.menu_scan_media ->
+            MediaScannerConnection.scanFile(this, arrayOf(utils.globalDirectory), null) { _, _ -> }
 
          R.id.menu_edit_song ->
             {

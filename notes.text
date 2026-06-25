@@ -13,8 +13,6 @@ work_2 :
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
-delete debugLog items
-
 add synced lyrics
     see gemini; implement LRC
     use lrcgenerator.com in parallel with VLC to generate .lrc file
@@ -31,10 +29,15 @@ search page:
 edit category on main view
     delete "category" button
 
+ updates
+25 jun 2026; claude updated Media3, Kotlin, AGP, others. Not AGP 9.x, not Compose BOM
+
  decisions
 standard notification doesn't display album
     can override?
     not with API > 33. sigh.
+
+adding artwork as id3 metadata does not help, as long as separate artwork files are available.
 
  Resources
 6 Jan 2026:

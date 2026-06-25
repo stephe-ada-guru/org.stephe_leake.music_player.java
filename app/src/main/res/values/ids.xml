@@ -47,6 +47,7 @@
   <item type="id" name="menu_show_debug_log" />
   <item type="id" name="menu_show_error_log" />
   <item type="id" name="menu_show_sync_log" />
+  <item type="id" name="menu_scan_media" />
   <item type="id" name="menu_sync_db" />
   <item type="id" name="menu_update_playlist" />
   <item type="id" name="voice" />

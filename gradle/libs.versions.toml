@@ -2,39 +2,38 @@
 # these names are used in [libraries] below (and maybe elsewhere?)
 
 # CORE TOOLS
-agp = "8.4.1" 
-kotlin = "2.0.0"
-ksp    = "2.0.0-1.0.21"    # MUST match kotlin version
-composeCompiler = "1.5.11" # The Compose Compiler for Kotlin 2.0.0
+agp    = "8.13.0"
+kotlin = "2.3.0"
+ksp    = "2.3.9"    # KSP2: independent versioning since 2.3.0; no longer tied to Kotlin version
 
 # ANDROIDX LIBRARIES
-activityCompose = "1.9.0"
-androidxConcurrent = "1.1.0" 
-appcompat = "1.7.0"
-composeBom = "2024.05.00" 
-constraintlayout = "2.1.4"
-coreKtx = "1.13.1"
-coroutines = "1.8.1" 
-datastorePreferences = "1.1.1"
-espressoCore = "3.5.1"
-fragmentKtx = "1.8.0"
+activityCompose     = "1.13.0"
+androidxConcurrent  = "1.1.0"
+appcompat           = "1.7.1"
+composeBom          = "2026.06.00"
+constraintlayout    = "2.2.1"
+coreKtx             = "1.19.0"
+coroutines          = "1.11.0"
+datastorePreferences = "1.2.1"
+espressoCore        = "3.5.1"
+fragmentKtx         = "1.8.9"
 # jetbrains uses coroutines version
-junit = "4.13.2"
-junitVersion = "1.1.5"
-lifecycle = "2.8.2" 
+junit               = "4.13.2"
+junitVersion        = "1.1.5"
+lifecycle           = "2.11.0"
 # material3 for "compose" is in composeBom
 # this is for AppCompat etc
-material = "1.12.0" 
-media3 = "1.3.1"
-navigationCompose = "2.7.7"
-preferenceKtx = "1.2.1"
-room = "2.6.1"
-viewpager2 = "1.1.0"
-guava = "33.2.1-android"
+material            = "1.14.0"
+media3              = "1.10.0"
+navigationCompose   = "2.9.8"
+preferenceKtx       = "1.2.1"
+room                = "2.8.4"
+viewpager2          = "1.1.0"
+guava               = "33.2.1-android"
 
 [libraries]
 # these names are used in build.gradle, as libs.* (replace - with .)
-# If an entry does not have 'version.ref', the version is found in one of the BOMs 
+# If an entry does not have 'version.ref', the version is found in one of the BOMs
 
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
