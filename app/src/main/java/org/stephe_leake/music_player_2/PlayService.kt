@@ -25,6 +25,7 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.MediaSession
@@ -79,7 +80,14 @@ class PlayService : MediaSessionService()
          .setOnAudioFocusChangeListener { focusChange -> audioFocusHandler.onFocusChange(focusChange) }
          .build()
 
-      audioManager.requestAudioFocus(audioFocusRequest)
+      player.addListener(object : Player.Listener {
+         override fun onIsPlayingChanged(isPlaying: Boolean) {
+            if (isPlaying)
+               audioManager.requestAudioFocus(audioFocusRequest)
+            else
+               audioManager.abandonAudioFocusRequest(audioFocusRequest)
+         }
+      })
 
       mediaSession = MediaSession.Builder(this, player)
          .setSessionActivity(

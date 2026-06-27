@@ -13,19 +13,9 @@ work_2 :
 (grep-find "find . -type f -print | \"xargs\" grep  -nH --null FIXME")
 
  current work
-prune gradle cache:
- The cleanest approach: stop daemons, then wipe the entire cache. Gradle re-downloads only what the next build actually needs (much less than 3.2 GB).
-
-  cd ~/Projects/org.stephe_leake.music_player
-  ./gradlew --stop
-  rm -rf ~/.gradle/caches/
-
-  If you'd rather keep the downloaded artifacts (avoid re-downloading) and only free the regenerable working cache:
-
-  ./gradlew --stop
-  rm -rf ~/.gradle/caches/9.0-milestone-1/
-  rm -rf ~/.gradle/caches/jars-9/
-
+search page:
+    collapse/expand albums
+    click on artist to search that artist
 
 add synced lyrics
     see gemini; implement LRC
@@ -36,15 +26,13 @@ add synced lyrics
 
     use claude to process .pdfs, add to .mp3?
 
-search page:
-    collapse/expand albums
-    click on artist to search that artist
-
-edit category on main view
-    delete "category" button
-
  updates
 25 jun 2026; claude updated Media3, Kotlin, AGP, others. compile sdk 36. Not AGP 9.x, not Compose BOM
+
+prune gradle cache:
+  cd ~/Projects/org.stephe_leake.music_player
+  ./gradlew --stop
+  rm -rf ~/.gradle/caches/
 
  decisions
 standard notification doesn't display album
