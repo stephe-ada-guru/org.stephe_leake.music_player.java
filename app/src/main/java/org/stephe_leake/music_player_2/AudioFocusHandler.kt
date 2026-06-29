@@ -38,7 +38,7 @@ class AudioFocusHandler(private val player: PlayerControl)
       const val AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK = -3
    }
 
-   private var pausedByFocusLoss = false
+   var pausedByFocusLoss = false
 
    fun onFocusChange(focusChange: Int)
    {

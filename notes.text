@@ -28,6 +28,7 @@ add synced lyrics
 
  updates
 25 jun 2026; claude updated Media3, Kotlin, AGP, others. compile sdk 36. Not AGP 9.x, not Compose BOM
+    did not update anything in Studio
 
 prune gradle cache:
   cd ~/Projects/org.stephe_leake.music_player

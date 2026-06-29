@@ -84,7 +84,7 @@ class PlayService : MediaSessionService()
          override fun onIsPlayingChanged(isPlaying: Boolean) {
             if (isPlaying)
                audioManager.requestAudioFocus(audioFocusRequest)
-            else
+            else if (!audioFocusHandler.pausedByFocusLoss)
                audioManager.abandonAudioFocusRequest(audioFocusRequest)
          }
       })
