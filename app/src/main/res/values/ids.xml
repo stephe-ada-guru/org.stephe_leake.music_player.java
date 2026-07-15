@@ -19,6 +19,8 @@
   500, Boston, MA 02110-1335, USA.
 -->
 <resources>
+  <item type="id" name="duck_overlay"/>
+
   <item type="id" name="main_toolbar"/>
   <item type="id" name="main_pref_frag"/>
 

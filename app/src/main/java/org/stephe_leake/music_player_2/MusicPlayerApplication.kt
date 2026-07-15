@@ -29,10 +29,8 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class MusicPlayerApplication : Application() {
@@ -56,23 +54,6 @@ class MusicPlayerApplication : Application() {
          defaultHandler?.uncaughtException(thread, throwable)
       }
    }
-}
-
-// Define the events MainViewModel can send to MainActivity.
-sealed class AppEvent
-{
-    data object ReloadPlaylist : AppEvent()
-}
-
-object AppEventBus
-{
-    private val _events = MutableSharedFlow<AppEvent>()
-    val events = _events.asSharedFlow()
-
-    suspend fun emitEvent(event: AppEvent)
- {
-        _events.emit(event)
-    }
 }
 
 // Playlist preferences are actually state data, so we use DataStore.
@@ -120,6 +101,12 @@ object DownloadStatusBus {
    private val _status = MutableStateFlow<DownloadStatus>(DownloadStatus.Idle)
    val status: StateFlow<DownloadStatus> = _status.asStateFlow()
    fun emit(s: DownloadStatus) { _status.value = s }
+}
+
+object DuckStatusBus {
+   private val _isDucked = MutableStateFlow(false)
+   val isDucked: StateFlow<Boolean> = _isDucked.asStateFlow()
+   fun emit(ducked: Boolean) { _isDucked.value = ducked }
 }
 
 // end of file

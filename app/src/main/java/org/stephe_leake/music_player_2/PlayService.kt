@@ -82,10 +82,15 @@ class PlayService : MediaSessionService()
 
       player.addListener(object : Player.Listener {
          override fun onIsPlayingChanged(isPlaying: Boolean) {
-            if (isPlaying)
+            if (isPlaying) {
                audioManager.requestAudioFocus(audioFocusRequest)
-            else if (!audioFocusHandler.pausedByFocusLoss)
+               DuckStatusBus.emit(false)
+            } else if (audioFocusHandler.pausedByFocusLoss) {
+               DuckStatusBus.emit(true)
+            } else {
                audioManager.abandonAudioFocusRequest(audioFocusRequest)
+               DuckStatusBus.emit(false)
+            }
          }
       })
 
@@ -108,7 +113,7 @@ class PlayService : MediaSessionService()
    {
       try {
          super.onUpdateNotification(session, startInForegroundRequired)
-      } catch (e: ForegroundServiceStartNotAllowedException) {
+      } catch (_: ForegroundServiceStartNotAllowedException) {
          // Player state changed while app was in the background; the service
          // is already running so no action is needed.
       }

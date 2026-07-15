@@ -68,24 +68,39 @@
       <!-- 150 dp; only shows play/pause -->
       <!-- 200 dp; shows all. -->
       <!-- hide_on_touch, auto_show have no effect -->
-      <androidx.media3.ui.PlayerView
-          android:id="@+id/player_view"
+      <FrameLayout
           android:layout_width="match_parent"
-          android:layout_height="wrap_content"
-          android:minHeight="200dp"
-          android:visibility="visible"
-          android:gravity="center"
-          app:use_controller="true"
-          app:show_shuffle_button="false"
-          app:show_subtitle_button="false"
-          app:keep_content_on_player_reset="true"
-          app:show_buffering="always"
-          app:show_vr_button="false"
-          app:surface_type="none"
-          app:use_artwork="false"
-          app:hide_on_touch="false"
-          app:auto_show="true"
-          app:show_timeout="0"/>
+          android:layout_height="wrap_content">
+
+        <androidx.media3.ui.PlayerView
+            android:id="@+id/player_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="200dp"
+            android:visibility="visible"
+            android:gravity="center"
+            app:use_controller="true"
+            app:show_shuffle_button="false"
+            app:show_subtitle_button="false"
+            app:keep_content_on_player_reset="true"
+            app:show_buffering="always"
+            app:show_vr_button="false"
+            app:surface_type="none"
+            app:use_artwork="false"
+            app:hide_on_touch="false"
+            app:auto_show="true"
+            app:show_timeout="0"/>
+
+        <TextView
+            android:id="@+id/duck_overlay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="🦆"
+            android:textSize="64sp"
+            android:visibility="gone"/>
+
+      </FrameLayout>
 
       <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/image_slideshow"

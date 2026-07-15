@@ -941,28 +941,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                }
             }
 
-            // Listen for ReloadPlaylist events (and others) from mainViewModel
             launch {
-               AppEventBus.events.collect {
-                  event: AppEvent ->
-                     when (event) {
-                        is AppEvent.ReloadPlaylist -> {
-                           if (mediaController != null)
-                              {
-                                 // We only get this when the playlist
-                                 // file corresponding to
-                                 // utils.readPlaylistName has
-                                 // been edited, and the correct
-                                 // counts saved. So don't overwrite
-                                 // them with the outdated state of
-                                 // the current mediaController playlist.
-                                 playlistToPlayer(
-                                    mediaController!!.playlistName!!,
-                                    play = mediaController!!.isPlaying,
-                                    saveState = false)
-                              }
-                        }
-                     }
+               DuckStatusBus.isDucked.collect { isDucked ->
+                  val overlay = findViewById<android.widget.TextView>(R.id.duck_overlay)
+                  overlay?.visibility = if (isDucked) android.view.View.VISIBLE else android.view.View.GONE
                }
             }
          }
@@ -1130,7 +1112,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                         utils.savePlaylistCounts(this@MainActivity, category, index = 0,
                                                  pos = utils.posDontSave, limit = utils.limitDontSave)
                         if (mediaController!!.playlistName!! == category)
-                           // See comment at ReloadPlaylist.
+                           // counts already saved above; don't overwrite with stale controller state
                            playlistToPlayer(
                               mediaController!!.playlistName!!,
                               play = mediaController!!.isPlaying,
@@ -1280,7 +1262,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                lifecycleScope.launch {
                   utils.savePlaylistCounts(this@MainActivity, mediaController!!.playlistName!!, 0, 0,
                                            limit = utils.limitDontSave)
-                  // See comment at ReloadPlaylist
+                  // counts already saved above; don't overwrite with stale controller state
                   playlistToPlayer(
                      mediaController!!.playlistName!!,
                      play = mediaController!!.isPlaying,
