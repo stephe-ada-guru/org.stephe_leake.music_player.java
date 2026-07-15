@@ -22,7 +22,6 @@ package org.stephe_leake.music_player_2
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -34,6 +33,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -75,7 +75,7 @@ class SearchActivity : ComponentActivity()
    override fun onCreate(savedInstanceState: Bundle?)
    {
       super.onCreate(savedInstanceState)
-      setContent {SearchScreen(viewModel)}
+      setContent {AppTheme {SearchScreen(viewModel)}}
     }
 }
 
@@ -87,7 +87,7 @@ fun SearchScreen(viewModel: SearchViewModel)
 
    CompositionLocalProvider(LocalSearchViewModel provides viewModel) {
       Column {
-         TabRow(selectedTabIndex = selectedTab) {
+         PrimaryTabRow(selectedTabIndex = selectedTab) {
             tabs.forEachIndexed { index, title ->
                                      Tab(
                                         selected = selectedTab == index,
@@ -124,7 +124,13 @@ fun GeneralSearchTab(onSearch: (String) -> Unit) {
             label = { Text("Search...") },
             modifier = Modifier.weight(1f),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-            keyboardActions = KeyboardActions(onGo = { doSearch() })
+            keyboardActions = KeyboardActions(onGo = { doSearch() }),
+            trailingIcon = {
+                if (query.isNotEmpty())
+                    IconButton(onClick = { query = "" }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Clear")
+                    }
+            }
         )
         Button(onClick = { doSearch() }, modifier = Modifier.padding(start = 8.dp)) {
             Text("Go")
@@ -182,7 +188,13 @@ private fun SearchField(
            .height(56.dp),
         singleLine = true,
         keyboardOptions = keyboardOptions,
-        keyboardActions = keyboardActions
+        keyboardActions = keyboardActions,
+        trailingIcon = {
+            if (value.isNotEmpty())
+                IconButton(onClick = { onValueChange("") }) {
+                    Icon(Icons.Default.Clear, contentDescription = "Clear")
+                }
+        }
     )
 }
 

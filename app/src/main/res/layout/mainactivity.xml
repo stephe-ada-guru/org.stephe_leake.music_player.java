@@ -62,8 +62,8 @@
           android:weightSum="1"/>
 
       <!-- WORKAROUND: the player controls keep disappearing because
-           it thinks it's displaying video, so we set the height; good
-           for my phone/tablet -->
+           it thinks it's displaying video, so we set the min height;
+           good for my phone/tablet -->
 
       <!-- 150 dp; only shows play/pause -->
       <!-- 200 dp; shows all. -->
@@ -71,7 +71,8 @@
       <androidx.media3.ui.PlayerView
           android:id="@+id/player_view"
           android:layout_width="match_parent"
-          android:layout_height="200dp"
+          android:layout_height="wrap_content"
+          android:minHeight="200dp"
           android:visibility="visible"
           android:gravity="center"
           app:use_controller="true"
@@ -80,9 +81,11 @@
           app:keep_content_on_player_reset="true"
           app:show_buffering="always"
           app:show_vr_button="false"
-          app:use_artwork="true"
-          app:hide_on_touch="true"
-          app:auto_show="false"/>
+          app:surface_type="none"
+          app:use_artwork="false"
+          app:hide_on_touch="false"
+          app:auto_show="true"
+          app:show_timeout="0"/>
 
       <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/image_slideshow"

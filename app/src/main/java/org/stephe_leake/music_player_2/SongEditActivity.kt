@@ -48,7 +48,7 @@ class SongEditActivity : ComponentActivity()
       val id = this@SongEditActivity.intent.getIntExtra("SONG_ID", -1)
       viewModel.loadSong(id)
 
-      setContent {
+      setContent { AppTheme {
          val isLoaded by viewModel.isSongLoaded.collectAsState(initial = false)
 
          if (isLoaded)
@@ -70,7 +70,7 @@ class SongEditActivity : ComponentActivity()
               Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
                 CircularProgressIndicator()}
            }
-      }
+      }}
    }
 
    suspend fun safeSave(onSaveSuccess: () -> Unit)

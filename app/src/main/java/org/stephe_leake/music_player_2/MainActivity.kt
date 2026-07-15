@@ -666,21 +666,14 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                if (images.size > 1)
                   startSlideshowTimer()
 
-               // metadata is _not_ a reference, so we need to build a
-               // replacement mediaItem.
-               //
-               // PlayerView.use_artwork requires artworkData (bytes);
-               // artworkUri is only used for the lock-screen
-               // notification. PlayerView can only display one image;
-               // the other images are shown in the slideshow below.
-               val artworkBytes = try { File(images.first().path!!).readBytes() } catch (_: Exception) { null }
-               val newMetadataBuilder = androidx.media3.common.MediaMetadata.Builder()
-                  .populate(metadata)
-                  .setArtworkUri(images.first())
-               if (artworkBytes != null)
-                  newMetadataBuilder.setArtworkData(artworkBytes, androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+               // Set artworkUri for the lock-screen notification.
+               // metadata is _not_ a reference, so we need to build a replacement mediaItem.
                val newItem = mediaController!!.currentMediaItem!!.buildUpon()
-                  .setMediaMetadata(newMetadataBuilder.build())
+                  .setMediaMetadata(
+                     androidx.media3.common.MediaMetadata.Builder()
+                        .populate(metadata)
+                        .setArtworkUri(images.first())
+                        .build())
                   .build()
                mediaController!!.replaceMediaItem(index, newItem)
             }
