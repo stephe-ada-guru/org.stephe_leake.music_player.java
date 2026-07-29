@@ -129,7 +129,9 @@ class DownloadService : Service()
          if (songsRemaining < songCountMax - songCountThresh)
             {
                var newSongs          : StatusStrings
-               val songCount         : Int   = songCountMax - songsRemaining
+               val songCount         : Int   = if (songCountMax == utils.playlistNoLimit)
+                                                   songCountMax
+                                                   else songCountMax - songsRemaining
                val newSongCountFloat : Float = songCount * newSongFractionStr!!.toFloat()
                val newSongCount      : Int   = newSongCountFloat.toInt()
 
